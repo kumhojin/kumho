@@ -442,7 +442,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .callegend{flex-wrap:wrap;gap:6px 14px}
   .lcard{padding:22px 18px}
   /* 작업자 입력표: 휴대폰에서는 한 줄을 카드처럼 */
-  #xferbox .sliptable thead,#recvbox .sliptable thead{display:none}
+  #xferbox .sliptable thead,#recvbox .sliptable thead,#reqbox .sliptable thead{display:none}
+  #reqbox .sliptable{min-width:0!important}
+  #reqbox .sliptable,#rq-body,#reqbox .sliptable tfoot,#reqbox .sliptable tfoot tr,#reqbox .sliptable tfoot td{display:block;width:100%}
+  #rq-body tr{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr) 36px;gap:6px 8px;padding:10px 0;border-bottom:1px solid var(--line)}
+  #rq-body td{display:block;padding:0;border:0;min-width:0} #rq-body td input,#rq-body td select{width:100%}
+  #rq-body td.rn{grid-column:1/-1;font-size:12px;color:var(--muted)} #rq-body td.rn::before{content:'재료 '}
+  #rq-body td:nth-child(2){grid-column:1/-1} #rq-body td.x{align-self:center}
   #xferbox .sliptable,#recvbox .sliptable{min-width:0!important;width:100%}
   #x-body tr,#rv-body tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px;padding:10px 0;border-bottom:1px solid var(--line)}
   #x-body td,#rv-body td{display:block;padding:0;border:0;min-width:0}
@@ -503,7 +509,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <label for="ac-team">부서<select id="ac-team"><option>생산</option><option>생산관리팀</option><option>품질</option><option>계발</option><option>총무팀</option></select></label>
       <label for="ac-pass">비밀번호<input id="ac-pass" type="password" minlength="6" autocomplete="new-password" placeholder="6자 이상 (수정 시 비우면 유지)"></label>
       <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="worker">작업자</option><option value="admin">관리자</option></select></label>
-      <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="사상반">사상반 (자재로 보낸 수량·불량 입력)</option><option value="자재">자재 (생산에서 받은 수량 입력)</option></select></label>
+      <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="생산">생산 작업자 (재료 요청)</option><option value="사상반">생산 사상반 (자재로 보낸 수량·불량 입력)</option><option value="자재">자재 작업자 (생산에서 받은 수량 입력)</option></select></label>
       <fieldset class="acc" id="ac-perm"><legend>부서 메뉴 권한</legend>
         <div class="pgrid">
           <span>자재 · 생산관리팀</span><select data-t="생산관리팀"><option value="edit">보기+수정</option><option value="view">보기만</option><option value="none">숨김</option></select>
@@ -522,7 +528,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </form>
     <div class="status" id="ac-status"></div>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>권한</th><th>부서 권한</th><th>주요 정보</th><th></th></tr></thead><tbody id="ac-list"></tbody></table></div>
-    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 지정한 작업장의 입력 화면 하나만 쓸 수 있습니다 (메뉴·공지·대시보드 없음). 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
+    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 작업장에 맞는 화면 하나만 씁니다 — 생산 작업자: 재료 요청 / 생산 사상반: 자재로 보낸 수량·불량 / 자재 작업자: 생산에서 받은 수량 (메뉴·공지·대시보드 없음). 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
   </section>
 
   <section class="panel" id="dash" aria-labelledby="h-dash">
@@ -617,13 +623,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <section class="panel" id="reqbox" aria-labelledby="h-req">
     <h2 id="h-req">재료 요청 <span class="tag">생산 → 자재</span></h2>
     <p class="hint">필요한 재료를 요청하면 자재(생산관리팀) 화면과 관리자 알림벨에 바로 알림이 갑니다. 자재가 처리하면 아래 목록의 상태가 바뀝니다.</p>
-    <form class="sform reqform" id="rqform" data-write>
-      <label for="rq-item">재료 (품명·품번)<input id="rq-item" maxlength="60" list="rq-items" placeholder="예: PP 수지 HJ500" required></label>
-      <label for="rq-qty">수량<input id="rq-qty" type="number" min="0" step="any" inputmode="decimal" placeholder="0" required></label>
-      <label for="rq-unit">단위<select id="rq-unit"><option>kg</option><option>포대</option><option>EA</option><option>박스</option><option>롤</option></select></label>
-      <label for="rq-need">필요한 날<input id="rq-need" type="date" required></label>
-      <label for="rq-memo" class="wide">메모<input id="rq-memo" maxlength="120" placeholder="사용 설비, 급한 정도 등 (선택)"></label>
-      <div class="sbtns"><span class="status" id="rq-status" style="margin-right:auto"></span><button type="submit" id="rq-save">재료 요청하기</button></div>
+    <form class="slipform" id="rqform" data-write>
+      <div class="sliphead">
+        <label for="rq-need">필요한 날<input id="rq-need" type="date" required></label>
+        <label for="rq-memo" class="grow" style="flex:1;min-width:200px">메모 (공통)<input id="rq-memo" maxlength="120" placeholder="사용 설비, 급한 정도 등 (선택)"></label>
+      </div>
+      <div class="scroll"><table class="rules sliptable"><thead><tr><th>#</th><th>재료 (품명·품번)</th><th class="num">수량</th><th>단위</th><th></th></tr></thead><tbody id="rq-body"></tbody>
+        <tfoot><tr><td colspan="5"><div class="row" style="justify-content:space-between"><span class="hint">한 번에 여러 재료를 요청할 수 있습니다. 엑셀에서 복사해 첫 칸에 붙여 넣어도 됩니다.</span><button type="button" class="ghost" id="rq-add">줄 추가</button></div></td></tr></tfoot></table></div>
+      <div class="row" style="justify-content:space-between"><span class="status" id="rq-status"></span><button type="submit" id="rq-save">재료 요청하기</button></div>
     </form>
     <datalist id="rq-items"></datalist>
     <h3 class="subh">최근 요청</h3>
@@ -1116,7 +1123,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     document.getElementById('crumb').textContent=it.g==='공통'?it.label:`${it.g} › ${it.label}`;
     const th=document.getElementById('teamhead'); th.hidden=it.t==='홈';
     document.getElementById('th-name').textContent=it.label; document.getElementById('th-desc').textContent=TEAMS[it.t];
-    if(typeof isWorker==='function'&&isWorker()) document.getElementById('th-desc').textContent=it.id==='xfer'?'자재(창고)로 보낸 수량과 불량 수량을 품번·LOT별로 적고 저장하세요.':it.id==='recv'?'생산(사상반)에서 받은 수량을 품번·LOT별로 적고 저장하세요.':'';
+    if(typeof isWorker==='function'&&isWorker()) document.getElementById('th-desc').textContent=it.id==='xfer'?'자재(창고)로 보낸 수량과 불량 수량을 품번·LOT별로 적고 저장하세요.':it.id==='recv'?'생산(사상반)에서 받은 수량을 품번·LOT별로 적고 저장하세요.':it.id==='reqnew'?'필요한 재료와 수량을 적고 요청하세요. 자재가 처리하면 상태가 바뀝니다.':'';
     document.getElementById('n-scope').textContent=it.t==='홈'?'전 부서':it.t+' + 전체';
     document.getElementById('n-team').value=it.t==='홈'?'전체':it.t;
     document.getElementById('prod-areawrap').hidden=it.id!=='lotprod';
@@ -1856,23 +1863,45 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   const fmtT=ts=>{const t=new Date(ts);return `${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`};
   document.getElementById('rq-need').value=iso(d);
   const rqStatus=document.getElementById('rq-status');
+  const rqBody=document.getElementById('rq-body'), UNITS=['kg','포대','EA','박스','롤'];
+  function rqRow(){const tr=document.createElement('tr'); const n=document.createElement('td'); n.className='rn'; tr.append(n);
+    const mk=(k,l)=>{const td=document.createElement('td'); let el;
+      if(k==='unit'){el=document.createElement('select'); UNITS.forEach(u=>{const o=document.createElement('option');o.textContent=u;el.append(o)})}
+      else{el=document.createElement('input'); el.placeholder=l; if(k==='qty'){el.type='number';el.min='0';el.step='any';el.inputMode='decimal';td.className='num'} else {el.maxLength=60; el.setAttribute('list','rq-items')}}
+      el.dataset.k=k; el.setAttribute('aria-label',l); td.append(el); tr.append(td); return el};
+    const it=mk('item','재료 (예: PP 수지 HJ500)'), q=mk('qty','수량'), u=mk('unit','단위');
+    it.addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t)) return; e.preventDefault();
+      let row=tr; t.replace(/\r/g,'').split('\n').filter(l=>l.trim()).forEach(line=>{if(!row){row=rqRow();rqBody.append(row)} const c=line.split('\t').map(x=>x.trim());
+        const f=row.querySelectorAll('[data-k]'); f[0].value=c[0]||''; if(c[1]) f[1].value=c[1].replace(/,/g,''); if(c[2]&&UNITS.includes(c[2])) f[2].value=c[2]; row=row.nextElementSibling}); rqNum()});
+    [it,q].forEach((el,ci)=>el.addEventListener('keydown',e=>{if(e.key!=='Enter') return; e.preventDefault(); if(ci===0){q.focus();return}
+      let nx=tr.nextElementSibling; if(!nx){nx=rqRow();rqBody.append(nx);rqNum()} nx.querySelector('input').focus()}));
+    // 이전 줄 단위 따라가기
+    const prev=rqBody.lastElementChild; if(prev){const pu=prev.querySelector('[data-k="unit"]'); if(pu) u.value=pu.value}
+    const x=document.createElement('td'); x.className='x'; const bt=document.createElement('button'); bt.type='button'; bt.className='ghost'; bt.textContent='×'; bt.setAttribute('aria-label','이 줄 지우기');
+    bt.onclick=()=>{tr.remove(); if(!rqBody.children.length) rqBody.append(rqRow()); rqNum()}; x.append(bt); tr.append(x); return tr}
+  function rqNum(){[...rqBody.children].forEach((tr,i)=>tr.firstChild.textContent=i+1)}
+  function rqAdd(n){for(let i=0;i<n;i++) rqBody.append(rqRow()); rqNum()}
+  rqAdd(3); document.getElementById('rq-add').onclick=()=>rqAdd(3);
   document.getElementById('rqform').addEventListener('submit',async e=>{e.preventDefault();
     if(!db){rqStatus.textContent='요청은 로그인한 직원만 할 수 있습니다.';return}
     if(!canEditTeam('생산')){rqStatus.textContent='재료 요청 권한이 없습니다.';return}
-    const item=document.getElementById('rq-item').value.trim(), qty=Number(document.getElementById('rq-qty').value);
-    if(!item||!(qty>0)){rqStatus.textContent='재료와 수량을 넣어 주세요.';return}
+    const rows=[], bad=[];
+    [...rqBody.children].forEach((tr,i)=>{tr.classList.remove('err'); const o={}; tr.querySelectorAll('[data-k]').forEach(x=>o[x.dataset.k]=x.value.trim());
+      if(!o.item&&!o.qty) return; o.qty=Number(o.qty); if(!o.item||!(o.qty>0)){bad.push(i+1);tr.classList.add('err');return} rows.push(o)});
+    if(bad.length){rqStatus.textContent=`${bad.join(', ')}번 줄에 재료와 수량을 넣어 주세요.`;return}
+    if(!rows.length){rqStatus.textContent='요청할 재료를 한 줄 이상 넣어 주세요.';return}
     const btn=document.getElementById('rq-save'); btn.disabled=true; rqStatus.textContent='요청 보내는 중…';
-    try{await db.collection('requests').add({item,qty,unit:document.getElementById('rq-unit').value,need:document.getElementById('rq-need').value,
-        memo:document.getElementById('rq-memo').value.trim(),status:'요청',author:myId,authorName:me?me.name:'',createdAt:Date.now()});
-      document.getElementById('rq-item').value=''; document.getElementById('rq-qty').value=''; document.getElementById('rq-memo').value='';
-      rqStatus.textContent='요청을 보냈습니다. 자재 화면과 관리자에게 알림이 갔습니다.'}
+    const need=document.getElementById('rq-need').value, memo=document.getElementById('rq-memo').value.trim(), now=Date.now(), batch='b'+now.toString(36);
+    try{for(const o of rows) await db.collection('requests').add({item:o.item,qty:o.qty,unit:o.unit,need,memo,batch,status:'요청',author:myId,authorName:me?me.name:'',createdAt:now});
+      rqBody.replaceChildren(); rqAdd(3); document.getElementById('rq-memo').value='';
+      rqStatus.textContent=`재료 ${rows.length}건을 요청했습니다. 자재 화면과 관리자에게 알림이 갔습니다.`}
     catch(err){rqStatus.textContent='요청하지 못했습니다. 다시 시도해 주세요.'}
     btn.disabled=false});
   function reqWho(x){return x.authorName||x.author||'직원'}
   function stPill(td,stt){const p=document.createElement('span'); const v=RQS[stt]||RQS['요청']; p.className='st '+v[1]; p.textContent=v[0]; td.append(p)}
   function renderReqs(){
     // 생산: 최근 요청
-    const rl=document.getElementById('rq-list'); rl.replaceChildren(); const mine=reqs.slice(0,40);
+    const rl=document.getElementById('rq-list'); rl.replaceChildren(); const mine=(isWorker()?reqs.filter(r=>r.data().author===myId):reqs).slice(0,40);
     document.getElementById('rq-empty').hidden=mine.length>0;
     const dl=document.getElementById('rq-items'); dl.replaceChildren(); [...new Set(reqs.map(r=>r.data().item).filter(Boolean))].slice(0,60).forEach(v=>{const o=document.createElement('option');o.value=v;dl.append(o)});
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
@@ -1930,8 +1959,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function seesMat(){return !!me&&!isWorker()&&(me.role==='admin'||canEditTeam('생산관리팀')||accessOf(me).includes('생산관리팀'))}
   function onReqs(first,prev){renderReqs(); renderReqBadges(); renderBell();
     if(first) return;
+    const fresh=reqs.map(r=>r.data()).filter((x,i)=>prev.get(reqs[i].id)===undefined&&x.status==='요청'&&x.author!==myId);
+    if(fresh.length&&seesMat()){const f=fresh[0]; toast(fresh.length>1?`🔔 새 재료 요청 ${fresh.length}건: ${f.item} 외 ${fresh.length-1}건 (${reqWho(f)})`:`🔔 새 재료 요청: ${f.item} ${Number(f.qty).toLocaleString('ko-KR')}${f.unit||''} (${reqWho(f)})`,'reqlist'); return}
     for(const s of reqs){const x=s.data(); const was=prev.get(s.id);
-      if(was===undefined&&x.status==='요청'&&x.author!==myId&&seesMat()){toast(`🔔 새 재료 요청: ${x.item} ${Number(x.qty).toLocaleString('ko-KR')}${x.unit||''} (${reqWho(x)})`,'reqlist'); break}
       if(was&&was!=='완료'&&x.status==='완료'&&x.author===myId){toast(`✓ 요청한 ${x.item}이(가) 완료 처리되었습니다.`,'reqnew'); break}}}
 
   // 생산 → 자재 받은 내역 (재고 추가로 저장, src:'recv')
@@ -2048,7 +2078,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:unhex(saltHex),iterations:ITER},k,256))}
   const ALLTEAMS=['생산관리팀','생산','품질','계발','총무팀'];
   // 작업자: 작업장별로 쓸 수 있는 화면
-  const WORK={'사상반':{team:'생산',items:['xfer']},'자재':{team:'생산관리팀',items:['recv']}};
+  const WORK={'생산':{team:'생산',items:['reqnew']},'사상반':{team:'생산',items:['xfer']},'자재':{team:'생산관리팀',items:['recv']}};
   function isWorker(){return !!me&&me.role==='worker'}
   function workItems(){const w=WORK[me&&me.station]||WORK['사상반']; return w.items}
   function permOf(a){const p={teams:{},notice:false,price:false,complaint:true};
@@ -2080,7 +2110,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   setTimeout(endCheck,1500);
   function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me){document.body.classList.remove('worker'); try{document.getElementById('bell').hidden=true;document.getElementById('bellpanel').hidden=true}catch(e){}}
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
-      document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.role==='worker'?(me.station||'')+' 작업자':(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
+      document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
       side.querySelectorAll('.sg').forEach(w=>{const g=MENU.find(m=>m.g===w.dataset.g), t=g&&g.items[0]&&g.items[0][2]; w.hidden=!!t&&!canSee(t)});
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
@@ -2104,7 +2134,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     const rows=[{id:null,data:()=>ADMIN},...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
-      c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':x.role==='worker'?`작업자 (${x.station||'사상반'})`:'일반'); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
+      c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':x.role==='worker'?(x.station==='생산'?'생산 작업자':x.station==='사상반'?'생산 사상반':'자재 작업자'):'일반'); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
       {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
