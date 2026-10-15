@@ -529,7 +529,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <form id="acform" class="sform">
       <label for="ac-user">아이디<input id="ac-user" maxlength="30" pattern="[A-Za-z0-9_.-]+" placeholder="영문·숫자" required></label>
       <label for="ac-name">이름<input id="ac-name" maxlength="20" required></label>
-      <label for="ac-team">부서<select id="ac-team"><option>생산</option><option>생산관리팀</option><option>품질</option><option>계발</option><option>총무팀</option></select></label>
+      <label for="ac-team">부서<select id="ac-team"><option>본사</option><option>생산</option><option>생산관리팀</option><option>품질</option><option>계발</option><option>총무팀</option></select></label>
       <label for="ac-pass">비밀번호<input id="ac-pass" type="password" minlength="6" autocomplete="new-password" placeholder="6자 이상 (수정 시 비우면 유지)"></label>
       <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="worker">작업자</option><option value="admin">관리자</option></select></label>
       <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="생산">생산 작업자 (재료 요청)</option><option value="사상반">생산 사상반 (자재로 보낸 수량·불량 입력)</option><option value="자재">자재 작업자 (생산에서 받은 수량 입력)</option></select></label>
@@ -2273,9 +2273,11 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     catch(err){const m=String(err&&err.message||''); st.textContent=/registered|exists|duplicate/i.test(m)?'이미 있는 아이디입니다.':'저장하지 못했습니다: '+m}});
   function acRoleUI(){const w=document.getElementById('ac-role').value==='worker';
     document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
-    if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team}
+    if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team;
+    if(document.getElementById('ac-role').value==='admin'&&acRoleUI._last!=='admin') document.getElementById('ac-team').value='본사';
+    acRoleUI._last=document.getElementById('ac-role').value}
   document.getElementById('ac-role').addEventListener('change',acRoleUI); document.getElementById('ac-station').addEventListener('change',acRoleUI);
-  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
+  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); document.getElementById('ac-team').value='생산'; acRoleUI._last=''; setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
   renderAccts(); applyLogin();
 
   // 권한 적용: 현재 메뉴 부서가 '보기만'이면 쓰기 막기, 공지·단가·클레임 개별 권한
