@@ -350,6 +350,39 @@ footer .kmark{height:14px}
 .endday h3 .kmark{height:18px}
 .endday p{margin:0;color:var(--muted);font-size:14px}
 .endday .row{display:flex;gap:8px;justify-content:flex-end}
+/* 재료 요청 / 알림 */
+.nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;line-height:1;margin-left:6px;font-family:var(--f-mono)}
+.nbadge[hidden]{display:none}
+.sgroup .nbadge{margin-left:auto;margin-right:6px}
+.bellbtn{position:relative;background:transparent;border:1px solid #5a6878;color:#eef1f4;padding:3px 8px;min-width:34px;display:inline-grid;place-items:center;border-radius:4px;cursor:pointer}
+.bellbtn svg{width:16px;height:16px}
+.bellbtn .nbadge{position:absolute;top:-7px;right:-8px;margin:0;border:2px solid var(--steel)}
+.bellbtn[hidden]{display:none}
+.bellpanel{position:fixed;top:calc(var(--hh,48px) + 6px);right:12px;width:min(380px,calc(100vw - 24px));max-height:min(70vh,560px);overflow:auto;z-index:46;background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:6px;box-shadow:0 12px 34px rgba(0,0,0,.28)}
+.bellpanel[hidden]{display:none}
+.bellpanel header{display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--surface)}
+.bellpanel header b{font-family:var(--f-display);font-size:15px}
+.bellpanel ul{list-style:none;margin:0;padding:4px}
+.bellpanel li button{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;width:100%;text-align:left;background:transparent;border:0;border-radius:4px;color:var(--ink);font-weight:400;padding:9px 10px}
+.bellpanel li button:hover{background:var(--bg)}
+.bellpanel li .ic{grid-row:span 2;width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:13px;font-weight:700}
+.bellpanel li .ic.req{background:var(--accent-soft);color:var(--accent)}
+.bellpanel li .ic.done{background:var(--ok-soft);color:var(--ok)}
+.bellpanel li .ic.bad{background:var(--bad-soft);color:var(--bad)}
+.bellpanel li .t{font-size:14px;font-weight:600;line-height:1.35}
+.bellpanel li .m{font-size:12px;color:var(--muted)}
+.bellpanel li.new .t::after{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--bad);margin-left:6px;vertical-align:2px}
+.bellpanel .none{padding:18px 14px;color:var(--muted);font-size:14px}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);z-index:70;background:var(--steel);color:#fff;border-left:4px solid var(--accent);border-radius:6px;padding:12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.3);font-size:14px;max-width:calc(100vw - 32px);cursor:pointer}
+.toast[hidden]{display:none}
+.reqform{grid-template-columns:2fr 1fr 1fr 1fr}
+.reqform .wide{grid-column:1/-1}
+@media (max-width:640px){.reqform{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.reqacts{display:flex;gap:6px;flex-wrap:wrap}
+.reqacts button.okbtn{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:600;padding:4px 12px;font-size:13px}
+.st.req{color:var(--bad);border-color:var(--bad)}
+.st.doing{color:var(--accent);border-color:var(--accent)}
+tr.reqnew td{background:var(--bad-soft)}
 /* 작업자 / 오차 알림 */
 .rcalert{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;border:1px solid var(--bad);background:var(--bad-soft);color:var(--bad);border-radius:4px;padding:10px 14px;font-weight:600}
 .rcalert.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
@@ -386,6 +419,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .who{margin-left:auto;gap:6px}
   .who button,.themebtn{padding:6px 9px;font-size:12px;min-height:32px}
   #ai-set{display:none}
+  .bellbtn{min-height:32px;padding:6px 9px}
   .themebtn .tl{display:none}
   /* 메뉴: 한 줄 가로 스크롤 대신 2줄까지 감싸고, 드롭다운은 화면 폭에 맞춤 */
   .side{padding:6px 12px;gap:6px;flex-wrap:nowrap;overflow-x:auto;overflow-y:visible;scrollbar-width:none;-webkit-overflow-scrolling:touch}
@@ -431,6 +465,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <p>오늘 업무가 끝났습니다. 로그아웃할까요? 공용 PC라면 로그아웃하는 것이 안전합니다.</p>
     <div class="row"><button type="button" class="ghost" id="endday-stay">계속 사용</button><button type="button" id="endday-out">로그아웃</button></div></div>
 </div>
+<div class="bellpanel" id="bellpanel" hidden role="dialog" aria-label="알림"><header><b>알림</b><button type="button" class="ghost" id="bell-read">모두 읽음</button></header><ul id="bell-list"></ul></div>
+<div class="toast" id="toast" hidden role="status"></div>
 <div class="login" id="login">
   <form class="lcard" id="lgform" autocomplete="on">
     <button type="button" class="themebtn" data-theme-btn>테마</button>
@@ -446,7 +482,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <a class="brand" id="brand" href="#dash" title="대시보드로"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><b>금호정공</b><span>사내 업무 시스템</span></a>
   <div class="crumb" id="crumb">대시보드</div>
   <div class="today"><b id="today">—</b> <span id="weekday"></span></div>
-  <div class="who"><span id="who-name"></span><button type="button" class="themebtn" data-theme-btn>테마</button> <button type="button" id="ai-set" onclick="kumhoAISettings()">AI 설정</button> <button type="button" id="logout">로그아웃</button></div>
+  <div class="who"><span id="who-name"></span><button type="button" class="bellbtn" id="bell" hidden aria-label="알림" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="nbadge" id="bell-n" hidden>0</span></button> <button type="button" class="themebtn" data-theme-btn>테마</button> <button type="button" id="ai-set" onclick="kumhoAISettings()">AI 설정</button> <button type="button" id="logout">로그아웃</button></div>
 </div></header>
 
 <div class="erp">
@@ -576,6 +612,32 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <h3 class="subh">최근 보낸 내역</h3>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>보낸 날</th><th>품번</th><th>LOT</th><th class="num">수량</th><th class="num">불량</th><th>메모</th><th>입력자</th><th></th></tr></thead><tbody id="x-list"></tbody></table></div>
     <div class="empty" id="x-empty">아직 보낸 내역이 없습니다.</div>
+  </section>
+
+  <section class="panel" id="reqbox" aria-labelledby="h-req">
+    <h2 id="h-req">재료 요청 <span class="tag">생산 → 자재</span></h2>
+    <p class="hint">필요한 재료를 요청하면 자재(생산관리팀) 화면과 관리자 알림벨에 바로 알림이 갑니다. 자재가 처리하면 아래 목록의 상태가 바뀝니다.</p>
+    <form class="sform reqform" id="rqform" data-write>
+      <label for="rq-item">재료 (품명·품번)<input id="rq-item" maxlength="60" list="rq-items" placeholder="예: PP 수지 HJ500" required></label>
+      <label for="rq-qty">수량<input id="rq-qty" type="number" min="0" step="any" inputmode="decimal" placeholder="0" required></label>
+      <label for="rq-unit">단위<select id="rq-unit"><option>kg</option><option>포대</option><option>EA</option><option>박스</option><option>롤</option></select></label>
+      <label for="rq-need">필요한 날<input id="rq-need" type="date" required></label>
+      <label for="rq-memo" class="wide">메모<input id="rq-memo" maxlength="120" placeholder="사용 설비, 급한 정도 등 (선택)"></label>
+      <div class="sbtns"><span class="status" id="rq-status" style="margin-right:auto"></span><button type="submit" id="rq-save">재료 요청하기</button></div>
+    </form>
+    <datalist id="rq-items"></datalist>
+    <h3 class="subh">최근 요청</h3>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>요청</th><th>재료</th><th class="num">수량</th><th>필요한 날</th><th>요청자</th><th>상태</th><th></th></tr></thead><tbody id="rq-list"></tbody></table></div>
+    <div class="empty" id="rq-empty">아직 요청이 없습니다.</div>
+  </section>
+
+  <section class="panel" id="reqinbox" aria-labelledby="h-reqin">
+    <h2 id="h-reqin">재료 요청 확인 <span class="tag">생산에서 온 요청</span></h2>
+    <div class="row"><div class="tabs" role="tablist" id="ri-tabs">
+      <button type="button" role="tab" data-f="open" aria-selected="true">처리 전</button><button type="button" role="tab" data-f="done" aria-selected="false">완료</button><button type="button" role="tab" data-f="all" aria-selected="false">전체</button></div>
+      <span class="status" id="ri-status"></span></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>요청</th><th>재료</th><th class="num">수량</th><th>필요한 날</th><th>요청자</th><th>메모</th><th>상태</th><th></th></tr></thead><tbody id="ri-list"></tbody></table></div>
+    <div class="empty" id="ri-empty">처리할 요청이 없습니다.</div>
   </section>
 
   <section class="panel" id="recvbox" aria-labelledby="h-recv">
@@ -1007,13 +1069,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   const MENU=[
     {g:'공통',items:[['dash','대시보드','홈',['dash','links','teams']],['acct','계정 관리','홈',['acctbox']],['notice','공지사항','홈',['notice']],['bot','포털 도우미','홈',['bot']]]},
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
-      ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['rules','판매입력 규칙','생산관리팀',['rules']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
-    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
+      ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['rules','판매입력 규칙','생산관리팀',['rules']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
+    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
     {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
     {g:'계발',items:[['ndev','부서 공지','계발',['notice','soon']]]},
     {g:'총무팀',items:[['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
-  const SECTIONS=['boardbox','acctbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
+  const SECTIONS=['boardbox','acctbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
   const side=document.getElementById('side');
   const mq=window.matchMedia('(max-width:860px)');
   let openG=new Set(); try{JSON.parse(localStorage.getItem('openGroups')||'[]').forEach(x=>openG.add(x))}catch(e){}
@@ -1171,6 +1233,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     ['CAN','CAC'].forEach(k=>db.doc('boxguide/'+k).onSnapshot(sn=>{guides[k]=(sn.exists&&sn.data().map)||{}; guideInfo(); if(lastExtract&&pdest.value===k) runPlan()},()=>{}));
     ['생산입고','판매입력','구매입력'].forEach(k=>db.doc('ecount/'+k).onSnapshot(sn=>{ecT[k]=sn.exists?sn.data():null; if(ecf===k) ecShow()},()=>{}));
     db.doc('ecount/inventory').onSnapshot(sn=>{ecInv=sn.exists?sn.data():null; if(ecf==='재고현황') renderInv()},()=>{});
+    db.collection('requests').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{const first=!reqLoaded; const prev=new Map(reqs.map(r=>[r.id,r.data().status])); reqs=sn.docs; reqLoaded=true; onReqs(first,prev)},()=>{});
     db.collection('transfers').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{xfers=sn.docs;renderXfers();renderRecon();try{renderBoard()}catch(e){}},()=>{xStatus.textContent='보낸 내역을 불러오지 못했습니다.'});
     db.collection('accounts').onSnapshot(sn=>{accounts=sn.docs;renderAccts()},()=>{});
     db.collection('plans').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{plans=sn.docs;renderPlans();try{renderBoard()}catch(e){}},()=>{});
@@ -1776,7 +1839,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     for(const e of rows){const tr=document.createElement('tr'); if(e.diff) tr.className='diff'; const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
       c(e.item); c(lotLabel(e.lot)); c(e.sent.toLocaleString('ko-KR'),'num'); c(e.got.toLocaleString('ko-KR'),'num'); c((e.diff>0?'+':'')+e.diff.toLocaleString('ko-KR'),'num'); c(e.bad?e.bad.toLocaleString('ko-KR'):'—','num');
       const st=c(''); const p=document.createElement('span'); p.className='st '+e.st[1]; p.textContent=e.st[0]; st.append(p); body.append(tr)}
-    renderRcAlert();
+    renderRcAlert(); try{renderBell()}catch(e){}
   }
   // 관리자 대시보드: 이번 달 사상반↔자재 오차 자동 확인
   function reconMismatch(ym){const m=new Map(), key=(i,l)=>String(i||'').trim()+'\u0000'+String(l||'').trim(), inM=dt=>String(dt||'').slice(0,7)===ym;
@@ -1787,6 +1850,90 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!isAdm){el.hidden=true;return} const r=reconMismatch(iso(d).slice(0,7)); el.hidden=!r.total;
     el.classList.toggle('ok',r.n===0); el.querySelector('span').textContent=r.n?`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건 (전체 ${r.total}개 품번·LOT)`:`이번 달 사상반 ↔ 자재 수량이 모두 일치합니다 (${r.total}개 품번·LOT)`}
   [rcMonth,document.getElementById('rc-search'),document.getElementById('rc-only')].forEach(el=>el.addEventListener('input',renderRecon));
+  // ===== 재료 요청 (생산 → 자재) + 알림 =====
+  let reqs=[], reqLoaded=false, riF='open';
+  const RQS={'요청':['요청','req'],'처리중':['처리 중','doing'],'완료':['완료','ok'],'취소':['취소','warn']};
+  const fmtT=ts=>{const t=new Date(ts);return `${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`};
+  document.getElementById('rq-need').value=iso(d);
+  const rqStatus=document.getElementById('rq-status');
+  document.getElementById('rqform').addEventListener('submit',async e=>{e.preventDefault();
+    if(!db){rqStatus.textContent='요청은 로그인한 직원만 할 수 있습니다.';return}
+    if(!canEditTeam('생산')){rqStatus.textContent='재료 요청 권한이 없습니다.';return}
+    const item=document.getElementById('rq-item').value.trim(), qty=Number(document.getElementById('rq-qty').value);
+    if(!item||!(qty>0)){rqStatus.textContent='재료와 수량을 넣어 주세요.';return}
+    const btn=document.getElementById('rq-save'); btn.disabled=true; rqStatus.textContent='요청 보내는 중…';
+    try{await db.collection('requests').add({item,qty,unit:document.getElementById('rq-unit').value,need:document.getElementById('rq-need').value,
+        memo:document.getElementById('rq-memo').value.trim(),status:'요청',author:myId,authorName:me?me.name:'',createdAt:Date.now()});
+      document.getElementById('rq-item').value=''; document.getElementById('rq-qty').value=''; document.getElementById('rq-memo').value='';
+      rqStatus.textContent='요청을 보냈습니다. 자재 화면과 관리자에게 알림이 갔습니다.'}
+    catch(err){rqStatus.textContent='요청하지 못했습니다. 다시 시도해 주세요.'}
+    btn.disabled=false});
+  function reqWho(x){return x.authorName||x.author||'직원'}
+  function stPill(td,stt){const p=document.createElement('span'); const v=RQS[stt]||RQS['요청']; p.className='st '+v[1]; p.textContent=v[0]; td.append(p)}
+  function renderReqs(){
+    // 생산: 최근 요청
+    const rl=document.getElementById('rq-list'); rl.replaceChildren(); const mine=reqs.slice(0,40);
+    document.getElementById('rq-empty').hidden=mine.length>0;
+    const dl=document.getElementById('rq-items'); dl.replaceChildren(); [...new Set(reqs.map(r=>r.data().item).filter(Boolean))].slice(0,60).forEach(v=>{const o=document.createElement('option');o.value=v;dl.append(o)});
+    for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
+      c(fmtT(x.createdAt),'num'); c(x.item); c(`${Number(x.qty).toLocaleString('ko-KR')} ${x.unit||''}`,'num'); c(x.need||''); c(reqWho(x)); stPill(c(''),x.status);
+      const a=c(''); if(x.author===myId&&x.status==='요청'){const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='취소';
+        b.onclick=async()=>{if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='취소 확인';return} try{await db.collection('requests').doc(s.id).update({status:'취소',doneAt:Date.now()})}catch(e){rqStatus.textContent='취소하지 못했습니다.'}}; a.append(b)}
+      rl.append(tr)}
+    // 자재: 요청 확인
+    const il=document.getElementById('ri-list'); il.replaceChildren();
+    const list=reqs.filter(s=>{const t=s.data().status; return riF==='all'?true:riF==='done'?(t==='완료'||t==='취소'):(t==='요청'||t==='처리중')});
+    document.getElementById('ri-empty').hidden=list.length>0;
+    document.getElementById('ri-empty').textContent=riF==='open'?'처리할 요청이 없습니다.':'요청이 없습니다.';
+    const canAct=canEditTeam('생산관리팀');
+    for(const s of list){const x=s.data(), tr=document.createElement('tr'); if(x.status==='요청') tr.className='reqnew'; const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
+      c(fmtT(x.createdAt),'num'); c(x.item); c(`${Number(x.qty).toLocaleString('ko-KR')} ${x.unit||''}`,'num'); c(x.need||''); c(reqWho(x)); c(x.memo||''); stPill(c(''),x.status);
+      const a=c(''); const box=document.createElement('div'); box.className='reqacts'; a.append(box);
+      const act=(label,stt,cls)=>{const b=document.createElement('button'); b.type='button'; b.className=cls||'ghost'; b.textContent=label;
+        b.onclick=async()=>{b.disabled=true; try{await db.collection('requests').doc(s.id).update({status:stt,doneBy:myId,doneByName:me?me.name:'',doneAt:Date.now()})}catch(e){document.getElementById('ri-status').textContent='바꾸지 못했습니다. 권한을 확인해 주세요.'} b.disabled=false}; box.append(b)};
+      if(canAct&&x.status==='요청'){act('처리 중','처리중'); act('완료','완료','okbtn')}
+      else if(canAct&&x.status==='처리중') act('완료','완료','okbtn');
+      else if(x.doneAt&&(x.status==='완료'||x.status==='취소')){const sp=document.createElement('span'); sp.className='hint'; sp.textContent=`${x.doneByName||''} ${fmtT(x.doneAt)}`.trim(); box.append(sp)}
+      il.append(tr)}
+  }
+  document.querySelectorAll('#ri-tabs button').forEach(b=>b.onclick=()=>{riF=b.dataset.f; document.querySelectorAll('#ri-tabs button').forEach(x=>x.setAttribute('aria-selected',x===b)); renderReqs()});
+  // 메뉴 배지: 자재 쪽에 처리 전 요청 수
+  function setBadge(host,n){if(!host) return; let bd=host.querySelector('.nbadge'); if(!bd){bd=document.createElement('span'); bd.className='nbadge'; const ar=host.querySelector('i'); ar?host.insertBefore(bd,ar):host.append(bd)} bd.textContent=n>99?'99+':n; bd.hidden=!n}
+  function renderReqBadges(){const open=reqs.filter(s=>s.data().status==='요청').length;
+    setBadge(document.querySelector('.sitem[data-m="reqlist"]'),open);
+    const g=[...document.querySelectorAll('.sg')].find(w=>w.dataset.g&&w.dataset.g.startsWith('자재')); if(g) setBadge(g.querySelector('.sgroup'),open)}
+  // 알림벨 (관리자): 재료 요청, 요청 처리, 수량 오차
+  const bellBtn=document.getElementById('bell'), bellPanel=document.getElementById('bellpanel');
+  const seenKey=()=>'kumhoBellSeen_'+(me&&me.user||'');
+  function bellSeen(){try{return Number(localStorage.getItem(seenKey()))||0}catch(e){return 0}}
+  function bellEvents(){const ev=[];
+    for(const s of reqs){const x=s.data();
+      ev.push({ts:x.createdAt,ic:'req',sym:'요',t:`재료 요청: ${x.item} ${Number(x.qty).toLocaleString('ko-KR')}${x.unit||''}`,m:`${reqWho(x)} · 필요 ${x.need||'-'} · ${fmtT(x.createdAt)}`,go:'reqlist'});
+      if(x.doneAt&&x.status==='완료') ev.push({ts:x.doneAt,ic:'done',sym:'✓',t:`요청 완료: ${x.item}`,m:`${x.doneByName||'자재'} 처리 · ${fmtT(x.doneAt)}`,go:'reqlist'})}
+    try{const r=reconMismatch(iso(d).slice(0,7)); if(r.n) ev.push({ts:0,sticky:true,ic:'bad',sym:'!',t:`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건`,m:'눌러서 오차 확인',go:'recon2'})}catch(e){}
+    return ev.sort((a,b)=>(b.sticky-a.sticky)||(b.ts-a.ts)).slice(0,40)}
+  function renderBell(){const isAdm=!!me&&me.role==='admin'; bellBtn.hidden=!isAdm; if(!isAdm){bellPanel.hidden=true;return}
+    const seen=bellSeen(), ev=bellEvents(), n=ev.filter(e=>e.ts>seen||e.sticky).length;
+    const bn=document.getElementById('bell-n'); bn.textContent=n>99?'99+':n; bn.hidden=!n;
+    const ul=document.getElementById('bell-list'); ul.replaceChildren();
+    if(!ev.length){const li=document.createElement('li'); li.className='none'; li.textContent='새 알림이 없습니다.'; ul.append(li); return}
+    for(const e of ev){const li=document.createElement('li'); if(e.ts>seen||e.sticky) li.className='new'; const b=document.createElement('button'); b.type='button';
+      const ic=document.createElement('span'); ic.className='ic '+e.ic; ic.textContent=e.sym; const t=document.createElement('span'); t.className='t'; t.textContent=e.t; const m=document.createElement('span'); m.className='m'; m.textContent=e.m;
+      b.append(ic,t,m); b.onclick=()=>{bellPanel.hidden=true; bellBtn.setAttribute('aria-expanded','false'); go(e.go,true); try{history.replaceState(null,'','#'+e.go)}catch(x){}}; li.append(b); ul.append(li)}}
+  function markRead(){try{localStorage.setItem(seenKey(),String(Date.now()))}catch(e){} renderBell()}
+  bellBtn.onclick=e=>{e.stopPropagation(); const o=bellPanel.hidden; bellPanel.hidden=!o; bellBtn.setAttribute('aria-expanded',String(o)); if(o) renderBell()};
+  document.getElementById('bell-read').onclick=markRead;
+  document.addEventListener('click',e=>{if(!bellPanel.hidden&&!bellPanel.contains(e.target)&&e.target!==bellBtn){bellPanel.hidden=true; bellBtn.setAttribute('aria-expanded','false')}});
+  // 새 요청 토스트 (자재 담당·관리자)
+  const toastEl=document.getElementById('toast'); let toastT=null;
+  function toast(msg,goId){toastEl.textContent=msg; toastEl.hidden=false; toastEl.onclick=()=>{toastEl.hidden=true; if(goId){go(goId,true)}}; clearTimeout(toastT); toastT=setTimeout(()=>toastEl.hidden=true,8000)}
+  function seesMat(){return !!me&&!isWorker()&&(me.role==='admin'||canEditTeam('생산관리팀')||accessOf(me).includes('생산관리팀'))}
+  function onReqs(first,prev){renderReqs(); renderReqBadges(); renderBell();
+    if(first) return;
+    for(const s of reqs){const x=s.data(); const was=prev.get(s.id);
+      if(was===undefined&&x.status==='요청'&&x.author!==myId&&seesMat()){toast(`🔔 새 재료 요청: ${x.item} ${Number(x.qty).toLocaleString('ko-KR')}${x.unit||''} (${reqWho(x)})`,'reqlist'); break}
+      if(was&&was!=='완료'&&x.status==='완료'&&x.author===myId){toast(`✓ 요청한 ${x.item}이(가) 완료 처리되었습니다.`,'reqnew'); break}}}
+
   // 생산 → 자재 받은 내역 (재고 추가로 저장, src:'recv')
   const rvBody=document.getElementById('rv-body'), rvStatus=document.getElementById('rv-status');
   document.getElementById('rv-date').value=iso(d);
@@ -1931,7 +2078,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   document.getElementById('endday-out').onclick=()=>{endDone(); me=null; clearLogin(); applyLogin()};
   setInterval(()=>{if(me&&!loadLogin()){me=null; applyLogin()} endCheck()},30000);
   setTimeout(endCheck,1500);
-  function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me) document.body.classList.remove('worker');
+  function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me){document.body.classList.remove('worker'); try{document.getElementById('bell').hidden=true;document.getElementById('bellpanel').hidden=true}catch(e){}}
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
       document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.role==='worker'?(me.station||'')+' 작업자':(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
@@ -1939,7 +2086,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
       if(isWorker()) side.querySelectorAll('.sg').forEach(w=>{w.hidden=![...w.querySelectorAll('.sitem'),...((w._box&&w._box.querySelectorAll('.sitem'))||[])].some(b=>!b.hidden)});
       document.body.classList.toggle('worker',isWorker());
-      try{renderRcAlert()}catch(e){}
+      try{renderRcAlert(); renderBell(); renderReqBadges(); renderReqs()}catch(e){}
       const cur=ITEM[curItem]; if((curItem==='acct'&&me.role!=='admin')||(cur&&!canSee(cur.t))||(isWorker()&&!workItems().includes(curItem))) go(isWorker()?workItems()[0]:'dash',false)}
     else{L.hidden=false; document.body.classList.add('locked'); setTimeout(()=>document.getElementById('lg-user').focus(),0)}}
   document.getElementById('lgform').addEventListener('submit',async e=>{e.preventDefault();
