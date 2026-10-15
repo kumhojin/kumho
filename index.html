@@ -350,6 +350,47 @@ footer .kmark{height:14px}
 .endday h3 .kmark{height:18px}
 .endday p{margin:0;color:var(--muted);font-size:14px}
 .endday .row{display:flex;gap:8px;justify-content:flex-end}
+/* ===== 모바일 최적화 ===== */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
+.side{top:var(--hh,48px)}
+.topbar .brand b,.topbar .brand span{white-space:nowrap}
+.themebtn .tl{display:inline}
+@media (max-width:860px){
+  .side{top:var(--hh,44px)}
+}
+@media (max-width:600px){
+  .topbar{gap:8px;padding-block:8px}
+  .topbar .brand{gap:6px}
+  .topbar .brand .kmark{height:20px}
+  .topbar .brand b{font-size:16px}
+  .crumb,.topbar .today{display:none}
+  .who{margin-left:auto;gap:6px}
+  .who button,.themebtn{padding:6px 9px;font-size:12px;min-height:32px}
+  #ai-set{display:none}
+  .themebtn .tl{display:none}
+  /* 메뉴: 한 줄 가로 스크롤 대신 2줄까지 감싸고, 드롭다운은 화면 폭에 맞춤 */
+  .side{padding:6px 12px;gap:6px;flex-wrap:nowrap;overflow-x:auto;overflow-y:visible;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .side::-webkit-scrollbar{display:none}
+  .sg{flex:none}
+  .sgroup{padding:8px 11px;font-size:13px;min-height:36px}
+  .sitems{position:fixed;left:12px!important;right:12px!important;top:auto;min-width:0;max-width:none;margin-top:4px}
+  .sitem{padding:11px 12px;font-size:15px;white-space:normal}
+  .cwrap{padding-block:14px 32px;gap:14px;padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px))}
+  .panel{padding:0 12px 14px}
+  .panel>h2{margin:0 -12px;padding:10px 12px;font-size:15px}
+  .kpi{padding:10px 12px}
+  .kpi b{font-size:20px}
+  /* iOS는 16px보다 작은 입력칸을 누르면 화면을 확대함 → 16px로 */
+  input,select,textarea{font-size:16px!important}
+  button{min-height:36px}
+  table{font-size:13px}
+  .scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cday{font-size:13px}
+  .cday small{font-size:8px!important}
+  .callegend{flex-wrap:wrap;gap:6px 14px}
+  .lcard{padding:22px 18px}
+  footer .cwrap{flex-wrap:wrap}
+}
 </style>
 
 <script>document.body.classList.add('locked')</script>
@@ -745,13 +786,15 @@ footer .kmark{height:14px}
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
 
 <script>
-(function(){const order=['auto','light','dark'], lbl={auto:'테마: 자동',light:'테마: 라이트',dark:'테마: 다크'};
+(function(){const order=['auto','light','dark'], lbl={auto:'자동',light:'라이트',dark:'다크'};
   function cur(){try{return localStorage.getItem('kumhoTheme')||'auto'}catch(e){return 'auto'}}
   function apply(t){const r=document.documentElement; if(t==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',t);
-    document.querySelectorAll('[data-theme-btn]').forEach(b=>{b.textContent=lbl[t]; b.title='눌러서 바꾸기 (자동 → 라이트 → 다크)'})}
+    document.querySelectorAll('[data-theme-btn]').forEach(b=>{b.innerHTML='<span class="tl">테마: </span>'+lbl[t]; b.setAttribute('aria-label','테마: '+lbl[t]); b.title='눌러서 바꾸기 (자동 → 라이트 → 다크)'})}
   document.addEventListener('click',e=>{const b=e.target.closest('[data-theme-btn]'); if(!b) return;
     const t=order[(order.indexOf(cur())+1)%3]; try{localStorage.setItem('kumhoTheme',t)}catch(x){} apply(t)});
   apply(cur());
+  function hh(){const h=document.querySelector('header.top'); if(h) document.documentElement.style.setProperty('--hh',h.offsetHeight+'px')}
+  addEventListener('resize',hh); addEventListener('load',hh); document.addEventListener('DOMContentLoaded',()=>{hh(); const h=document.querySelector('header.top'); if(h&&window.ResizeObserver) new ResizeObserver(hh).observe(h)});
 })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
