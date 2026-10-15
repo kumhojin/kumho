@@ -355,6 +355,12 @@ footer .kmark{height:14px}
 .endday label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 #pw-open{background:transparent;border:1px solid #5a6878;color:#eef1f4;font-weight:500;padding:3px 10px;font-size:12px}
 body.worker #pw-open{display:inline-block}
+/* 생산 계획표 / 호기 */
+.mtag{display:inline-block;font-family:var(--f-mono);font-size:12px;font-weight:600;padding:1px 7px;border-radius:999px;border:1px solid var(--line);background:var(--bg);margin:1px 3px 1px 0;white-space:nowrap}
+.mtag.none{color:var(--muted);border-style:dashed}
+.ppbar{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:end}
+.ppbar .grow{flex:1}
+.mhist td .mtag b{font-weight:700;margin-left:3px;color:var(--accent)}
 /* 재료 요청 / 알림 */
 .nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;line-height:1;margin-left:6px;font-family:var(--f-mono)}
 .nbadge[hidden]{display:none}
@@ -643,6 +649,28 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="empty" id="x-empty">아직 보낸 내역이 없습니다.</div>
   </section>
 
+  <section class="panel" id="pplanbox" aria-labelledby="h-pplan">
+    <h2 id="h-pplan">생산 계획표 <span class="tag">날짜별 호기 · 품번</span></h2>
+    <p class="hint">날짜마다 어느 호기(예: 80-2 = 80톤 2번기, 120-1 = 120톤 1번기)에서 어떤 품번을 만드는지 적습니다. 저장해 두면 LOT(생산일)로 각 제품이 몇 번 호기에서 만들어졌는지 LOT 기록·재고·대조 화면에 자동으로 표시됩니다.</p>
+    <form id="ppform" data-write class="slipform">
+      <div class="ppbar">
+        <label for="pp-date">생산일<input id="pp-date" type="date" required></label>
+        <button type="button" class="ghost" id="pp-prev">‹ 전날</button><button type="button" class="ghost" id="pp-next">다음날 ›</button>
+        <span class="grow"></span>
+        <button type="button" class="ghost" id="pp-copy">전날 계획 복사</button>
+        <label class="ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:4px 10px">엑셀·CSV 올리기<input id="pp-file" type="file" accept=".xlsx,.xls,.csv" hidden></label>
+      </div>
+      <div class="scroll"><table class="rules sliptable"><thead><tr><th>#</th><th>호기</th><th>품번</th><th class="num">계획 수량</th><th>메모</th><th></th></tr></thead><tbody id="pp-body"></tbody>
+        <tfoot><tr><td colspan="6"><div class="row" style="justify-content:space-between"><span class="hint">엑셀에서 "호기 · 품번 · 수량" 순서로 복사해 첫 칸에 붙여 넣어도 됩니다.</span><button type="button" class="ghost" id="pp-add">줄 추가</button></div></td></tr></tfoot></table></div>
+      <div class="row" style="justify-content:space-between"><span class="status" id="pp-status"></span><button type="submit" id="pp-save">계획표 저장</button></div>
+    </form>
+    <datalist id="pp-machines"></datalist>
+    <h3 class="subh">품번별 생산 호기 이력</h3>
+    <div class="row"><input id="mh-search" class="grow" placeholder="품번으로 찾기"><label class="area" for="mh-month">기간<input id="mh-month" type="month"></label></div>
+    <div class="scroll"><table class="rules sliplist mhist"><thead><tr><th>품번</th><th>생산한 호기 (생산일 수)</th><th class="num">총 생산일</th><th>처음</th><th>최근</th></tr></thead><tbody id="mh-body"></tbody></table></div>
+    <div class="empty" id="mh-empty">저장된 생산 계획표가 없습니다.</div>
+  </section>
+
   <section class="panel" id="reqbox" aria-labelledby="h-req">
     <h2 id="h-req">재료 요청 <span class="tag">생산 → 자재</span></h2>
     <p class="hint">필요한 재료를 요청하면 자재(생산관리팀) 화면과 관리자 알림벨에 바로 알림이 갑니다. 자재가 처리하면 아래 목록의 상태가 바뀝니다.</p>
@@ -693,7 +721,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </div>
     <p class="hint">사상반이 보낸 수량과 자재(창고)가 받은 수량(받은 내역, 입고 전표, 재고 추가)을 품번·LOT별로 자동 비교합니다. 판매로 빠진 수량은 비교에 넣지 않습니다. 불량은 사상반이 적은 수량입니다.</p>
     <div class="rcsum" id="rc-sum"></div>
-    <div class="scroll"><table class="rules sliplist"><thead><tr><th>품번</th><th>LOT</th><th class="num">사상반 보냄</th><th class="num">자재 받음</th><th class="num">차이</th><th class="num">불량</th><th>상태</th></tr></thead><tbody id="rc-body"></tbody></table></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>품번</th><th>LOT</th><th>호기</th><th class="num">사상반 보냄</th><th class="num">자재 받음</th><th class="num">차이</th><th class="num">불량</th><th>상태</th></tr></thead><tbody id="rc-body"></tbody></table></div>
     <div class="empty" id="rc-empty">이 기간에 비교할 기록이 없습니다.</div>
   </section>
 
@@ -730,9 +758,9 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <datalist id="s-items"></datalist>
       <div class="row"><input id="s-search" class="grow" placeholder="품번이나 LOT로 찾기"><span class="status" id="s-status"></span></div>
       <div class="scroll"><table class="rules stable">
-        <thead><tr><th>품번</th><th>LOT</th><th style="text-align:right">현재 재고 (EA)</th><th>최근 변동</th></tr></thead>
+        <thead><tr><th>품번</th><th>LOT</th><th>호기</th><th style="text-align:right">현재 재고 (EA)</th><th>최근 변동</th></tr></thead>
         <tbody id="sbody"></tbody>
-        <tfoot><tr><th colspan="2">합계</th><th class="num" id="s-total" style="text-align:right">0</th><th></th></tr></tfoot>
+        <tfoot><tr><th colspan="3">합계</th><th class="num" id="s-total" style="text-align:right">0</th><th></th></tr></tfoot>
       </table></div>
       <div class="empty" id="sempty">창고에 등록된 완제품 재고가 없습니다. 품번·LOT·수량을 넣고 ‘재고 추가’를 누르세요.</div>
       <details><summary>입출고 이력</summary><ul class="slog" id="slog"></ul></details>
@@ -867,7 +895,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div class="scroll"><table class="rules"><thead><tr><th>LOT</th><th>품번</th><th style="text-align:right">불량 수량</th><th style="text-align:right">기록 수</th></tr></thead><tbody id="lsumbody"></tbody></table></div>
     </div>
     <div class="scroll"><table class="rules ltable">
-      <thead><tr><th>구분</th><th>위치</th><th>날짜</th><th>품번 / 품목</th><th>LOT</th><th style="text-align:right">수량</th><th>메모</th><th>입력자</th><th></th></tr></thead>
+      <thead><tr><th>구분</th><th>위치</th><th>날짜</th><th>품번 / 품목</th><th>LOT</th><th>호기</th><th style="text-align:right">수량</th><th>메모</th><th>입력자</th><th></th></tr></thead>
       <tbody id="lbody"></tbody>
     </table></div>
     <div class="empty" id="lempty">아직 기록이 없습니다. 구분·날짜·품번·LOT 번호를 넣고 ‘기록 추가’를 누르면 모든 직원이 함께 봅니다.</div>
@@ -1127,13 +1155,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   const MENU=[
     {g:'공통',items:[['dash','대시보드','홈',['dash','links','teams']],['acct','계정 관리','홈',['acctbox']],['notice','공지사항','홈',['notice']],['bot','포털 도우미','홈',['bot']]]},
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
-      ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
-    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
+      ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
+    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
     {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
     {g:'계발',items:[['ndev','부서 공지','계발',['notice','soon']]]},
     {g:'총무팀',items:[['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
-  const SECTIONS=['boardbox','acctbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
+  const SECTIONS=['boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
   const side=document.getElementById('side');
   const mq=window.matchMedia('(max-width:860px)');
   let openG=new Set(); try{JSON.parse(localStorage.getItem('openGroups')||'[]').forEach(x=>openG.add(x))}catch(e){}
@@ -1291,6 +1319,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     ['CAN','CAC'].forEach(k=>db.doc('boxguide/'+k).onSnapshot(sn=>{guides[k]=(sn.exists&&sn.data().map)||{}; guideInfo(); if(lastExtract&&pdest.value===k) runPlan()},()=>{}));
     ['생산입고','판매입력','구매입력'].forEach(k=>db.doc('ecount/'+k).onSnapshot(sn=>{ecT[k]=sn.exists?sn.data():null; if(ecf===k) ecShow()},()=>{}));
     db.doc('ecount/inventory').onSnapshot(sn=>{ecInvBase=sn.exists?sn.data():null; mergePrices()},()=>{});
+    db.collection('pplans').orderBy('createdAt','desc').limit(800).onSnapshot(sn=>{pplanMap=new Map(sn.docs.map(d=>[d.id,d.data()])); onPplans()},()=>{});
     db.collection('requests').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{const first=!reqLoaded; const prev=new Map(reqs.map(r=>[r.id,r.data().status])); reqs=sn.docs; reqLoaded=true; onReqs(first,prev)},()=>{});
     db.collection('transfers').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{xfers=sn.docs;renderXfers();renderRecon();try{renderBoard()}catch(e){}},()=>{xStatus.textContent='보낸 내역을 불러오지 못했습니다.'});
     db.collection('accounts').onSnapshot(sn=>{accounts=sn.docs;renderAccts()},()=>{});
@@ -1365,7 +1394,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       const r=s.data(), tr=document.createElement('tr');
       const cell=(txt,cls)=>{const td=document.createElement('td');if(cls)td.className=cls;td.textContent=txt??'';tr.append(td);return td};
       const k=cell(''); const sp=document.createElement('span'); sp.className='kind '+r.kind; sp.textContent=r.kind; k.append(sp);
-      cell(LOCNAME[r.loc]||r.loc||'—'); cell(r.date,'num'); cell(r.item); cell(lotLabel(r.lot),'lotc');
+      cell(LOCNAME[r.loc]||r.loc||'—'); cell(r.date,'num'); cell(r.item); cell(lotLabel(r.lot),'lotc'); mcell(cell(''),r.item,r.lot,r.date);
       cell(r.qty!=null&&r.qty!==''?`${Number(r.qty).toLocaleString('ko-KR')} ${r.unit||''}`:'—','num');
       cell(r.memo); cell((ps[r.author]&&ps[r.author].name)||'직원');
       const act=cell('');
@@ -1409,7 +1438,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     let total=0;
     for(const e of rows){total+=e.qty; const tr=document.createElement('tr');
       const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td)};
-      c(e.item); c(lotLabel(e.lot)); c(e.qty.toLocaleString('ko-KR'),'num');
+      c(e.item); c(lotLabel(e.lot)); {const td=document.createElement('td'); mcell(td,e.item,e.lot); tr.append(td)} c(e.qty.toLocaleString('ko-KR'),'num');
       c(`${e.lastQ>0?'+':''}${e.lastQ.toLocaleString('ko-KR')} · ${fmt(e.last)}`); sb.append(tr)}
     document.getElementById('s-total').textContent=total.toLocaleString('ko-KR'); if(typeof renderRecon==='function') try{renderRecon()}catch(e){}
     document.querySelector('.stable tfoot').hidden=!term||!rows.length;
@@ -1927,7 +1956,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     [['일치',cnt.ok],['부족·미입고',cnt.bad],['초과·기록 없음',cnt.warn]].forEach(([l,n])=>{const sp=document.createElement('span'); sp.append(l+' '); const b=document.createElement('b'); b.textContent=n; sp.append(b); sum.append(sp)});
     const body=document.getElementById('rc-body'); body.replaceChildren(); document.getElementById('rc-empty').hidden=rows.length>0;
     for(const e of rows){const tr=document.createElement('tr'); if(e.diff) tr.className='diff'; const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
-      c(e.item); c(lotLabel(e.lot)); c(e.sent.toLocaleString('ko-KR'),'num'); c(e.got.toLocaleString('ko-KR'),'num'); c((e.diff>0?'+':'')+e.diff.toLocaleString('ko-KR'),'num'); c(e.bad?e.bad.toLocaleString('ko-KR'):'—','num');
+      c(e.item); c(lotLabel(e.lot)); mcell(c(''),e.item,e.lot); c(e.sent.toLocaleString('ko-KR'),'num'); c(e.got.toLocaleString('ko-KR'),'num'); c((e.diff>0?'+':'')+e.diff.toLocaleString('ko-KR'),'num'); c(e.bad?e.bad.toLocaleString('ko-KR'):'—','num');
       const st=c(''); const p=document.createElement('span'); p.className='st '+e.st[1]; p.textContent=e.st[0]; st.append(p); body.append(tr)}
     renderRcAlert(); try{renderBell()}catch(e){}
   }
@@ -1940,6 +1969,91 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!isAdm){el.hidden=true;return} const r=reconMismatch(iso(d).slice(0,7)); el.hidden=!r.total;
     el.classList.toggle('ok',r.n===0); el.querySelector('span').textContent=r.n?`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건 (전체 ${r.total}개 품번·LOT)`:`이번 달 사상반 ↔ 자재 수량이 모두 일치합니다 (${r.total}개 품번·LOT)`}
   [rcMonth,document.getElementById('rc-search'),document.getElementById('rc-only')].forEach(el=>el.addEventListener('input',renderRecon));
+  // ===== 생산 계획표 (날짜별 호기·품번) → 제품별 생산 호기 자동 추적 =====
+  let pplanMap=new Map();
+  const nItem=x=>String(x||'').replace(/\s+/g,'').toUpperCase();
+  const MACH=/^\s*(\d{2,4})\s*[-–]\s*(\d{1,2})\s*(호기)?\s*$/;
+  const normMachine=x=>{const m=MACH.exec(String(x||'')); return m?`${m[1]}-${m[2]}`:String(x||'').trim()};
+  function machinesOn(item,date){const p=pplanMap.get(date); if(!p||!Array.isArray(p.rows)) return []; const n=nItem(item); return [...new Set(p.rows.filter(r=>nItem(r.item)===n&&r.machine).map(r=>normMachine(r.machine)))]}
+  function machinesFor(item,lot,date){const d=lotDate(lot); let m=d?machinesOn(item,d):[]; if(!m.length&&date) m=machinesOn(item,String(date).slice(0,10)); return m}
+  function mcell(td,item,lot,date){td.replaceChildren(); const m=machinesFor(item,lot,date);
+    if(!m.length){const sp=document.createElement('span'); sp.className='mtag none'; sp.textContent=pplanMap.size?'계획 없음':'—'; sp.title='그날 생산 계획표에 이 품번이 없습니다'; td.append(sp); return}
+    m.forEach(x=>{const sp=document.createElement('span'); sp.className='mtag'; sp.textContent=x; td.append(sp)})}
+  // 입력표
+  const ppBody=document.getElementById('pp-body'), ppDate=document.getElementById('pp-date'), ppStatus=document.getElementById('pp-status');
+  ppDate.value=iso(d);
+  function ppRow(o={}){const tr=document.createElement('tr'); const n=document.createElement('td'); n.className='rn'; tr.append(n);
+    [['machine','호기 (예: 80-2)'],['item','품번'],['qty','계획 수량'],['memo','메모']].forEach(([k,l],ci)=>{const td=document.createElement('td'),inp=document.createElement('input');
+      inp.dataset.k=k; inp.placeholder=l; inp.setAttribute('aria-label',l); inp.value=o[k]??'';
+      if(k==='qty'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='machine'){inp.setAttribute('list','pp-machines'); inp.maxLength=12; inp.addEventListener('change',()=>inp.value=normMachine(inp.value))} if(k==='item') inp.setAttribute('list','s-items');
+      inp.addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t)) return; e.preventDefault();
+        let row=tr; t.replace(/\r/g,'').split('\n').filter(l=>l.trim()).forEach(line=>{if(!row){row=ppRow();ppBody.append(row)} const ins=row.querySelectorAll('input');
+          line.split('\t').forEach((c,j)=>{const x=ins[ci+j]; if(x) x.value=x.dataset.k==='machine'?normMachine(c):String(c).trim().replace(/,/g,x.type==='number'?'':',')}); row=row.nextElementSibling}); ppNum()});
+      inp.addEventListener('keydown',e=>{if(e.key!=='Enter') return; e.preventDefault(); if(ci===3){let nx=tr.nextElementSibling; if(!nx){nx=ppRow();ppBody.append(nx);ppNum()} nx.querySelector('input').focus()} else tr.querySelectorAll('input')[ci+1].focus()});
+      td.append(inp); tr.append(td)});
+    const x=document.createElement('td'); x.className='x'; const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='×'; b.setAttribute('aria-label','이 줄 지우기');
+    b.onclick=()=>{tr.remove(); if(!ppBody.children.length) ppBody.append(ppRow()); ppNum()}; x.append(b); tr.append(x); return tr}
+  function ppNum(){[...ppBody.children].forEach((tr,i)=>tr.firstChild.textContent=i+1)}
+  function ppFill(rows){ppBody.replaceChildren(); (rows&&rows.length?rows:[]).forEach(o=>ppBody.append(ppRow(o))); const extra=Math.max(3,8-ppBody.children.length); for(let i=0;i<extra;i++) ppBody.append(ppRow()); ppNum()}
+  function ppLoad(){const p=pplanMap.get(ppDate.value); ppFill(p&&p.rows);
+    ppStatus.textContent=p?`${ppDate.value} 계획표 (${p.rows.length}줄${p.file?' · '+p.file:''})를 불러왔습니다.`:`${ppDate.value} 계획표가 아직 없습니다.`}
+  const shiftDay=(ds,n)=>{const t=new Date(ds+'T12:00:00'); t.setDate(t.getDate()+n); return iso(t)};
+  ppDate.addEventListener('change',ppLoad);
+  document.getElementById('pp-prev').onclick=()=>{ppDate.value=shiftDay(ppDate.value,-1); ppLoad()};
+  document.getElementById('pp-next').onclick=()=>{ppDate.value=shiftDay(ppDate.value,1); ppLoad()};
+  document.getElementById('pp-add').onclick=()=>{for(let i=0;i<3;i++) ppBody.append(ppRow()); ppNum()};
+  document.getElementById('pp-copy').onclick=()=>{const keys=[...pplanMap.keys()].filter(k=>k<ppDate.value).sort(); const k=keys[keys.length-1];
+    if(!k){ppStatus.textContent='이전 날짜의 계획표가 없습니다.';return} ppFill(pplanMap.get(k).rows.map(r=>({...r}))); ppStatus.textContent=`${k} 계획을 복사했습니다. 확인 후 저장하세요.`};
+  function ppCollect(){const rows=[], bad=[]; [...ppBody.children].forEach((tr,i)=>{tr.classList.remove('err'); const o={}; tr.querySelectorAll('input').forEach(x=>o[x.dataset.k]=x.value.trim());
+      if(!o.machine&&!o.item) return; o.machine=normMachine(o.machine); if(!o.machine||!o.item){bad.push(i+1);tr.classList.add('err');return}
+      o.qty=o.qty===''?null:Math.floor(Number(o.qty)); rows.push(o)}); return {rows,bad}}
+  async function ppSave(date,rows,file){await db.doc('pplans/'+date).set({date,rows,file:file||'',author:myId,createdAt:new Date(date+'T08:00:00').getTime(),updatedAt:Date.now()})}
+  document.getElementById('ppform').addEventListener('submit',async e=>{e.preventDefault();
+    if(!db){ppStatus.textContent='저장은 로그인한 직원만 할 수 있습니다.';return}
+    const {rows,bad}=ppCollect(); if(bad.length){ppStatus.textContent=`${bad.join(', ')}번 줄에 호기와 품번을 넣어 주세요.`;return}
+    const btn=document.getElementById('pp-save'); btn.disabled=true; ppStatus.textContent='저장 중…';
+    try{if(!rows.length){await db.collection('pplans').doc(ppDate.value).delete(); ppStatus.textContent=`${ppDate.value} 계획표를 비웠습니다.`}
+      else{await ppSave(ppDate.value,rows); ppStatus.textContent=`${ppDate.value} 계획표 ${rows.length}줄을 저장했습니다.`}}
+    catch(err){ppStatus.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}
+    btn.disabled=false});
+  // 엑셀·CSV 올리기: 호기(80-2 같은 값)가 있는 줄을 찾아 품번·수량을 읽음. 날짜 칸이 있으면 날짜별로 나눔
+  document.getElementById('pp-file').addEventListener('change',async e=>{const f=e.target.files[0]; e.target.value=''; if(!f) return;
+    if(!db){ppStatus.textContent='저장은 로그인한 직원만 할 수 있습니다.';return}
+    ppStatus.textContent=`${f.name} 읽는 중…`;
+    try{const aoa=await sheetAoa(f); const byDate=new Map(); let curDate=null;
+      const toDate=v=>{if(v instanceof Date&&!isNaN(v)) return iso(v); const t=String(v||'').trim(); let m=/^(20\d{2})[-./년 ]\s*(\d{1,2})[-./월 ]\s*(\d{1,2})/.exec(t); if(m) return `${m[1]}-${m[2].padStart(2,'0')}-${m[3].padStart(2,'0')}`;
+        m=/^(\d{1,2})[./월]\s*(\d{1,2})일?$/.exec(t); if(m) return `${d.getFullYear()}-${m[1].padStart(2,'0')}-${m[2].padStart(2,'0')}`; return null};
+      for(const row of aoa){const cells=row.map(c=>c instanceof Date?c:String(c??'').trim());
+        const dc=cells.map(toDate).find(Boolean); const mi=cells.findIndex(c=>MACH.test(String(c)));
+        if(dc&&mi<0){curDate=dc; continue}
+        if(mi<0) continue; const date=dc||curDate||ppDate.value;
+        const rest=cells.slice(mi+1).map(String).filter(c=>c&&!toDate(c));
+        const item=rest.find(c=>!/^[\d,.\s]+$/.test(c)); if(!item) continue;
+        const qs=rest.slice(rest.indexOf(item)+1).find(c=>/^[\d,]+$/.test(c));
+        const arr=byDate.get(date)||[]; arr.push({machine:normMachine(cells[mi]),item,qty:qs?Number(qs.replace(/,/g,'')):null,memo:''}); byDate.set(date,arr)}
+      if(!byDate.size){ppStatus.textContent='파일에서 "80-2" 같은 호기 칸을 찾지 못했습니다. 호기 · 품번 · 수량 열이 있는지 확인해 주세요.';return}
+      if(byDate.size===1){const [dt,rows]=[...byDate][0]; ppDate.value=dt; ppFill(rows); ppStatus.textContent=`${f.name}에서 ${dt} 계획 ${rows.length}줄을 읽었습니다. 확인 후 ‘계획표 저장’을 누르세요.`; return}
+      for(const [dt,rows] of byDate) await ppSave(dt,rows,f.name);
+      ppStatus.textContent=`${f.name}에서 ${byDate.size}일치 계획표(${[...byDate.keys()].sort()[0]} ~ ${[...byDate.keys()].sort().pop()})를 저장했습니다.`}
+    catch(err){ppStatus.textContent='파일을 읽지 못했습니다: '+(err&&err.message||'')}});
+  // 품번별 호기 이력
+  const mhSearch=document.getElementById('mh-search'), mhMonth=document.getElementById('mh-month');
+  function renderMhist(){const q=nItem(mhSearch.value), ym=mhMonth.value, m=new Map();
+    for(const [date,p] of pplanMap){if(ym&&!date.startsWith(ym)) continue;
+      for(const r of (p.rows||[])){if(!r.item||!r.machine) continue; const k=nItem(r.item); if(q&&!k.includes(q)) continue;
+        const e=m.get(k)||{item:r.item,mach:new Map(),dates:new Set()}; const mc=normMachine(r.machine); const ds=e.mach.get(mc)||new Set(); ds.add(date); e.mach.set(mc,ds); e.dates.add(date); m.set(k,e)}}
+    const body=document.getElementById('mh-body'); body.replaceChildren(); const rows=[...m.values()].sort((a,b)=>String(a.item).localeCompare(String(b.item)));
+    document.getElementById('mh-empty').hidden=rows.length>0; document.getElementById('mh-empty').textContent=pplanMap.size?'조건에 맞는 품번이 없습니다.':'저장된 생산 계획표가 없습니다.';
+    for(const e of rows){const tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td'); if(t!=null) td.textContent=t; if(cl) td.className=cl; tr.append(td); return td};
+      c(e.item); const mt=c(null); [...e.mach.entries()].sort((a,b)=>b[1].size-a[1].size).forEach(([mc,ds])=>{const sp=document.createElement('span'); sp.className='mtag'; sp.textContent=mc; const b=document.createElement('b'); b.textContent=ds.size+'일'; sp.append(b); sp.title=[...ds].sort().join(', '); mt.append(sp)});
+      const all=[...e.dates].sort(); c(all.length,'num'); c(all[0],'num'); c(all[all.length-1],'num'); body.append(tr)}}
+  [mhSearch,mhMonth].forEach(el=>el.addEventListener('input',renderMhist));
+  function onPplans(){const dl=document.getElementById('pp-machines'); dl.replaceChildren();
+    [...new Set([...pplanMap.values()].flatMap(p=>(p.rows||[]).map(r=>normMachine(r.machine))).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})).forEach(v=>{const o=document.createElement('option');o.value=v;dl.append(o)});
+    if(!ppBody.querySelector('input')||![...ppBody.querySelectorAll('input')].some(i=>i.value)) ppLoad();
+    renderMhist(); try{renderRecs()}catch(e){} try{renderStock()}catch(e){} try{renderRecon()}catch(e){}}
+  ppFill([]);
+
   // ===== 재료 요청 (생산 → 자재) + 알림 =====
   let reqs=[], reqLoaded=false, riF='open';
   const RQS={'요청':['요청','req'],'처리중':['처리 중','doing'],'완료':['완료','ok'],'취소':['취소','warn']};
@@ -2453,6 +2567,8 @@ LOT·원자재·초물·불량 기록 질문은 search_records 도구로, 공지
     {name:'list_plans',description:'저장된 출하 계획표 목록(CAN/CAC). query는 파일명·품번·납품일 일부.',inputSchema:{type:'object',properties:{query:{type:'string'}}},
      execute:({query})=>{const q=String(query||'').toLowerCase(); return plans.map(p=>p.data()).filter(x=>!q||[x.file,...(x.items||[]),...(x.dates||[])].some(v=>String(v).toLowerCase().includes(q))).slice(0,20)
        .map(x=>{let out=[]; try{out=JSON.parse(x.data).out.map(o=>({납품일:o.date,파렛트:o.pallets.length,혼적:o.pallets.filter(p=>p.type==='혼적').length}))}catch(e){} return {파일:x.file,구분:x.dest,작성:new Date(x.createdAt).toLocaleString('ko-KR'),날짜별:out}})}},
+    {name:'machine_history',description:'품번별로 어느 호기(사출기, 예: 80-2)에서 며칠 생산했는지. 생산 계획표 기준. query는 품번 일부, month는 YYYY-MM(비우면 전체).',inputSchema:{type:'object',properties:{query:{type:'string'},month:{type:'string'}}},
+     execute:({query,month})=>{const q=nItem(query), out={}; for(const [date,p] of pplanMap){if(month&&!date.startsWith(month)) continue; for(const r of (p.rows||[])){if(q&&!nItem(r.item).includes(q)) continue; const o=out[r.item]=out[r.item]||{}; const mc=normMachine(r.machine); (o[mc]=o[mc]||[]).push(date)}} return Object.entries(out).slice(0,30).map(([item,ms])=>({품번:item,호기:Object.fromEntries(Object.entries(ms).map(([m,ds])=>[m,{생산일수:ds.length,최근:ds.sort().pop()}]))}))}},
     {name:'list_notices',description:'최근 공지사항 목록',inputSchema:{type:'object',properties:{}},
      execute:()=>docs.slice(0,15).map(s=>{const n=s.data();return {team:n.team,title:n.title,body:n.body,date:new Date(n.createdAt).toLocaleDateString('ko-KR')}})}
   ];
