@@ -1,5 +1,7 @@
 <!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>금호정공 사내 업무 시스템</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%22-10%20-54%20310%20310%22%3E%3Cpath%20fill%3D%22%23F2C443%22%20fill-rule%3D%22evenodd%22%20d%3D%22M0%200H136V20L172%200H290V70L276%2094L290%20118V202H192L148%20158L136%20168V202H0Z%20M52%2051H88V81H192V51H228V145H192V121H88V145H52Z%22/%3E%3C/svg%3E">
+<script>try{var t=localStorage.getItem('kumhoTheme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
@@ -327,12 +329,40 @@ body.locked .erp,body.locked header.top,body.locked footer{visibility:hidden}
 .bdcard .more{font-size:12px;color:var(--muted)}
 footer{color:var(--muted);font-size:12px;padding-block:0 32px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.kmark{display:inline-block;width:auto;flex:none;vertical-align:middle}
+.topbar .brand{align-items:center}
+.topbar .brand .kmark{height:22px}
+.lbrand{grid-template-columns:auto 1fr;align-items:center;column-gap:12px}
+.lbrand .kmark{height:44px;grid-row:span 2}
+.lbrand b{line-height:1.15}
+.lbrand span{line-height:1.2}
+footer .cwrap{display:flex;align-items:center;gap:8px}
+footer .kmark{height:14px}
+.themebtn{background:transparent;border:1px solid #5a6878;color:#eef1f4;font-weight:500;padding:3px 10px;font-size:12px;border-radius:4px;cursor:pointer}
+.lcard .themebtn{justify-self:end;color:var(--muted);border-color:var(--line);margin-top:-6px}
+:root[data-theme="dark"] .cday.hol{background:#2a1d45;border-color:#a78bfa;color:#c4b5fd}
+:root[data-theme="dark"] .cday.hol.future{background:#221836}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .cday.hol{background:#2a1d45;border-color:#a78bfa;color:#c4b5fd}:root:not([data-theme="light"]) .cday.hol.future{background:#221836}}
+.endday{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:rgba(0,0,0,.45);padding:16px}
+.endday[hidden]{display:none}
+.endday .box{width:min(360px,100%);background:var(--surface);color:var(--ink);border-radius:6px;padding:22px 20px;display:grid;gap:12px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+.endday h3{margin:0;font-family:var(--f-display);font-size:17px;display:flex;align-items:center;gap:8px}
+.endday h3 .kmark{height:18px}
+.endday p{margin:0;color:var(--muted);font-size:14px}
+.endday .row{display:flex;gap:8px;justify-content:flex-end}
 </style>
 
 <script>document.body.classList.add('locked')</script>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
+<div class="endday" id="endday" hidden role="dialog" aria-modal="true" aria-labelledby="endday-t">
+  <div class="box"><h3 id="endday-t"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg>오후 5시 30분, 퇴근 시간입니다</h3>
+    <p>오늘 업무가 끝났습니다. 로그아웃할까요? 공용 PC라면 로그아웃하는 것이 안전합니다.</p>
+    <div class="row"><button type="button" class="ghost" id="endday-stay">계속 사용</button><button type="button" id="endday-out">로그아웃</button></div></div>
+</div>
 <div class="login" id="login">
   <form class="lcard" id="lgform" autocomplete="on">
-    <div class="lbrand"><b>금호정공</b><span>사내 업무 시스템</span></div>
+    <button type="button" class="themebtn" data-theme-btn>테마</button>
+    <div class="lbrand"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><b>금호정공(주)</b><span>사내 업무 시스템</span></div>
     <label for="lg-user">아이디<input id="lg-user" autocomplete="username" required></label>
     <label for="lg-pass">비밀번호<input id="lg-pass" type="password" autocomplete="current-password" required></label>
     <button type="submit" id="lg-btn">로그인</button>
@@ -341,10 +371,10 @@ footer{color:var(--muted);font-size:12px;padding-block:0 32px}
   </form>
 </div>
 <header class="top"><div class="topbar">
-  <a class="brand" id="brand" href="#dash" title="대시보드로"><b>금호정공</b><span>사내 업무 시스템</span></a>
+  <a class="brand" id="brand" href="#dash" title="대시보드로"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><b>금호정공</b><span>사내 업무 시스템</span></a>
   <div class="crumb" id="crumb">대시보드</div>
   <div class="today"><b id="today">—</b> <span id="weekday"></span></div>
-  <div class="who"><span id="who-name"></span><button type="button" id="ai-set" onclick="kumhoAISettings()">AI 설정</button> <button type="button" id="logout">로그아웃</button></div>
+  <div class="who"><span id="who-name"></span><button type="button" class="themebtn" data-theme-btn>테마</button> <button type="button" id="ai-set" onclick="kumhoAISettings()">AI 설정</button> <button type="button" id="logout">로그아웃</button></div>
 </div></header>
 
 <div class="erp">
@@ -712,8 +742,18 @@ footer{color:var(--muted);font-size:12px;padding-block:0 32px}
     </div>
   </section>
 </div></main></div>
-<footer><div class="cwrap">금호정공 · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</div></footer>
+<footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
 
+<script>
+(function(){const order=['auto','light','dark'], lbl={auto:'테마: 자동',light:'테마: 라이트',dark:'테마: 다크'};
+  function cur(){try{return localStorage.getItem('kumhoTheme')||'auto'}catch(e){return 'auto'}}
+  function apply(t){const r=document.documentElement; if(t==='auto') r.removeAttribute('data-theme'); else r.setAttribute('data-theme',t);
+    document.querySelectorAll('[data-theme-btn]').forEach(b=>{b.textContent=lbl[t]; b.title='눌러서 바꾸기 (자동 → 라이트 → 다크)'})}
+  document.addEventListener('click',e=>{const b=e.target.closest('[data-theme-btn]'); if(!b) return;
+    const t=order[(order.indexOf(cur())+1)%3]; try{localStorage.setItem('kumhoTheme',t)}catch(x){} apply(t)});
+  apply(cur());
+})();
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
 <script>
 /* ===== 금호정공 포털: Supabase 저장소 + LM Studio AI 연결 =====
@@ -771,7 +811,7 @@ footer{color:var(--muted);font-size:12px;padding-block:0 32px}
 
   // ---------- 사용자: 포털 로그인 아이디를 그대로 씀 ----------
   const user={
-    async id(){try{const v=JSON.parse(sessionStorage.getItem('kumhoLogin')||'null'); return v&&v.user||null}catch(e){return null}},
+    async id(){try{const v=JSON.parse(localStorage.getItem('kumhoLogin')||'null'); return v&&v.user||null}catch(e){return null}},
     async profiles(ids){const out={}; ids=[...new Set(ids)].filter(Boolean); if(!ids.length) return out;
       if(ids.includes('adminkumho')) out.adminkumho={name:'관리자'};
       try{const rows=chk(await sb.from(TABLE).select('id,data').eq('col','accounts').in('id',ids));
@@ -1717,6 +1757,22 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function can(k){return !!me&&permOf(me)[k]}
   const LBL={edit:'수정',view:'보기',none:'숨김'};
   function findAcct(u){u=String(u||'').trim().toLowerCase(); if(u===ADMIN.user) return ADMIN; const a=accounts.find(x=>x.data().user===u); return a?a.data():null}
+  // 로그인은 하루 한 번: 같은 날(이 기기) 동안 유지, 날짜가 바뀌면 다시 로그인
+  const dayKey=()=>{const t=new Date();return `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`};
+  function saveLogin(m){try{localStorage.setItem('kumhoLogin',JSON.stringify({...m,day:dayKey()}))}catch(x){}}
+  function clearLogin(){try{localStorage.removeItem('kumhoLogin');sessionStorage.removeItem('kumhoLogin')}catch(x){}}
+  function loadLogin(){try{const v=JSON.parse(localStorage.getItem('kumhoLogin')||'null'); if(v&&v.user&&v.day===dayKey()){const {day,...m}=v; return m} if(v) clearLogin()}catch(x){} return null}
+  // 오후 5:30 퇴근 시간 알림 (하루 한 번)
+  const endBox=document.getElementById('endday');
+  function endCheck(){if(!me){endBox.hidden=true;return} const t=new Date();
+    if(t.getHours()*60+t.getMinutes()<17*60+30) return;
+    let asked=null; try{asked=localStorage.getItem('kumhoEndAsked')}catch(x){}
+    if(asked===dayKey()||!endBox.hidden) return; endBox.hidden=false; document.getElementById('endday-out').focus()}
+  function endDone(){try{localStorage.setItem('kumhoEndAsked',dayKey())}catch(x){} endBox.hidden=true}
+  document.getElementById('endday-stay').onclick=endDone;
+  document.getElementById('endday-out').onclick=()=>{endDone(); me=null; clearLogin(); applyLogin()};
+  setInterval(()=>{if(me&&!loadLogin()){me=null; applyLogin()} endCheck()},30000);
+  setTimeout(endCheck,1500);
   function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null;
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
       document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.team||''}${me.role==='admin'?' · 관리자':''}`;
@@ -1729,13 +1785,13 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const u=document.getElementById('lg-user').value.trim().toLowerCase(), p=document.getElementById('lg-pass').value;
     const a=findAcct(u); btn.disabled=true; btn.textContent='확인 중…';
     try{if(a&&await pbk(p,a.salt)===a.hash){me={user:a.user,name:a.name,team:a.team,role:a.role,perm:permOf(a)};
-        try{sessionStorage.setItem('kumhoLogin',JSON.stringify(me))}catch(x){}
+        saveLogin(me)
         document.getElementById('lg-pass').value=''; applyLogin()}
       else st.textContent=a||accounts.length||!db?'아이디 또는 비밀번호가 맞지 않습니다.':'아이디 또는 비밀번호가 맞지 않습니다. 계정 목록을 아직 불러오는 중이면 잠시 후 다시 시도하세요.'}
     catch(x){st.textContent='이 브라우저에서는 로그인할 수 없습니다.'}
     btn.disabled=false; btn.textContent='로그인'});
-  document.getElementById('logout').onclick=()=>{me=null; try{sessionStorage.removeItem('kumhoLogin')}catch(x){} applyLogin()};
-  try{const v=JSON.parse(sessionStorage.getItem('kumhoLogin')||'null'); if(v&&v.user) me=v}catch(x){}
+  document.getElementById('logout').onclick=()=>{me=null; clearLogin(); applyLogin()};
+  me=loadLogin();
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     const rows=[{id:null,data:()=>ADMIN},...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
@@ -1752,9 +1808,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
           try{await db.collection('accounts').doc(s.id).delete(); document.getElementById('ac-status').textContent=`${x.user} 계정을 지웠습니다.`}catch(e){document.getElementById('ac-status').textContent='지우지 못했습니다. 이 페이지의 편집 권한이 필요합니다.'}};
         a.append(del)}
       tb.append(tr)});
-    if(me&&me.user!==ADMIN.user){const a=findAcct(me.user); if(a){me={user:a.user,name:a.name,team:a.team,role:a.role,perm:permOf(a)}; try{sessionStorage.setItem('kumhoLogin',JSON.stringify(me))}catch(x){} applyLogin()}}
+    if(me&&me.user!==ADMIN.user){const a=findAcct(me.user); if(a){me={user:a.user,name:a.name,team:a.team,role:a.role,perm:permOf(a)}; saveLogin(me); applyLogin()}}
     // 지워진 계정이면 로그아웃
-    if(me&&me.user!==ADMIN.user&&accounts.length&&!findAcct(me.user)){me=null;try{sessionStorage.removeItem('kumhoLogin')}catch(x){} applyLogin()}}
+    if(me&&me.user!==ADMIN.user&&accounts.length&&!findAcct(me.user)){me=null;clearLogin(); applyLogin()}}
   document.getElementById('acform').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('ac-status');
     if(!me||me.role!=='admin'){st.textContent='관리자만 계정을 만들 수 있습니다.';return}
     if(!db){st.textContent='계정 저장소에 연결되지 않았습니다.';return}
