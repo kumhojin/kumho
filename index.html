@@ -401,6 +401,19 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .cday small{font-size:8px!important}
   .callegend{flex-wrap:wrap;gap:6px 14px}
   .lcard{padding:22px 18px}
+  /* 작업자 입력표: 휴대폰에서는 한 줄을 카드처럼 */
+  #xferbox .sliptable thead,#recvbox .sliptable thead{display:none}
+  #xferbox .sliptable,#recvbox .sliptable{min-width:0!important;width:100%}
+  #x-body tr,#rv-body tr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 8px;padding:10px 0;border-bottom:1px solid var(--line)}
+  #x-body td,#rv-body td{display:block;padding:0;border:0;min-width:0}
+  #x-body td input,#rv-body td input{width:100%}
+  #x-body td.rn,#rv-body td.rn{grid-column:1/-1;font-size:12px;color:var(--muted);text-align:left}
+  #x-body td.rn::before,#rv-body td.rn::before{content:'품목 '}
+  #x-body td:nth-child(6),#rv-body td:nth-child(5){grid-column:1/-1}
+  #x-body td.x,#rv-body td.x{grid-column:1/-1;justify-self:end}
+  #xferbox .sliptable,#recvbox .sliptable,#x-body,#rv-body,#xferbox .sliptable tfoot,#recvbox .sliptable tfoot,#xferbox .sliptable tfoot tr,#recvbox .sliptable tfoot tr,#xferbox .sliptable tfoot td,#recvbox .sliptable tfoot td{display:block;width:100%}
+  #x-body tr,#rv-body tr{width:100%}
+  #xferbox .sliplist,#recvbox .sliplist{font-size:12px}
   footer .cwrap{flex-wrap:wrap}
 }
 </style>
@@ -1035,6 +1048,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     document.getElementById('crumb').textContent=it.g==='공통'?it.label:`${it.g} › ${it.label}`;
     const th=document.getElementById('teamhead'); th.hidden=it.t==='홈';
     document.getElementById('th-name').textContent=it.label; document.getElementById('th-desc').textContent=TEAMS[it.t];
+    if(typeof isWorker==='function'&&isWorker()) document.getElementById('th-desc').textContent=it.id==='xfer'?'자재(창고)로 보낸 수량과 불량 수량을 품번·LOT별로 적고 저장하세요.':it.id==='recv'?'생산(사상반)에서 받은 수량을 품번·LOT별로 적고 저장하세요.':'공지를 확인하세요.';
     document.getElementById('n-scope').textContent=it.t==='홈'?'전 부서':it.t+' + 전체';
     document.getElementById('n-team').value=it.t==='홈'?'전체':it.t;
     document.getElementById('prod-areawrap').hidden=it.id!=='lotprod';
@@ -1703,7 +1717,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   const rcMonth=document.getElementById('rc-month'); rcMonth.value=iso(d).slice(0,7);
   function xRow(){const tr=document.createElement('tr'); const n=document.createElement('td'); n.className='rn'; tr.append(n);
     [['item','품번'],['lot','LOT'],['qty','보낸 수량'],['bad','불량'],['memo','메모']].forEach(([k,l],ci)=>{const td=document.createElement('td'),inp=document.createElement('input');
-      inp.dataset.k=k; inp.setAttribute('aria-label',l); if(k==='bad'){inp.placeholder='0'} if(k==='qty'||k==='bad'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
+      inp.dataset.k=k; inp.setAttribute('aria-label',l); inp.placeholder=k==='bad'?'불량 (0)':k==='qty'?'보낸 수량':l; if(k==='qty'||k==='bad'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
       inp.addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t)) return; e.preventDefault();
         let row=tr; t.replace(/\r/g,'').split('\n').filter(l=>l.trim()).forEach(line=>{if(!row){row=xRow();xBody.append(row)} const ins=row.querySelectorAll('input');
           line.split('\t').forEach((c,j)=>{const x=ins[ci+j]; if(x) x.value=String(c).trim().replace(/,/g,x.type==='number'?'':',')}); row=row.nextElementSibling}); xNum()});
@@ -1772,7 +1786,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   document.getElementById('rv-date').value=iso(d);
   function rvRow(){const tr=document.createElement('tr'); const n=document.createElement('td'); n.className='rn'; tr.append(n);
     [['item','품번'],['lot','LOT'],['qty','받은 수량'],['memo','메모']].forEach(([k,l],ci)=>{const td=document.createElement('td'),inp=document.createElement('input');
-      inp.dataset.k=k; inp.setAttribute('aria-label',l); if(k==='qty'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
+      inp.dataset.k=k; inp.setAttribute('aria-label',l); inp.placeholder=l; if(k==='qty'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
       inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); if(ci===3){let nx=tr.nextElementSibling; if(!nx){nx=rvRow();rvBody.append(nx);rvNum()} nx.querySelector('input').focus()} else tr.querySelectorAll('input')[ci+1].focus()}});
       td.append(inp); tr.append(td)});
     const x=document.createElement('td'); x.className='x'; const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='×'; b.setAttribute('aria-label','이 줄 지우기');
