@@ -352,6 +352,9 @@ footer .kmark{height:14px}
 .endday h3 .kmark{height:18px}
 .endday p{margin:0;color:var(--muted);font-size:14px}
 .endday .row{display:flex;gap:8px;justify-content:flex-end}
+.endday label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
+#pw-open{background:transparent;border:1px solid #5a6878;color:#eef1f4;font-weight:500;padding:3px 10px;font-size:12px}
+body.worker #pw-open{display:inline-block}
 /* 재료 요청 / 알림 */
 .nbadge{display:inline-grid;place-items:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:var(--bad);color:#fff;font-size:11px;font-weight:700;line-height:1;margin-left:6px;font-family:var(--f-mono)}
 .nbadge[hidden]{display:none}
@@ -421,6 +424,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   .who{margin-left:auto;gap:6px}
   .who button,.themebtn{padding:6px 9px;font-size:12px;min-height:32px}
   #ai-set{display:none}
+  #pw-open{min-height:32px;padding:6px 9px}
   .bellbtn{min-height:32px;padding:6px 9px}
   .themebtn .tl{display:none}
   /* 메뉴: 한 줄 가로 스크롤 대신 2줄까지 감싸고, 드롭다운은 화면 폭에 맞춤 */
@@ -468,6 +472,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
+<div class="endday" id="pwbox" hidden role="dialog" aria-modal="true" aria-labelledby="pw-t">
+  <form class="box" id="pwform" autocomplete="off"><h3 id="pw-t">비밀번호 변경</h3>
+    <label for="pw-old">현재 비밀번호<input id="pw-old" type="password" autocomplete="current-password" required></label>
+    <label for="pw-new">새 비밀번호 (8자 이상)<input id="pw-new" type="password" minlength="8" autocomplete="new-password" required></label>
+    <label for="pw-new2">새 비밀번호 확인<input id="pw-new2" type="password" minlength="8" autocomplete="new-password" required></label>
+    <div class="status" id="pw-status" role="alert"></div>
+    <div class="row"><button type="button" class="ghost" id="pw-cancel">닫기</button><button type="submit" id="pw-save">변경</button></div></form>
+</div>
 <div class="endday" id="endday" hidden role="dialog" aria-modal="true" aria-labelledby="endday-t">
   <div class="box"><h3 id="endday-t"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg>오후 5시 30분, 퇴근 시간입니다</h3>
     <p>오늘 업무가 끝났습니다. 로그아웃할까요? 공용 PC라면 로그아웃하는 것이 안전합니다.</p>
@@ -499,7 +511,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   <a class="brand" id="brand" href="#dash" title="대시보드로"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><b>금호정공</b><span>사내 업무 시스템</span></a>
   <div class="crumb" id="crumb">대시보드</div>
   <div class="today"><b id="today">—</b> <span id="weekday"></span></div>
-  <div class="who"><span id="who-name"></span><button type="button" class="bellbtn" id="bell" hidden aria-label="알림" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="nbadge" id="bell-n" hidden>0</span></button> <button type="button" class="themebtn" data-theme-btn>테마</button> <button type="button" id="ai-set" onclick="kumhoAISettings()">AI 설정</button> <button type="button" id="logout">로그아웃</button></div>
+  <div class="who"><span id="who-name"></span><button type="button" class="bellbtn" id="bell" hidden aria-label="알림" aria-expanded="false"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="nbadge" id="bell-n" hidden>0</span></button> <button type="button" class="themebtn" data-theme-btn>테마</button> <button type="button" id="ai-set" onclick="kumhoAISettings()">AI 설정</button> <button type="button" id="pw-open">비밀번호</button> <button type="button" id="logout">로그아웃</button></div>
 </div></header>
 
 <div class="erp">
@@ -952,7 +964,10 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       const {error}=await sb.from('profiles').update({name:rec.name,team:rec.team,role:rec.role,station:rec.station||'',perm:rec.perm||{},updated_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
       if(ex&&pw){const r=await sb.rpc('admin_set_password',{uid:id,pw}); if(r.error) throw r.error}
       return id},
-    async deleteAccount(id){const {error}=await sb.rpc('admin_delete_user',{uid:id}); if(error) throw error}
+    async deleteAccount(id){const {error}=await sb.rpc('admin_delete_user',{uid:id}); if(error) throw error},
+    async changeMyPassword(oldPw,pw){const {data:{session}}=await sb.auth.getSession(); if(!session) throw new Error('로그인이 필요합니다.');
+      const chk=await sb.auth.signInWithPassword({email:session.user.email,password:oldPw}); if(chk.error) throw new Error('현재 비밀번호가 맞지 않습니다.');
+      const {error}=await sb.auth.updateUser({password:pw}); if(error) throw error}
   };
 
   // ---------- 문서 저장소 (Firestore 비슷한 모양) ----------
@@ -2206,6 +2221,16 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     btn.disabled=true; st.textContent='만드는 중…';
     try{await kumhoAuth.register(u,n,p1); document.getElementById('bootform').reset(); st.textContent=`${u} 계정을 만들었습니다. 관리자 권한이 켜지면 위에서 로그인하세요.`}
     catch(x){st.textContent=/registered|exists/i.test(String(x&&x.message))?'이미 있는 아이디입니다.':'만들지 못했습니다: '+String(x&&x.message||'')}
+    btn.disabled=false});
+  const pwBox=document.getElementById('pwbox');
+  document.getElementById('pw-open').onclick=()=>{document.getElementById('pwform').reset(); document.getElementById('pw-status').textContent=''; pwBox.hidden=false; document.getElementById('pw-old').focus()};
+  document.getElementById('pw-cancel').onclick=()=>{pwBox.hidden=true};
+  document.getElementById('pwform').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('pw-status'), btn=document.getElementById('pw-save');
+    const o=document.getElementById('pw-old').value, a=document.getElementById('pw-new').value, b=document.getElementById('pw-new2').value;
+    if(a!==b){st.textContent='새 비밀번호가 서로 다릅니다.';return} if(a.length<8){st.textContent='새 비밀번호는 8자 이상으로 해 주세요.';return} if(a===o){st.textContent='지금 비밀번호와 다르게 해 주세요.';return}
+    btn.disabled=true; st.textContent='바꾸는 중…';
+    try{await kumhoAuth.changeMyPassword(o,a); document.getElementById('pwform').reset(); st.textContent='비밀번호를 바꿨습니다. 다음 로그인부터 새 비밀번호를 쓰세요.'}
+    catch(x){st.textContent=String(x&&x.message||'바꾸지 못했습니다.')}
     btn.disabled=false});
   document.getElementById('logout').onclick=()=>{me=null; clearLogin(); applyLogin()};
   me=loadLogin();
