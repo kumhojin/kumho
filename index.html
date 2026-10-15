@@ -291,6 +291,8 @@ tr.diff td.num:nth-child(5){color:var(--bad);font-weight:600}
 #cal-list li p{margin:0;color:var(--muted);font-size:13px;white-space:pre-wrap;overflow-wrap:anywhere}
 .login{position:fixed;inset:0;z-index:50;display:grid;place-items:center;background:var(--steel);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
 .login[hidden]{display:none}
+.login{grid-auto-flow:row;gap:16px;align-content:center}
+#bootform[hidden]{display:none}
 .lcard{width:min(360px,100%);background:var(--surface);color:var(--ink);border-radius:6px;padding:28px 24px;display:grid;gap:14px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
 .lcard label{display:grid;gap:4px;font-size:13px;color:var(--muted)}
 .lbrand{display:grid;gap:2px;margin-bottom:6px}
@@ -483,6 +485,15 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     <div class="status" id="lg-status" role="alert"></div>
     <p class="hint">계정은 관리자에게 요청하세요.</p>
   </form>
+  <form class="lcard" id="bootform" hidden autocomplete="off">
+    <div class="lbrand"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><b>처음 관리자 계정</b><span>아직 관리자가 없습니다. 첫 관리자 계정을 만드세요.</span></div>
+    <label for="bt-user">아이디 (영문·숫자)<input id="bt-user" pattern="[A-Za-z0-9_.-]+" maxlength="30" autocomplete="username" required></label>
+    <label for="bt-name">이름<input id="bt-name" maxlength="20" required></label>
+    <label for="bt-pass">비밀번호 (8자 이상)<input id="bt-pass" type="password" minlength="8" autocomplete="new-password" required></label>
+    <label for="bt-pass2">비밀번호 확인<input id="bt-pass2" type="password" minlength="8" autocomplete="new-password" required></label>
+    <button type="submit" id="bt-btn">계정 만들기</button>
+    <div class="status" id="bt-status" role="alert"></div>
+  </form>
 </div>
 <header class="top"><div class="topbar">
   <a class="brand" id="brand" href="#dash" title="대시보드로"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><b>금호정공</b><span>사내 업무 시스템</span></a>
@@ -528,7 +539,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </form>
     <div class="status" id="ac-status"></div>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>권한</th><th>부서 권한</th><th>주요 정보</th><th></th></tr></thead><tbody id="ac-list"></tbody></table></div>
-    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 작업장에 맞는 화면 하나만 씁니다 — 생산 작업자: 재료 요청 / 생산 사상반: 자재로 보낸 수량·불량 / 자재 작업자: 생산에서 받은 수량 (메뉴·공지·대시보드 없음). 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
+    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 작업장에 맞는 화면 하나만 씁니다 — 생산 작업자: 재료 요청 / 생산 사상반: 자재로 보낸 수량·불량 / 자재 작업자: 생산에서 받은 수량 (메뉴·공지·대시보드 없음). 관리자는 모든 권한을 가집니다. 계정과 권한은 서버(Supabase)에서 검사하므로, 화면을 우회해도 권한 밖의 자료는 읽거나 바꿀 수 없습니다. 본인 계정은 지울 수 없습니다.</p>
   </section>
 
   <section class="panel" id="dash" aria-labelledby="h-dash">
@@ -922,7 +933,27 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   const SUPABASE_URL='https://qnkugmphzkfkrsgewutl.supabase.co';
   const SUPABASE_KEY='sb_publishable_1vGSYU1p8uVUpbPB4_nWRw_g_maxDia';
   const TABLE='docs';
-  let sb=null; try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY)}catch(e){console.error('Supabase 연결 실패',e)}
+  let sb=null; try{sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:true,autoRefreshToken:true,storageKey:'kumho-auth'}})}catch(e){console.error('Supabase 연결 실패',e)}
+  // ---------- 로그인 (Supabase Auth) ----------
+  const EMAIL=u=>String(u||'').trim().toLowerCase()+'@portal.khpi.co.kr';
+  const profDoc=p=>({id:p.id,exists:true,data:()=>({user:p.username,name:p.name,team:p.team,role:p.role,station:p.station||'',perm:p.perm||{},createdAt:Date.parse(p.created_at)||0})});
+  async function myProfile(){const {data:{session}}=await sb.auth.getSession(); if(!session) return null;
+    const {data,error}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle(); if(error) throw error; return data}
+  function tmpClient(){return window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'kumho-tmp'}})}
+  window.kumhoAuth={
+    async signIn(u,pw){const {error}=await sb.auth.signInWithPassword({email:EMAIL(u),password:pw}); if(error) throw error; return await myProfile()},
+    async signOut(){try{await sb.auth.signOut()}catch(e){}},
+    current:myProfile,
+    async hasAdmin(){const {data,error}=await sb.rpc('portal_has_admin'); if(error) return true; return !!data},
+    async register(u,name,pw){const c=tmpClient(); const {data,error}=await c.auth.signUp({email:EMAIL(u),password:pw,options:{data:{username:String(u).trim().toLowerCase(),name}}}); if(error) throw error; return data.user&&data.user.id},
+    async saveAccount(rec,pw){const {data:ex}=await sb.from('profiles').select('id').eq('username',rec.user).maybeSingle();
+      let id=ex&&ex.id;
+      if(!id){if(!pw||pw.length<6) throw new Error('새 계정은 비밀번호(6자 이상)가 필요합니다.'); id=await this.register(rec.user,rec.name,pw); if(!id) throw new Error('계정을 만들지 못했습니다.')}
+      const {error}=await sb.from('profiles').update({name:rec.name,team:rec.team,role:rec.role,station:rec.station||'',perm:rec.perm||{},updated_at:new Date().toISOString()}).eq('id',id); if(error) throw error;
+      if(ex&&pw){const r=await sb.rpc('admin_set_password',{uid:id,pw}); if(r.error) throw r.error}
+      return id},
+    async deleteAccount(id){const {error}=await sb.rpc('admin_delete_user',{uid:id}); if(error) throw error}
+  };
 
   // ---------- 문서 저장소 (Firestore 비슷한 모양) ----------
   const rid=()=>{const a='ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789',r=crypto.getRandomValues(new Uint8Array(20));return [...r].map(x=>a[x%62]).join('')};
@@ -933,7 +964,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   function fire(col){const s=subs.get(col); if(!s) return; clearTimeout(s.timer); s.timer=setTimeout(()=>s.listeners.forEach(f=>f()),150)}
   function watch(col,fn){
     if(!chan){chan=sb.channel('kumho-docs').on('postgres_changes',{event:'*',schema:'public',table:TABLE},p=>{
-      const c=(p.new&&p.new.col)||(p.old&&p.old.col); if(c) fire(c); else subs.forEach((_,k)=>fire(k))}).subscribe()}
+      const c=(p.new&&p.new.col)||(p.old&&p.old.col); if(c) fire(c); else subs.forEach((_,k)=>fire(k))})
+      .on('postgres_changes',{event:'*',schema:'public',table:'profiles'},()=>fire('accounts')).subscribe()}
     let s=subs.get(col); if(!s){s={listeners:new Set(),timer:null}; subs.set(col,s)}
     s.listeners.add(fn);
     return ()=>s.listeners.delete(fn);
@@ -951,7 +983,11 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     onSnapshot(cb,err){let alive=true; const load=()=>this.get().then(s=>{if(alive) cb(s)},e=>{console.error(e); err&&err(e)});
       load(); const off=watch(col,load); return ()=>{alive=false; off()}}
   }}
-  function query(col,o={}){return {
+  function profQuery(){return {orderBy(){return this},limit(){return this},
+    async get(){const {data,error}=await sb.from('profiles').select('*').order('username'); if(error) throw error; const docs=(data||[]).map(profDoc); return {docs,size:docs.length,empty:!docs.length,forEach:f=>docs.forEach(f)}},
+    onSnapshot(cb,err){let alive=true; const load=()=>this.get().then(s=>{if(alive) cb(s)},e=>{console.error(e); err&&err(e)}); load(); const off=watch('accounts',load); return ()=>{alive=false; off()}},
+    doc(id){return {id,async delete(){await window.kumhoAuth.deleteAccount(id)}}}}}
+  function query(col,o={}){if(col==='accounts') return profQuery(); return {
     orderBy(field,dir='asc'){return query(col,{...o,order:{field,dir}})},
     limit(n){return query(col,{...o,limit:n})},
     where(field,op,value){if(op!=='=='&&op!=='eq') throw new Error('지원하지 않는 조건: '+op); return query(col,{...o,where:[...(o.where||[]),[field,value]]})},
@@ -973,8 +1009,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     async id(){try{const v=JSON.parse(localStorage.getItem('kumhoLogin')||'null'); return v&&v.user||null}catch(e){return null}},
     async profiles(ids){const out={}; ids=[...new Set(ids)].filter(Boolean); if(!ids.length) return out;
       if(ids.includes('adminkumho')) out.adminkumho={name:'관리자'};
-      try{const rows=chk(await sb.from(TABLE).select('id,data').eq('col','accounts').in('id',ids));
-        rows.forEach(r=>out[r.id]={name:r.data&&r.data.name||r.id})}catch(e){}
+      try{const rows=chk(await sb.from('profiles').select('username,name').in('username',ids));
+        rows.forEach(r=>out[r.username]={name:r.name||r.username})}catch(e){}
       return out}
   };
 
@@ -1032,7 +1068,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     document.body.append(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),5000)}};
 
   const caps={db:sb?db:null,user,sample,downloads};
-  window.claude={use:async name=>caps[name]||null};
+  window.claude={use:async name=>{if(name==='db'){if(!sb) return null; try{const {data:{session}}=await sb.auth.getSession(); return session?db:null}catch(e){return null}} return caps[name]||null}};
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -1239,13 +1275,14 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       ()=>{status.textContent='공지를 불러오지 못했습니다. 새로고침해 보세요.'});
     ['CAN','CAC'].forEach(k=>db.doc('boxguide/'+k).onSnapshot(sn=>{guides[k]=(sn.exists&&sn.data().map)||{}; guideInfo(); if(lastExtract&&pdest.value===k) runPlan()},()=>{}));
     ['생산입고','판매입력','구매입력'].forEach(k=>db.doc('ecount/'+k).onSnapshot(sn=>{ecT[k]=sn.exists?sn.data():null; if(ecf===k) ecShow()},()=>{}));
-    db.doc('ecount/inventory').onSnapshot(sn=>{ecInv=sn.exists?sn.data():null; if(ecf==='재고현황') renderInv()},()=>{});
+    db.doc('ecount/inventory').onSnapshot(sn=>{ecInvBase=sn.exists?sn.data():null; mergePrices()},()=>{});
     db.collection('requests').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{const first=!reqLoaded; const prev=new Map(reqs.map(r=>[r.id,r.data().status])); reqs=sn.docs; reqLoaded=true; onReqs(first,prev)},()=>{});
     db.collection('transfers').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{xfers=sn.docs;renderXfers();renderRecon();try{renderBoard()}catch(e){}},()=>{xStatus.textContent='보낸 내역을 불러오지 못했습니다.'});
     db.collection('accounts').onSnapshot(sn=>{accounts=sn.docs;renderAccts()},()=>{});
     db.collection('plans').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{plans=sn.docs;renderPlans();try{renderBoard()}catch(e){}},()=>{});
     db.collection('complaints').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{complaints=sn.docs;renderCal()},()=>{});
-    db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slips=sn.docs;renderSlips();try{renderBoard()}catch(e){}},()=>{});
+    db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slipsRaw=sn.docs;mergePrices()},()=>{});
+    db.collection('prices').onSnapshot(sn=>{priceMap=new Map(sn.docs.map(d=>[d.id,d.data()]));mergePrices()},()=>{});
     db.collection('stock').orderBy('createdAt','desc').limit(1000).onSnapshot(s=>{moves=s.docs;renderStock();try{renderRecv();renderRecon()}catch(e){}},
       ()=>{sstatus.textContent='재고를 불러오지 못했습니다. 새로고침해 보세요.'});
     db.collection('records').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{recs=s.docs;renderRecs()},
@@ -1647,7 +1684,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const keep=headers.map((h,i)=>h?i:-1).filter(i=>i>=0);
       const rows=aoa.slice(hr+1).filter(r=>r.some(c=>String(c).trim())).slice(0,3000).map(r=>keep.map(i=>String(r[i]??'')));
       st.textContent='올리는 중…';
-      await db.doc('ecount/inventory').set({headers:keep.map(i=>headers[i]),rows:JSON.stringify(rows),file:file.name,uploadedAt:Date.now()});
+      await saveInventory(keep.map(i=>headers[i]),rows,file.name,Date.now());
       st.textContent=`${file.name} · ${rows.length}행을 올렸습니다.`;
     }catch(e){st.textContent='재고현황을 올리지 못했습니다. 파일이 너무 크면 필요한 열만 남겨 다시 올려 주세요.'}
   }
@@ -1673,7 +1710,36 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       hint:'저장하면 완제품 재고에서 빠집니다. LOT를 비우면 그 품번의 오래된 LOT부터 뺍니다.'},
     '구매':{title:'구매 등록',ec:'구매입력',partner:true,cols:[['item','품목',''],['spec','규격',''],['lot','LOT',''],['qty','수량',''],['price','단가',''],['memo','적요','']],
       hint:'저장하면 각 줄이 창고 원자재 LOT 기록으로 들어갑니다.'}};
-  let slipType='입고', slips=[];
+  let slipType='입고', slips=[], slipsRaw=[], priceMap=new Map(), ecInvBase=null;
+  // 단가는 'prices' 기록에 따로 저장 → 서버가 단가 권한 있는 사람에게만 보내 줌. 여기서 합쳐서 보여 줌
+  const PRICE_COL=/단가|금액|가액|원가|매입가|판매가|price/i;
+  function mergePrices(){
+    slips=slipsRaw.map(d=>{const x=d.data(), pr=priceMap.get(d.id);
+      if(!pr||!Array.isArray(pr.prices)) return d;
+      const rows=(x.rows||[]).map((o,i)=>pr.prices[i]==null?o:{...o,price:pr.prices[i]});
+      return {id:d.id,exists:true,data:()=>({...x,rows})}});
+    const pi=priceMap.get('inventory');
+    if(ecInvBase&&pi&&pi.file===ecInvBase.file&&pi.uploadedAt===ecInvBase.uploadedAt){
+      try{const a=JSON.parse(ecInvBase.rows), b=JSON.parse(pi.rows); const map=pi.pos||[];
+        const headers=[...ecInvBase.headers]; map.forEach((pos,j)=>headers.splice(pos,0,pi.headers[j]));
+        const rows=a.map((r,i)=>{const o=[...r]; map.forEach((pos,j)=>o.splice(pos,0,(b[i]||[])[j]??'')); return o});
+        ecInv={...ecInvBase,headers,rows:JSON.stringify(rows)}}catch(e){ecInv=ecInvBase}}
+    else ecInv=ecInvBase;
+    try{renderSlips()}catch(e){} try{renderBoard()}catch(e){} try{if(ecf==='재고현황') renderInv()}catch(e){}
+    autoMovePrices()}
+  // 예전에 단가가 전표·재고현황 안에 같이 저장된 경우, 관리자 화면에서 한 번 옮겨 둠
+  let movingPrices=false;
+  async function autoMovePrices(){if(movingPrices||!db||!me||me.role!=='admin') return; movingPrices=true;
+    try{for(const d of slipsRaw){const x=d.data(); if(!(x.rows||[]).some(o=>'price' in o)) continue;
+        const prices=x.rows.map(o=>o.price??null);
+        if(prices.some(v=>v!=null)&&!priceMap.has(d.id)) await db.doc('prices/'+d.id).set({slip:d.id,prices,author:x.author||myId,createdAt:x.createdAt||Date.now()});
+        await db.doc('slips/'+d.id).set({...x,rows:x.rows.map(({price,...o})=>o)})}
+      if(ecInvBase&&ecInvBase.headers&&ecInvBase.headers.some(h=>PRICE_COL.test(h))) await saveInventory(ecInvBase.headers,JSON.parse(ecInvBase.rows),ecInvBase.file,ecInvBase.uploadedAt);
+    }catch(e){console.warn('단가 옮기기 실패',e)} movingPrices=false}
+  async function saveInventory(headers,rows,file,at){
+    const pIdx=headers.map((h,i)=>PRICE_COL.test(h)?i:-1).filter(i=>i>=0), keep=headers.map((h,i)=>i).filter(i=>!pIdx.includes(i));
+    if(pIdx.length&&(me&&(me.role==='admin'||can('price')))) await db.doc('prices/inventory').set({file,uploadedAt:at,headers:pIdx.map(i=>headers[i]),pos:pIdx,rows:JSON.stringify(rows.map(r=>pIdx.map(i=>r[i]??''))),author:myId,createdAt:at});
+    await db.doc('ecount/inventory').set({headers:keep.map(i=>headers[i]),rows:JSON.stringify(rows.map(r=>keep.map(i=>r[i]??''))),file,uploadedAt:at})}
   const slBody=document.getElementById('sl-body'), slStatus=document.getElementById('sl-status');
   document.getElementById('sl-date').value=iso(d);
   function slipRow(vals){const C=SLIP[slipType].cols, tr=document.createElement('tr');
@@ -1731,7 +1797,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       if(short.length){slStatus.textContent='재고가 모자랍니다: '+short.join(', ');return}}
     const btn=document.getElementById('sl-save'); btn.disabled=true; slStatus.textContent='저장 중…';
     try{
-      const ref=await db.collection('slips').add({type:slipType,date,partner:S.partner?partner:'',rows,author:myId,createdAt:Date.now()});
+      const prices=rows.map(o=>o.price??null), cleanRows=rows.map(({price,...o})=>o);
+      const ref=await db.collection('slips').add({type:slipType,date,partner:S.partner?partner:'',rows:cleanRows,author:myId,createdAt:Date.now()});
+      if(prices.some(v=>v!=null)&&can('price')) await db.doc('prices/'+ref.id).set({slip:ref.id,prices,author:myId,createdAt:Date.now()});
       const now=Date.now();
       if(slipType==='입고') for(const o of rows) await db.collection('stock').add({item:o.item,lot:o.lot,qty:o.qty,memo:'입고 전표'+(o.memo?' · '+o.memo:''),slip:ref.id,author:myId,createdAt:now});
       if(slipType==='판매') for(const o of outs) await db.collection('stock').add({item:o.item,lot:o.lot,qty:-o.qty,memo:'판매 · '+partner,slip:ref.id,author:myId,createdAt:now});
@@ -1756,7 +1824,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
           del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return}
             try{const col=x.type==='구매'?'records':'stock'; const q=await db.collection(col).where('slip','==',s.id).get();
               for(const dd of q.docs) await db.collection(col).doc(dd.id).delete();
-              await db.collection('slips').doc(s.id).delete(); slStatus.textContent='전표와 재고 반영을 지웠습니다.'}
+              await db.collection('slips').doc(s.id).delete(); try{await db.collection('prices').doc(s.id).delete()}catch(e){} slStatus.textContent='전표와 재고 반영을 지웠습니다.'}
             catch(e){slStatus.textContent='지우지 못했습니다. 권한을 확인해 주세요.'}};
           act.append(' ',del)}
         list.append(tr)}})()}
@@ -2070,7 +2138,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   renderCal();
 
   // 로그인 (아이디·비밀번호, 비밀번호는 PBKDF2 해시로만 비교)
-  const ADMIN={user:'adminkumho',name:'관리자',team:'생산관리팀',role:'admin',salt:'1567b37adf7fba0d9caae36407a5155d',hash:'b3c7aca8fbd3bf1552efec47007141591e754b5e00375b39f88b58c0c55eeb4a',fixed:true};
+  const ADMIN={user:'__none__'};
   const ITER=150000; let accounts=[], me=null;
   const hex=b=>[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
   const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
@@ -2091,12 +2159,13 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function canEditTeam(t){if(!me) return false; if(t==='홈') return true; return permOf(me).teams[t]==='edit'}
   function can(k){return !!me&&permOf(me)[k]}
   const LBL={edit:'수정',view:'보기',none:'숨김'};
-  function findAcct(u){u=String(u||'').trim().toLowerCase(); if(u===ADMIN.user) return ADMIN; const a=accounts.find(x=>x.data().user===u); return a?a.data():null}
+  function findAcct(u){u=String(u||'').trim().toLowerCase(); const a=accounts.find(x=>x.data().user===u); return a?a.data():null}
   // 로그인은 하루 한 번: 같은 날(이 기기) 동안 유지, 날짜가 바뀌면 다시 로그인
   const dayKey=()=>{const t=new Date();return `${t.getFullYear()}-${t.getMonth()+1}-${t.getDate()}`};
   function saveLogin(m){try{localStorage.setItem('kumhoLogin',JSON.stringify({...m,day:dayKey()}))}catch(x){}}
-  function clearLogin(){try{localStorage.removeItem('kumhoLogin');sessionStorage.removeItem('kumhoLogin')}catch(x){}}
-  function loadLogin(){try{const v=JSON.parse(localStorage.getItem('kumhoLogin')||'null'); if(v&&v.user&&v.day===dayKey()){const {day,...m}=v; return m} if(v) clearLogin()}catch(x){} return null}
+  function clearLogin(){try{localStorage.removeItem('kumhoLogin');sessionStorage.removeItem('kumhoLogin')}catch(x){} try{window.kumhoAuth&&kumhoAuth.signOut()}catch(x){}}
+  let loginExpired=false;
+  function loadLogin(){try{const v=JSON.parse(localStorage.getItem('kumhoLogin')||'null'); if(v&&v.user&&v.day===dayKey()){const {day,...m}=v; return m} if(v){loginExpired=true; clearLogin()}}catch(x){} return null}
   // 오후 5:30 퇴근 시간 알림 (하루 한 번)
   const endBox=document.getElementById('endday');
   function endCheck(){if(!me){endBox.hidden=true;return} const t=new Date();
@@ -2110,7 +2179,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   setTimeout(endCheck,1500);
   function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me){document.body.classList.remove('worker'); try{document.getElementById('bell').hidden=true;document.getElementById('bellpanel').hidden=true}catch(e){}}
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
-      document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
+      document.getElementById('who-name').textContent=`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
       side.querySelectorAll('.sg').forEach(w=>{const g=MENU.find(m=>m.g===w.dataset.g), t=g&&g.items[0]&&g.items[0][2]; w.hidden=!!t&&!canSee(t)});
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
@@ -2119,24 +2188,36 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       try{renderRcAlert(); renderBell(); renderReqBadges(); renderReqs()}catch(e){}
       const cur=ITEM[curItem]; if((curItem==='acct'&&me.role!=='admin')||(cur&&!canSee(cur.t))||(isWorker()&&!workItems().includes(curItem))) go(isWorker()?workItems()[0]:'dash',false)}
     else{L.hidden=false; document.body.classList.add('locked'); setTimeout(()=>document.getElementById('lg-user').focus(),0)}}
+  const profToMe=pr=>({user:pr.username,name:pr.name,team:pr.team,role:pr.role,station:pr.station||'',perm:permOf({role:pr.role,station:pr.station,perm:pr.perm})});
   document.getElementById('lgform').addEventListener('submit',async e=>{e.preventDefault();
     const st=document.getElementById('lg-status'), btn=document.getElementById('lg-btn'); st.textContent='';
     const u=document.getElementById('lg-user').value.trim().toLowerCase(), p=document.getElementById('lg-pass').value;
-    const a=findAcct(u); btn.disabled=true; btn.textContent='확인 중…';
-    try{if(a&&await pbk(p,a.salt)===a.hash){me={user:a.user,name:a.name,team:a.team,role:a.role,station:a.station||'',perm:permOf(a)};
-        saveLogin(me)
-        document.getElementById('lg-pass').value=''; applyLogin()}
-      else st.textContent=a||accounts.length||!db?'아이디 또는 비밀번호가 맞지 않습니다.':'아이디 또는 비밀번호가 맞지 않습니다. 계정 목록을 아직 불러오는 중이면 잠시 후 다시 시도하세요.'}
-    catch(x){st.textContent='이 브라우저에서는 로그인할 수 없습니다.'}
+    btn.disabled=true; btn.textContent='확인 중…';
+    try{const pr=await kumhoAuth.signIn(u,p);
+      if(!pr||pr.role==='none'){await kumhoAuth.signOut(); st.textContent='아직 권한이 없는 계정입니다. 관리자에게 권한을 요청하세요.'}
+      else{me=profToMe(pr); saveLogin(me); document.getElementById('lg-pass').value=''; st.textContent='로그인했습니다. 불러오는 중…'; location.reload(); return}}
+    catch(x){const m=String(x&&x.message||''); st.textContent=/invalid login|credentials/i.test(m)?'아이디 또는 비밀번호가 맞지 않습니다.':/rate|too many/i.test(m)?'시도가 너무 많습니다. 잠시 후 다시 해 주세요.':'로그인하지 못했습니다. 인터넷 연결을 확인해 주세요.'}
     btn.disabled=false; btn.textContent='로그인'});
+  // 처음 관리자 계정 만들기 (관리자가 아무도 없을 때만 보임)
+  (async()=>{try{if(await kumhoAuth.hasAdmin()) return}catch(e){return} document.getElementById('bootform').hidden=false})();
+  document.getElementById('bootform').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('bt-status'), btn=document.getElementById('bt-btn');
+    const u=document.getElementById('bt-user').value.trim().toLowerCase(), n=document.getElementById('bt-name').value.trim(), p1=document.getElementById('bt-pass').value, p2=document.getElementById('bt-pass2').value;
+    if(p1!==p2){st.textContent='비밀번호가 서로 다릅니다.';return} if(p1.length<8){st.textContent='비밀번호는 8자 이상으로 해 주세요.';return}
+    btn.disabled=true; st.textContent='만드는 중…';
+    try{await kumhoAuth.register(u,n,p1); document.getElementById('bootform').reset(); st.textContent=`${u} 계정을 만들었습니다. 관리자 권한이 켜지면 위에서 로그인하세요.`}
+    catch(x){st.textContent=/registered|exists/i.test(String(x&&x.message))?'이미 있는 아이디입니다.':'만들지 못했습니다: '+String(x&&x.message||'')}
+    btn.disabled=false});
   document.getElementById('logout').onclick=()=>{me=null; clearLogin(); applyLogin()};
   me=loadLogin();
+  (async()=>{if(loginExpired){await kumhoAuth.signOut(); return} let pr=null; try{pr=await kumhoAuth.current()}catch(e){return}
+    if(!pr||pr.role==='none'){if(me||pr){me=null; clearLogin(); applyLogin()} return}
+    const was=me; me=profToMe(pr); saveLogin(me); if(!was){location.reload();return} applyLogin()})();
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
-    const rows=[{id:null,data:()=>ADMIN},...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
+    const rows=[...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
       c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':x.role==='worker'?(x.station==='생산'?'생산 작업자':x.station==='사상반'?'생산 사상반':'자재 작업자'):'일반'); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
       {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
-      const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
+      const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed&&!(me&&me.user===x.user)){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           document.getElementById('ac-role').value=x.role||'user'; document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
           const p=permOf(x); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value=p.teams[sel.dataset.t]||'none');
@@ -2154,7 +2235,6 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!me||me.role!=='admin'){st.textContent='관리자만 계정을 만들 수 있습니다.';return}
     if(!db){st.textContent='계정 저장소에 연결되지 않았습니다.';return}
     const u=document.getElementById('ac-user').value.trim().toLowerCase();
-    if(u===ADMIN.user){st.textContent='기본 관리자 계정은 바꿀 수 없습니다.';return}
     const pw=document.getElementById('ac-pass').value, old=accounts.find(x=>x.data().user===u);
     if(!old&&pw.length<6){st.textContent='새 계정은 비밀번호(6자 이상)가 필요합니다.';return}
     if(pw&&pw.length<6){st.textContent='비밀번호는 6자 이상이어야 합니다.';return}
@@ -2163,9 +2243,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const rl=document.getElementById('ac-role').value, stn=document.getElementById('ac-station').value;
     const rec={user:u,name:document.getElementById('ac-name').value.trim(),team:rl==='worker'?WORK[stn].team:document.getElementById('ac-team').value,role:rl,station:rl==='worker'?stn:'',perm,
       createdAt:old?old.data().createdAt:Date.now(),updatedAt:Date.now()};
-    if(pw){rec.salt=hex(crypto.getRandomValues(new Uint8Array(16))); rec.hash=await pbk(pw,rec.salt)} else {rec.salt=old.data().salt; rec.hash=old.data().hash}
-    try{await db.collection('accounts').doc(u).set(rec); document.getElementById('ac-pass').value=''; st.textContent=`${u} 계정을 저장했습니다.`}
-    catch(err){st.textContent='저장하지 못했습니다. 계정 관리는 이 페이지의 편집 권한이 있는 사람만 할 수 있습니다.'}});
+    st.textContent='저장 중…';
+    try{await kumhoAuth.saveAccount(rec,pw); document.getElementById('ac-pass').value=''; st.textContent=`${u} 계정을 저장했습니다.`}
+    catch(err){const m=String(err&&err.message||''); st.textContent=/registered|exists|duplicate/i.test(m)?'이미 있는 아이디입니다.':'저장하지 못했습니다: '+m}});
   function acRoleUI(){const w=document.getElementById('ac-role').value==='worker';
     document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
     if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team}
