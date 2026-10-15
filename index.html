@@ -358,6 +358,12 @@ footer .kmark{height:14px}
 .wbanner{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:4px;padding:10px 14px;font-size:14px}
 .wbanner[hidden]{display:none}
 #ac-wwrap[hidden]{display:none}
+body.worker .side,body.worker .crumb{display:none!important}
+body.worker .erp{grid-template-columns:minmax(0,1fr)}
+body.worker .topbar .today{margin-left:auto}
+body.worker #ai-set{display:none}
+@media (max-width:600px){body.worker .who{margin-left:auto}}
+body.worker .cwrap{max-width:900px;margin-inline:auto}
 .acc[hidden]{display:none}
 /* ===== 모바일 최적화 ===== */
 .sitems.msheet{display:flex;position:fixed;left:12px;right:12px;z-index:45;min-width:0;max-width:none;max-height:calc(100dvh - var(--mtop,120px) - 16px);overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.25);flex-direction:column;gap:1px}
@@ -480,7 +486,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </form>
     <div class="status" id="ac-status"></div>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>권한</th><th>부서 권한</th><th>주요 정보</th><th></th></tr></thead><tbody id="ac-list"></tbody></table></div>
-    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 지정한 작업장의 입력 화면 하나와 공지 보기만 쓸 수 있습니다. 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
+    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 지정한 작업장의 입력 화면 하나만 쓸 수 있습니다 (메뉴·공지·대시보드 없음). 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
   </section>
 
   <section class="panel" id="dash" aria-labelledby="h-dash">
@@ -1048,7 +1054,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     document.getElementById('crumb').textContent=it.g==='공통'?it.label:`${it.g} › ${it.label}`;
     const th=document.getElementById('teamhead'); th.hidden=it.t==='홈';
     document.getElementById('th-name').textContent=it.label; document.getElementById('th-desc').textContent=TEAMS[it.t];
-    if(typeof isWorker==='function'&&isWorker()) document.getElementById('th-desc').textContent=it.id==='xfer'?'자재(창고)로 보낸 수량과 불량 수량을 품번·LOT별로 적고 저장하세요.':it.id==='recv'?'생산(사상반)에서 받은 수량을 품번·LOT별로 적고 저장하세요.':'공지를 확인하세요.';
+    if(typeof isWorker==='function'&&isWorker()) document.getElementById('th-desc').textContent=it.id==='xfer'?'자재(창고)로 보낸 수량과 불량 수량을 품번·LOT별로 적고 저장하세요.':it.id==='recv'?'생산(사상반)에서 받은 수량을 품번·LOT별로 적고 저장하세요.':'';
     document.getElementById('n-scope').textContent=it.t==='홈'?'전 부서':it.t+' + 전체';
     document.getElementById('n-team').value=it.t==='홈'?'전체':it.t;
     document.getElementById('prod-areawrap').hidden=it.id!=='lotprod';
@@ -1895,7 +1901,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:unhex(saltHex),iterations:ITER},k,256))}
   const ALLTEAMS=['생산관리팀','생산','품질','계발','총무팀'];
   // 작업자: 작업장별로 쓸 수 있는 화면
-  const WORK={'사상반':{team:'생산',items:['xfer','notice']},'자재':{team:'생산관리팀',items:['recv','notice']}};
+  const WORK={'사상반':{team:'생산',items:['xfer']},'자재':{team:'생산관리팀',items:['recv']}};
   function isWorker(){return !!me&&me.role==='worker'}
   function workItems(){const w=WORK[me&&me.station]||WORK['사상반']; return w.items}
   function permOf(a){const p={teams:{},notice:false,price:false,complaint:true};
@@ -1925,13 +1931,14 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   document.getElementById('endday-out').onclick=()=>{endDone(); me=null; clearLogin(); applyLogin()};
   setInterval(()=>{if(me&&!loadLogin()){me=null; applyLogin()} endCheck()},30000);
   setTimeout(endCheck,1500);
-  function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null;
+  function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me) document.body.classList.remove('worker');
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
       document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.role==='worker'?(me.station||'')+' 작업자':(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
       side.querySelectorAll('.sg').forEach(w=>{const g=MENU.find(m=>m.g===w.dataset.g), t=g&&g.items[0]&&g.items[0][2]; w.hidden=!!t&&!canSee(t)});
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
       if(isWorker()) side.querySelectorAll('.sg').forEach(w=>{w.hidden=![...w.querySelectorAll('.sitem'),...((w._box&&w._box.querySelectorAll('.sitem'))||[])].some(b=>!b.hidden)});
+      document.body.classList.toggle('worker',isWorker());
       try{renderRcAlert()}catch(e){}
       const cur=ITEM[curItem]; if((curItem==='acct'&&me.role!=='admin')||(cur&&!canSee(cur.t))||(isWorker()&&!workItems().includes(curItem))) go(isWorker()?workItems()[0]:'dash',false)}
     else{L.hidden=false; document.body.classList.add('locked'); setTimeout(()=>document.getElementById('lg-user').focus(),0)}}
@@ -1951,7 +1958,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const rows=[{id:null,data:()=>ADMIN},...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
       c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':x.role==='worker'?`작업자 (${x.station||'사상반'})`:'일반'); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'공지 보기':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
+      {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           document.getElementById('ac-role').value=x.role||'user'; document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
