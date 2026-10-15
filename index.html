@@ -350,6 +350,15 @@ footer .kmark{height:14px}
 .endday h3 .kmark{height:18px}
 .endday p{margin:0;color:var(--muted);font-size:14px}
 .endday .row{display:flex;gap:8px;justify-content:flex-end}
+/* 작업자 / 오차 알림 */
+.rcalert{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;justify-content:space-between;border:1px solid var(--bad);background:var(--bad-soft);color:var(--bad);border-radius:4px;padding:10px 14px;font-weight:600}
+.rcalert.ok{border-color:var(--ok);background:var(--ok-soft);color:var(--ok)}
+.rcalert[hidden]{display:none}
+.rcalert button{background:transparent;border:1px solid currentColor;color:inherit;font-weight:600;padding:4px 10px;font-size:13px}
+.wbanner{border:1px solid var(--line);border-left:4px solid var(--accent);background:var(--accent-soft);border-radius:4px;padding:10px 14px;font-size:14px}
+.wbanner[hidden]{display:none}
+#ac-wwrap[hidden]{display:none}
+.acc[hidden]{display:none}
 /* ===== 모바일 최적화 ===== */
 .sitems.msheet{display:flex;position:fixed;left:12px;right:12px;z-index:45;min-width:0;max-width:none;max-height:calc(100dvh - var(--mtop,120px) - 16px);overflow-y:auto;background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:4px;box-shadow:0 10px 30px rgba(0,0,0,.25);flex-direction:column;gap:1px}
 .sitems.msheet .sitem{padding:12px 12px;font-size:15px;white-space:normal;border-radius:4px}
@@ -438,7 +447,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <label for="ac-name">이름<input id="ac-name" maxlength="20" required></label>
       <label for="ac-team">부서<select id="ac-team"><option>생산</option><option>생산관리팀</option><option>품질</option><option>계발</option><option>총무팀</option></select></label>
       <label for="ac-pass">비밀번호<input id="ac-pass" type="password" minlength="6" autocomplete="new-password" placeholder="6자 이상 (수정 시 비우면 유지)"></label>
-      <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="admin">관리자</option></select></label>
+      <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="worker">작업자</option><option value="admin">관리자</option></select></label>
+      <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="사상반">사상반 (자재로 보낸 수량·불량 입력)</option><option value="자재">자재 (생산에서 받은 수량 입력)</option></select></label>
       <fieldset class="acc" id="ac-perm"><legend>부서 메뉴 권한</legend>
         <div class="pgrid">
           <span>자재 · 생산관리팀</span><select data-t="생산관리팀"><option value="edit">보기+수정</option><option value="view">보기만</option><option value="none">숨김</option></select>
@@ -457,11 +467,12 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     </form>
     <div class="status" id="ac-status"></div>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>권한</th><th>부서 권한</th><th>주요 정보</th><th></th></tr></thead><tbody id="ac-list"></tbody></table></div>
-    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
+    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 지정한 작업장의 입력 화면 하나와 공지 보기만 쓸 수 있습니다. 관리자는 모든 권한을 가집니다. 기본 관리자 계정 adminkumho는 지울 수 없습니다.</p>
   </section>
 
   <section class="panel" id="dash" aria-labelledby="h-dash">
     <h2 id="h-dash">대시보드 <span class="tag" id="dash-at"></span></h2>
+    <div class="rcalert" id="rc-alert" hidden role="status"><span></span><button type="button" onclick="location.hash='recon2';location.reload()">오차 확인</button></div>
     <div class="kpis">
       <div class="kpi ksearch"><label for="k-q"><span>재고 찾기</span></label><input id="k-q" placeholder="품번 또는 LOT" autocomplete="off"><em id="k-stock2">찾으면 창고 재고 수량이 나옵니다</em></div>
       <button type="button" class="kpi" data-go="lotqc"><span>이번 달 불량</span><b id="k-bad">0</b><em id="k-bad2">EA · 0개 LOT</em></button>
@@ -533,31 +544,45 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       </section>
 
 <section class="panel" id="xferbox" aria-labelledby="h-xfer">
-    <h2 id="h-xfer">사상반 → 창고 보낸 내역 <span class="tag">사상반 기록</span></h2>
-    <p class="hint">사상반에서 검사를 마치고 창고로 보낸 완제품을 적습니다. 창고 입고와 따로 기록되어, ‘오차 확인’에서 두 기록을 맞춰 봅니다.</p>
+    <h2 id="h-xfer">사상반 → 자재 보낸 내역 <span class="tag">사상반 기록</span></h2>
+    <p class="hint">사상반에서 검사를 마치고 자재(창고)로 보낸 완제품 수량과, 그 품번의 불량 수량을 적습니다. 자재가 받은 수량과 자동으로 비교됩니다.</p>
     <form id="xform" data-write class="slipform">
       <div class="sliphead"><label for="x-date">보낸 날<input id="x-date" type="date" required></label></div>
-      <div class="scroll"><table class="rules sliptable"><thead><tr><th>#</th><th>품번</th><th>LOT</th><th class="num">보낸 수량 (EA)</th><th>메모</th><th></th></tr></thead><tbody id="x-body"></tbody>
-        <tfoot><tr><td colspan="6"><div class="row" style="justify-content:space-between">
+      <div class="scroll"><table class="rules sliptable"><thead><tr><th>#</th><th>품번</th><th>LOT</th><th class="num">보낸 수량 (EA)</th><th class="num">불량 (EA)</th><th>메모</th><th></th></tr></thead><tbody id="x-body"></tbody>
+        <tfoot><tr><td colspan="7"><div class="row" style="justify-content:space-between">
           <span class="hint">엑셀에서 여러 줄을 복사해 첫 칸에 붙여 넣을 수 있습니다.</span>
           <button type="button" class="ghost" id="x-add">줄 추가</button></div></td></tr></tfoot></table></div>
       <div class="row" style="justify-content:space-between"><span class="status" id="x-status"></span><button type="submit" id="x-save">보낸 내역 저장</button></div>
     </form>
     <h3 class="subh">최근 보낸 내역</h3>
-    <div class="scroll"><table class="rules sliplist"><thead><tr><th>보낸 날</th><th>품번</th><th>LOT</th><th class="num">수량</th><th>메모</th><th>입력자</th><th></th></tr></thead><tbody id="x-list"></tbody></table></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>보낸 날</th><th>품번</th><th>LOT</th><th class="num">수량</th><th class="num">불량</th><th>메모</th><th>입력자</th><th></th></tr></thead><tbody id="x-list"></tbody></table></div>
     <div class="empty" id="x-empty">아직 보낸 내역이 없습니다.</div>
   </section>
 
+  <section class="panel" id="recvbox" aria-labelledby="h-recv">
+    <h2 id="h-recv">생산 → 자재 받은 내역 <span class="tag">자재 기록</span></h2>
+    <p class="hint">생산(사상반)에서 받은 완제품을 품번·LOT별로 적습니다. 저장하면 창고 재고에 더해지고, 사상반이 보낸 수량과 자동으로 비교됩니다.</p>
+    <form id="rvform" data-write class="slipform">
+      <div class="sliphead"><label for="rv-date">받은 날<input id="rv-date" type="date" required></label></div>
+      <div class="scroll"><table class="rules sliptable"><thead><tr><th>#</th><th>품번</th><th>LOT</th><th class="num">받은 수량 (EA)</th><th>메모</th><th></th></tr></thead><tbody id="rv-body"></tbody>
+        <tfoot><tr><td colspan="6"><div class="row" style="justify-content:flex-end"><button type="button" class="ghost" id="rv-add">줄 추가</button></div></td></tr></tfoot></table></div>
+      <div class="row" style="justify-content:space-between"><span class="status" id="rv-status"></span><button type="submit" id="rv-save">받은 내역 저장</button></div>
+    </form>
+    <h3 class="subh">최근 받은 내역</h3>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>받은 날</th><th>품번</th><th>LOT</th><th class="num">수량</th><th>메모</th><th>입력자</th><th></th></tr></thead><tbody id="rv-list"></tbody></table></div>
+    <div class="empty" id="rv-empty">아직 받은 내역이 없습니다.</div>
+  </section>
+
   <section class="panel" id="reconbox" aria-labelledby="h-recon">
-    <h2 id="h-recon">사상반 ↔ 창고 오차 확인 <span class="tag">품번 · LOT별</span></h2>
+    <h2 id="h-recon">사상반 ↔ 자재 오차 확인 <span class="tag">품번 · LOT별</span></h2>
     <div class="row">
       <label for="rc-month" class="area">기간<input id="rc-month" type="month"></label>
       <label class="area" for="rc-only"><input id="rc-only" type="checkbox" style="width:auto"> 오차만 보기</label>
       <input id="rc-search" class="grow" placeholder="품번이나 LOT로 찾기">
     </div>
-    <p class="hint">사상반이 보낸 수량과 창고에 들어온 수량(입고 전표, 재고 추가)을 품번·LOT별로 비교합니다. 판매로 빠진 수량은 비교에 넣지 않습니다.</p>
+    <p class="hint">사상반이 보낸 수량과 자재(창고)가 받은 수량(받은 내역, 입고 전표, 재고 추가)을 품번·LOT별로 자동 비교합니다. 판매로 빠진 수량은 비교에 넣지 않습니다. 불량은 사상반이 적은 수량입니다.</p>
     <div class="rcsum" id="rc-sum"></div>
-    <div class="scroll"><table class="rules sliplist"><thead><tr><th>품번</th><th>LOT</th><th class="num">사상반 보냄</th><th class="num">창고 받음</th><th class="num">차이</th><th>상태</th></tr></thead><tbody id="rc-body"></tbody></table></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>품번</th><th>LOT</th><th class="num">사상반 보냄</th><th class="num">자재 받음</th><th class="num">차이</th><th class="num">불량</th><th>상태</th></tr></thead><tbody id="rc-body"></tbody></table></div>
     <div class="empty" id="rc-empty">이 기간에 비교할 기록이 없습니다.</div>
   </section>
 
@@ -963,13 +988,13 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   const MENU=[
     {g:'공통',items:[['dash','대시보드','홈',['dash','links','teams']],['acct','계정 관리','홈',['acctbox']],['notice','공지사항','홈',['notice']],['bot','포털 도우미','홈',['bot']]]},
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
-      ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['rules','판매입력 규칙','생산관리팀',['rules']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
-    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['xfer','창고 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
+      ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['rules','판매입력 규칙','생산관리팀',['rules']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
+    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
     {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
     {g:'계발',items:[['ndev','부서 공지','계발',['notice','soon']]]},
     {g:'총무팀',items:[['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
-  const SECTIONS=['boardbox','acctbox','xferbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
+  const SECTIONS=['boardbox','acctbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
   const side=document.getElementById('side');
   const mq=window.matchMedia('(max-width:860px)');
   let openG=new Set(); try{JSON.parse(localStorage.getItem('openGroups')||'[]').forEach(x=>openG.add(x))}catch(e){}
@@ -1001,7 +1026,8 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
   phone.addEventListener&&phone.addEventListener('change',()=>side.querySelectorAll('.sg.open').forEach(w=>{if(mq.matches) setOpen(w,false); else setOpen(w,true)}));
   side.addEventListener('scroll',()=>{if(phone.matches) side.querySelectorAll('.sg.open').forEach(w=>setOpen(w,false))},{passive:true});
   let curItem='dash';
-  function go(id,fromUser){let it=ITEM[id]||ITEM.dash; if(typeof canSee==='function'&&me&&!canSee(it.t)) it=ITEM.dash; curItem=it.id; team=it.t;
+  function go(id,fromUser){let it=ITEM[id]||ITEM.dash; if(typeof canSee==='function'&&me&&!canSee(it.t)) it=ITEM.dash;
+    if(typeof isWorker==='function'&&isWorker()&&!workItems().includes(it.id)) it=ITEM[workItems()[0]]; curItem=it.id; team=it.t;
     side.querySelectorAll('.sitem').forEach(b=>b.setAttribute('aria-current',b.dataset.m===it.id?'page':'false'));
     side.querySelectorAll('.sg').forEach(w=>{const cur=w.dataset.g===it.g; w.classList.toggle('has-cur',cur);
       if(!mq.matches){if(cur){openG.add(it.g);saveOpen()} setOpen(w,openG.has(w.dataset.g))}});
@@ -1130,7 +1156,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
     db.collection('plans').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{plans=sn.docs;renderPlans();try{renderBoard()}catch(e){}},()=>{});
     db.collection('complaints').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{complaints=sn.docs;renderCal()},()=>{});
     db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slips=sn.docs;renderSlips();try{renderBoard()}catch(e){}},()=>{});
-    db.collection('stock').orderBy('createdAt','desc').limit(1000).onSnapshot(s=>{moves=s.docs;renderStock()},
+    db.collection('stock').orderBy('createdAt','desc').limit(1000).onSnapshot(s=>{moves=s.docs;renderStock();try{renderRecv();renderRecon()}catch(e){}},
       ()=>{sstatus.textContent='재고를 불러오지 못했습니다. 새로고침해 보세요.'});
     db.collection('records').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{recs=s.docs;renderRecs()},
       ()=>{lstatus.textContent='기록을 불러오지 못했습니다. 새로고침해 보세요.'});
@@ -1676,12 +1702,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   document.getElementById('x-date').value=iso(d);
   const rcMonth=document.getElementById('rc-month'); rcMonth.value=iso(d).slice(0,7);
   function xRow(){const tr=document.createElement('tr'); const n=document.createElement('td'); n.className='rn'; tr.append(n);
-    [['item','품번'],['lot','LOT'],['qty','보낸 수량'],['memo','메모']].forEach(([k,l],ci)=>{const td=document.createElement('td'),inp=document.createElement('input');
-      inp.dataset.k=k; inp.setAttribute('aria-label',l); if(k==='qty'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
+    [['item','품번'],['lot','LOT'],['qty','보낸 수량'],['bad','불량'],['memo','메모']].forEach(([k,l],ci)=>{const td=document.createElement('td'),inp=document.createElement('input');
+      inp.dataset.k=k; inp.setAttribute('aria-label',l); if(k==='bad'){inp.placeholder='0'} if(k==='qty'||k==='bad'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
       inp.addEventListener('paste',e=>{const t=(e.clipboardData||window.clipboardData).getData('text'); if(!/[\t\n]/.test(t)) return; e.preventDefault();
         let row=tr; t.replace(/\r/g,'').split('\n').filter(l=>l.trim()).forEach(line=>{if(!row){row=xRow();xBody.append(row)} const ins=row.querySelectorAll('input');
           line.split('\t').forEach((c,j)=>{const x=ins[ci+j]; if(x) x.value=String(c).trim().replace(/,/g,x.type==='number'?'':',')}); row=row.nextElementSibling}); xNum()});
-      inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); if(ci===3){let nx=tr.nextElementSibling; if(!nx){nx=xRow();xBody.append(nx);xNum()} nx.querySelector('input').focus()} else tr.querySelectorAll('input')[ci+1].focus()}});
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); if(ci===4){let nx=tr.nextElementSibling; if(!nx){nx=xRow();xBody.append(nx);xNum()} nx.querySelector('input').focus()} else tr.querySelectorAll('input')[ci+1].focus()}});
       td.append(inp); tr.append(td)});
     const x=document.createElement('td'); x.className='x'; const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='×'; b.setAttribute('aria-label','이 줄 지우기');
     b.onclick=()=>{tr.remove(); if(!xBody.children.length) xBody.append(xRow()); xNum()}; x.append(b); tr.append(x); return tr}
@@ -1692,32 +1718,35 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!db){xStatus.textContent='저장은 로그인한 직원만 할 수 있습니다.';return}
     const date=document.getElementById('x-date').value, rows=[], bad=[];
     [...xBody.children].forEach((tr,i)=>{tr.classList.remove('err'); const o={}; tr.querySelectorAll('input').forEach(x=>o[x.dataset.k]=x.value.trim());
-      if(!Object.values(o).some(v=>v)) return; o.qty=Math.floor(Number(o.qty));
-      if(!o.item||!o.lot||!(o.qty>0)){bad.push(i+1);tr.classList.add('err');return} rows.push(o)});
+      if(!Object.values(o).some(v=>v)) return; o.qty=Math.floor(Number(o.qty)); o.bad=Math.max(0,Math.floor(Number(o.bad)||0));
+      if(!o.item||!o.lot||!(o.qty>0||o.bad>0)){bad.push(i+1);tr.classList.add('err');return} rows.push(o)});
     if(bad.length){xStatus.textContent=`${bad.join(', ')}번 줄에 품번, LOT, 수량을 넣어 주세요.`;return}
     if(!rows.length){xStatus.textContent='입력한 줄이 없습니다.';return}
     const btn=document.getElementById('x-save'); btn.disabled=true; xStatus.textContent='저장 중…';
-    try{const now=Date.now(); for(const o of rows) await db.collection('transfers').add({date,item:o.item,lot:o.lot,qty:o.qty,memo:o.memo||'',author:myId,createdAt:now});
-      xBody.replaceChildren(); xAdd(5); xStatus.textContent=`${rows.length}개 품목을 저장했습니다. 창고 입고와 비교는 ‘오차 확인’에서 볼 수 있습니다.`}
+    try{const now=Date.now(); for(const o of rows){const ref=await db.collection('transfers').add({date,item:o.item,lot:o.lot,qty:o.qty>0?o.qty:0,bad:o.bad,memo:o.memo||'',author:myId,createdAt:now});
+        if(o.bad>0) await db.collection('records').add({kind:'불량',loc:'',date,item:o.item,lot:o.lot,qty:o.bad,unit:'EA',memo:'사상반 입력',xfer:ref.id,author:myId,createdAt:now})}
+      xBody.replaceChildren(); xAdd(5); xStatus.textContent=`${rows.length}개 품목을 저장했습니다. 자재가 받은 수량과 자동으로 비교됩니다.`}
     catch(err){xStatus.textContent='저장하지 못했습니다. 보기 전용 권한이면 관리자에게 편집 권한을 요청하세요.'}
     btn.disabled=false});
-  async function renderXfers(){const list=document.getElementById('x-list'); list.replaceChildren(); const mine=xfers.slice(0,50);
+  async function renderXfers(){const list=document.getElementById('x-list'); list.replaceChildren(); const mine=(isWorker()?xfers.filter(s=>s.data().author===myId):xfers).slice(0,50);
     document.getElementById('x-empty').hidden=mine.length>0;
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
-      c(x.date,'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(x.memo); c((ps[x.author]&&ps[x.author].name)||'직원');
+      c(x.date,'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(Number(x.bad||0)?Number(x.bad).toLocaleString('ko-KR'):'—','num'); c(x.memo); c((ps[x.author]&&ps[x.author].name)||'직원');
       const a=c(''); if(x.author&&x.author===myId){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
-        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('transfers').doc(s.id).delete()}catch(e){xStatus.textContent='지우지 못했습니다.'}}; a.append(del)}
+        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('transfers').doc(s.id).delete();
+          if(Number(x.bad)>0){try{const q=await db.collection('records').where('xfer','==',s.id).get(); for(const r of q.docs) await db.collection('records').doc(r.id).delete()}catch(e){}}}catch(e){xStatus.textContent='지우지 못했습니다.'}}; a.append(del)}
       list.append(tr)}}
   function renderRecon(){
     const ym=rcMonth.value, q=document.getElementById('rc-search').value.trim().toLowerCase(), only=document.getElementById('rc-only').checked;
     const m=new Map(), key=(i,l)=>String(i||'').trim()+'\u0000'+String(l||'').trim();
     const inMonth=dt=>!ym||String(dt||'').slice(0,7)===ym;
-    for(const s of xfers){const x=s.data(); if(!inMonth(x.date)) continue; const k=key(x.item,x.lot); const e=m.get(k)||{item:x.item,lot:x.lot,sent:0,got:0}; e.sent+=Number(x.qty)||0; m.set(k,e)}
+    for(const s of xfers){const x=s.data(); if(!inMonth(x.date)) continue; const k=key(x.item,x.lot); const e=m.get(k)||{item:x.item,lot:x.lot,sent:0,got:0,bad:0}; e.sent+=Number(x.qty)||0; e.bad=(e.bad||0)+(Number(x.bad)||0); m.set(k,e)}
     for(const s of moves){const x=s.data(), n=Number(x.qty)||0; if(n<=0) continue; if(!inMonth(iso(new Date(x.createdAt)))) continue;
-      const k=key(x.item,x.lot); const e=m.get(k)||{item:x.item,lot:x.lot,sent:0,got:0}; e.got+=n; m.set(k,e)}
+      const k=key(x.item,x.lot); const e=m.get(k)||{item:x.item,lot:x.lot,sent:0,got:0,bad:0}; e.got+=n; m.set(k,e)}
     let rows=[...m.values()].filter(e=>!q||(lotHit(e.lot,q)||String(e.item||'').toLowerCase().includes(q)));
-    rows.forEach(e=>{e.diff=e.got-e.sent; e.st=e.diff===0?['일치','ok']:e.got===0?['창고 미입고','bad']:e.sent===0?['사상반 기록 없음','warn']:e.diff<0?['창고 부족','bad']:['창고 초과','warn']});
+    rows=rows.filter(e=>e.sent||e.got);
+    rows.forEach(e=>{e.diff=e.got-e.sent; e.st=e.diff===0?['일치','ok']:e.got===0?['자재 미입고','bad']:e.sent===0?['사상반 기록 없음','warn']:e.diff<0?['자재 부족','bad']:['자재 초과','warn']});
     const cnt={ok:0,bad:0,warn:0}; rows.forEach(e=>cnt[e.st[1]]++);
     if(only) rows=rows.filter(e=>e.diff!==0);
     rows.sort((a,b)=>(a.diff===0)-(b.diff===0)||Math.abs(b.diff)-Math.abs(a.diff)||String(a.item).localeCompare(String(b.item)));
@@ -1725,10 +1754,56 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     [['일치',cnt.ok],['부족·미입고',cnt.bad],['초과·기록 없음',cnt.warn]].forEach(([l,n])=>{const sp=document.createElement('span'); sp.append(l+' '); const b=document.createElement('b'); b.textContent=n; sp.append(b); sum.append(sp)});
     const body=document.getElementById('rc-body'); body.replaceChildren(); document.getElementById('rc-empty').hidden=rows.length>0;
     for(const e of rows){const tr=document.createElement('tr'); if(e.diff) tr.className='diff'; const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
-      c(e.item); c(lotLabel(e.lot)); c(e.sent.toLocaleString('ko-KR'),'num'); c(e.got.toLocaleString('ko-KR'),'num'); c((e.diff>0?'+':'')+e.diff.toLocaleString('ko-KR'),'num');
+      c(e.item); c(lotLabel(e.lot)); c(e.sent.toLocaleString('ko-KR'),'num'); c(e.got.toLocaleString('ko-KR'),'num'); c((e.diff>0?'+':'')+e.diff.toLocaleString('ko-KR'),'num'); c(e.bad?e.bad.toLocaleString('ko-KR'):'—','num');
       const st=c(''); const p=document.createElement('span'); p.className='st '+e.st[1]; p.textContent=e.st[0]; st.append(p); body.append(tr)}
+    renderRcAlert();
   }
+  // 관리자 대시보드: 이번 달 사상반↔자재 오차 자동 확인
+  function reconMismatch(ym){const m=new Map(), key=(i,l)=>String(i||'').trim()+'\u0000'+String(l||'').trim(), inM=dt=>String(dt||'').slice(0,7)===ym;
+    for(const s of xfers){const x=s.data(); if(!inM(x.date)) continue; const k=key(x.item,x.lot); m.set(k,(m.get(k)||0)-(Number(x.qty)||0))}
+    for(const s of moves){const x=s.data(), n=Number(x.qty)||0; if(n<=0||!inM(iso(new Date(x.createdAt)))) continue; const k=key(x.item,x.lot); m.set(k,(m.get(k)||0)+n)}
+    let n=0; m.forEach(v=>{if(v!==0) n++}); return {n,total:m.size}}
+  function renderRcAlert(){const el=document.getElementById('rc-alert'); if(!el) return; const isAdm=!!me&&me.role==='admin';
+    if(!isAdm){el.hidden=true;return} const r=reconMismatch(iso(d).slice(0,7)); el.hidden=!r.total;
+    el.classList.toggle('ok',r.n===0); el.querySelector('span').textContent=r.n?`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건 (전체 ${r.total}개 품번·LOT)`:`이번 달 사상반 ↔ 자재 수량이 모두 일치합니다 (${r.total}개 품번·LOT)`}
   [rcMonth,document.getElementById('rc-search'),document.getElementById('rc-only')].forEach(el=>el.addEventListener('input',renderRecon));
+  // 생산 → 자재 받은 내역 (재고 추가로 저장, src:'recv')
+  const rvBody=document.getElementById('rv-body'), rvStatus=document.getElementById('rv-status');
+  document.getElementById('rv-date').value=iso(d);
+  function rvRow(){const tr=document.createElement('tr'); const n=document.createElement('td'); n.className='rn'; tr.append(n);
+    [['item','품번'],['lot','LOT'],['qty','받은 수량'],['memo','메모']].forEach(([k,l],ci)=>{const td=document.createElement('td'),inp=document.createElement('input');
+      inp.dataset.k=k; inp.setAttribute('aria-label',l); if(k==='qty'){inp.type='number';inp.min='0';inp.inputMode='numeric';td.className='num'} if(k==='item') inp.setAttribute('list','s-items');
+      inp.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault(); if(ci===3){let nx=tr.nextElementSibling; if(!nx){nx=rvRow();rvBody.append(nx);rvNum()} nx.querySelector('input').focus()} else tr.querySelectorAll('input')[ci+1].focus()}});
+      td.append(inp); tr.append(td)});
+    const x=document.createElement('td'); x.className='x'; const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='×'; b.setAttribute('aria-label','이 줄 지우기');
+    b.onclick=()=>{tr.remove(); if(!rvBody.children.length) rvBody.append(rvRow()); rvNum()}; x.append(b); tr.append(x); return tr}
+  function rvNum(){[...rvBody.children].forEach((tr,i)=>tr.firstChild.textContent=i+1)}
+  function rvAdd(n){for(let i=0;i<n;i++) rvBody.append(rvRow()); rvNum()}
+  rvAdd(5); document.getElementById('rv-add').onclick=()=>rvAdd(5);
+  document.getElementById('rvform').addEventListener('submit',()=>fillLots('rv-body','rv-date'),true);
+  document.getElementById('rvform').addEventListener('submit',async e=>{e.preventDefault();
+    if(!db){rvStatus.textContent='저장은 로그인한 직원만 할 수 있습니다.';return}
+    const date=document.getElementById('rv-date').value, rows=[], bad=[];
+    [...rvBody.children].forEach((tr,i)=>{tr.classList.remove('err'); const o={}; tr.querySelectorAll('input').forEach(x=>o[x.dataset.k]=x.value.trim());
+      if(!Object.values(o).some(v=>v)) return; o.qty=Math.floor(Number(o.qty));
+      if(!o.item||!o.lot||!(o.qty>0)){bad.push(i+1);tr.classList.add('err');return} rows.push(o)});
+    if(bad.length){rvStatus.textContent=`${bad.join(', ')}번 줄에 품번, LOT, 수량을 넣어 주세요.`;return}
+    if(!rows.length){rvStatus.textContent='입력한 줄이 없습니다.';return}
+    const btn=document.getElementById('rv-save'); btn.disabled=true; rvStatus.textContent='저장 중…';
+    try{const t=new Date(date+'T12:00:00').getTime(), at=isNaN(t)?Date.now():t;
+      for(const o of rows) await db.collection('stock').add({item:o.item,lot:o.lot,qty:o.qty,memo:'생산에서 받음'+(o.memo?' · '+o.memo:''),src:'recv',date,author:myId,createdAt:at});
+      rvBody.replaceChildren(); rvAdd(5); rvStatus.textContent=`${rows.length}개 품목을 저장했습니다. 사상반이 보낸 수량과 자동으로 비교됩니다.`}
+    catch(err){rvStatus.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}
+    btn.disabled=false});
+  async function renderRecv(){const list=document.getElementById('rv-list'); if(!list) return; list.replaceChildren();
+    const mine=moves.filter(s=>{const x=s.data(); return x.src==='recv'&&(!isWorker()||x.author===myId)}).slice(0,50);
+    document.getElementById('rv-empty').hidden=mine.length>0;
+    let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
+    for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
+      c(x.date||iso(new Date(x.createdAt)),'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(String(x.memo||'').replace(/^생산에서 받음( · )?/,'')); c((ps[x.author]&&ps[x.author].name)||'직원');
+      const a=c(''); if(x.author&&x.author===myId){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
+        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('stock').doc(s.id).delete()}catch(e){rvStatus.textContent='지우지 못했습니다.'}}; a.append(del)}
+      list.append(tr)}}
   document.getElementById('rc-only').addEventListener('change',renderRecon);
 
   // LOT 입력 도우미: 대문자로, 비어 있으면 날짜로 채우기
@@ -1805,7 +1880,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   async function pbk(pw,saltHex){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
     return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:unhex(saltHex),iterations:ITER},k,256))}
   const ALLTEAMS=['생산관리팀','생산','품질','계발','총무팀'];
+  // 작업자: 작업장별로 쓸 수 있는 화면
+  const WORK={'사상반':{team:'생산',items:['xfer','notice']},'자재':{team:'생산관리팀',items:['recv','notice']}};
+  function isWorker(){return !!me&&me.role==='worker'}
+  function workItems(){const w=WORK[me&&me.station]||WORK['사상반']; return w.items}
   function permOf(a){const p={teams:{},notice:false,price:false,complaint:true};
+    if(a&&a.role==='worker'){const w=WORK[a.station]||WORK['사상반']; ALLTEAMS.forEach(t=>p.teams[t]=t===w.team?'edit':'none'); p.complaint=false; return p}
     if(!a) return p; if(a.role==='admin'){ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.price=p.complaint=true; return p}
     if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.price=!!a.perm.price; p.complaint=a.perm.complaint!==false; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
@@ -1833,16 +1913,19 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   setTimeout(endCheck,1500);
   function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null;
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
-      document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.team||''}${me.role==='admin'?' · 관리자':''}`;
+      document.getElementById('who-name').textContent=me.user===ADMIN.user?'ADMIN':`${me.name} · ${me.role==='worker'?(me.station||'')+' 작업자':(me.team||'')}${me.role==='admin'?' · 관리자':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
       side.querySelectorAll('.sg').forEach(w=>{const g=MENU.find(m=>m.g===w.dataset.g), t=g&&g.items[0]&&g.items[0][2]; w.hidden=!!t&&!canSee(t)});
-      const cur=ITEM[curItem]; if((curItem==='acct'&&me.role!=='admin')||(cur&&!canSee(cur.t))) go('dash',false)}
+      side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
+      if(isWorker()) side.querySelectorAll('.sg').forEach(w=>{w.hidden=![...w.querySelectorAll('.sitem'),...((w._box&&w._box.querySelectorAll('.sitem'))||[])].some(b=>!b.hidden)});
+      try{renderRcAlert()}catch(e){}
+      const cur=ITEM[curItem]; if((curItem==='acct'&&me.role!=='admin')||(cur&&!canSee(cur.t))||(isWorker()&&!workItems().includes(curItem))) go(isWorker()?workItems()[0]:'dash',false)}
     else{L.hidden=false; document.body.classList.add('locked'); setTimeout(()=>document.getElementById('lg-user').focus(),0)}}
   document.getElementById('lgform').addEventListener('submit',async e=>{e.preventDefault();
     const st=document.getElementById('lg-status'), btn=document.getElementById('lg-btn'); st.textContent='';
     const u=document.getElementById('lg-user').value.trim().toLowerCase(), p=document.getElementById('lg-pass').value;
     const a=findAcct(u); btn.disabled=true; btn.textContent='확인 중…';
-    try{if(a&&await pbk(p,a.salt)===a.hash){me={user:a.user,name:a.name,team:a.team,role:a.role,perm:permOf(a)};
+    try{if(a&&await pbk(p,a.salt)===a.hash){me={user:a.user,name:a.name,team:a.team,role:a.role,station:a.station||'',perm:permOf(a)};
         saveLogin(me)
         document.getElementById('lg-pass').value=''; applyLogin()}
       else st.textContent=a||accounts.length||!db?'아이디 또는 비밀번호가 맞지 않습니다.':'아이디 또는 비밀번호가 맞지 않습니다. 계정 목록을 아직 불러오는 중이면 잠시 후 다시 시도하세요.'}
@@ -1853,11 +1936,11 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     const rows=[{id:null,data:()=>ADMIN},...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
-      c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':'일반'); c(x.role==='admin'?'전체 수정':ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='admin'?'전체':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
+      c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':x.role==='worker'?`작업자 (${x.station||'사상반'})`:'일반'); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
+      {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'공지 보기':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
-          document.getElementById('ac-role').value=x.role||'user'; document.getElementById('ac-pass').value='';
+          document.getElementById('ac-role').value=x.role||'user'; document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
           const p=permOf(x); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value=p.teams[sel.dataset.t]||'none');
           document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=!!p[i.value]);
           document.getElementById('ac-status').textContent=`${x.user} 계정을 고치는 중입니다. 비밀번호 칸을 비우면 그대로 둡니다.`; document.getElementById('ac-user').focus()};
@@ -1866,7 +1949,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
           try{await db.collection('accounts').doc(s.id).delete(); document.getElementById('ac-status').textContent=`${x.user} 계정을 지웠습니다.`}catch(e){document.getElementById('ac-status').textContent='지우지 못했습니다. 이 페이지의 편집 권한이 필요합니다.'}};
         a.append(del)}
       tb.append(tr)});
-    if(me&&me.user!==ADMIN.user){const a=findAcct(me.user); if(a){me={user:a.user,name:a.name,team:a.team,role:a.role,perm:permOf(a)}; saveLogin(me); applyLogin()}}
+    if(me&&me.user!==ADMIN.user){const a=findAcct(me.user); if(a){me={user:a.user,name:a.name,team:a.team,role:a.role,station:a.station||'',perm:permOf(a)}; saveLogin(me); applyLogin()}}
     // 지워진 계정이면 로그아웃
     if(me&&me.user!==ADMIN.user&&accounts.length&&!findAcct(me.user)){me=null;clearLogin(); applyLogin()}}
   document.getElementById('acform').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('ac-status');
@@ -1879,12 +1962,17 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(pw&&pw.length<6){st.textContent='비밀번호는 6자 이상이어야 합니다.';return}
     const perm={teams:{}}; document.querySelectorAll('#ac-perm select').forEach(sel=>perm.teams[sel.dataset.t]=sel.value);
     document.querySelectorAll('#ac-keys input').forEach(i=>perm[i.value]=i.checked);
-    const rec={user:u,name:document.getElementById('ac-name').value.trim(),team:document.getElementById('ac-team').value,role:document.getElementById('ac-role').value,perm,
+    const rl=document.getElementById('ac-role').value, stn=document.getElementById('ac-station').value;
+    const rec={user:u,name:document.getElementById('ac-name').value.trim(),team:rl==='worker'?WORK[stn].team:document.getElementById('ac-team').value,role:rl,station:rl==='worker'?stn:'',perm,
       createdAt:old?old.data().createdAt:Date.now(),updatedAt:Date.now()};
     if(pw){rec.salt=hex(crypto.getRandomValues(new Uint8Array(16))); rec.hash=await pbk(pw,rec.salt)} else {rec.salt=old.data().salt; rec.hash=old.data().hash}
     try{await db.collection('accounts').doc(u).set(rec); document.getElementById('ac-pass').value=''; st.textContent=`${u} 계정을 저장했습니다.`}
     catch(err){st.textContent='저장하지 못했습니다. 계정 관리는 이 페이지의 편집 권한이 있는 사람만 할 수 있습니다.'}});
-  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
+  function acRoleUI(){const w=document.getElementById('ac-role').value==='worker';
+    document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
+    if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team}
+  document.getElementById('ac-role').addEventListener('change',acRoleUI); document.getElementById('ac-station').addEventListener('change',acRoleUI);
+  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
   renderAccts(); applyLogin();
 
   // 권한 적용: 현재 메뉴 부서가 '보기만'이면 쓰기 막기, 공지·단가·클레임 개별 권한
