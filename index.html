@@ -1611,7 +1611,7 @@ button.editbtn{margin-right:4px}
     db.collection('complaints').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{complaints=sn.docs;renderCal()},()=>{});
     db.collection('events').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{events=sn.docs;renderCal()},()=>{});
     db.collection('trials').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{trials=sn.docs;renderTrials()},()=>{});
-    db.collection('claims').orderBy('createdAt','desc').limit(1000).onSnapshot(sn=>{claims=sn.docs;renderClaims()},()=>{});
+    db.collection('claims').orderBy('createdAt','desc').limit(1000).onSnapshot(sn=>{claims=sn.docs;renderClaims();renderCal()},()=>{});
     db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slipsRaw=sn.docs;mergePrices()},()=>{});
     db.collection('prices').onSnapshot(sn=>{priceMap=new Map(sn.docs.map(d=>[d.id,d.data()]));mergePrices()},()=>{});
     db.collection('stock').orderBy('createdAt','desc').limit(1000).onSnapshot(s=>{moves=s.docs;renderStock();try{renderRecv();renderRecon()}catch(e){}},
@@ -2636,7 +2636,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   let calQ=0; function renderCal(){if(calQ) return; calQ=requestAnimationFrame(()=>{calQ=0; drawCal()})}
   function drawCal(){
     document.getElementById('cal-title').textContent=`${calY}년 ${calM+1}월`;
-    const by=new Map(); complaints.forEach(c=>{const x=c.data(); const k=x.date; by.set(k,(by.get(k)||[]).concat([c]))});
+    const by=new Map(); calComplaints().forEach(c=>{const x=c.data(); const k=x.date; by.set(k,(by.get(k)||[]).concat([c]))});
     const box=document.getElementById('cal-days'); box.replaceChildren();
     const first=new Date(calY,calM,1).getDay(), n=new Date(calY,calM+1,0).getDate();
     for(let i=0;i<first;i++){const e=document.createElement('span');e.className='cempty';box.append(e)}
@@ -2655,6 +2655,10 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       b.setAttribute('aria-label',`${calM+1}월 ${dd}일, ${hol?hol+', ':''}${evs.length?'일정 '+evs.length+'건, ':''}${k>todayISO?'예정':list.length?'클레임 '+list.length+'건':'클레임 없음'}`);
       b.onclick=()=>{calSel=k; renderCal()}; box.append(b)}
     renderCalSide(by)}
+  // 달력의 고객 클레임 = 직접 등록한 클레임 + 클레임 현황(신속 대응 추적표, 볼 수 있는 사람만)
+  function calComplaints(){let ok=false; try{ok=claimOK()}catch(e){}
+    if(!ok) return complaints;
+    return complaints.concat(claims.filter(c=>c.data().opened).map(c=>{const x=c.data(); return {id:'frb-'+c.id,data:()=>({date:x.opened,partner:x.where||'',item:x.partNo||x.part||'',body:`${x.issue||''}${x.action?'\n조치: '+x.action:''}\n(클레임 현황 ${x.no||''})`,frb:true})}}))}
   function canEvent(){try{return !!me&&(me.role==='admin'||me.team==='총무팀')}catch(e){return false}}
   async function renderEvSide(k){
     const ok=canEvent(), list=events.filter(e=>e.data().date===k).sort((a,c)=>(a.data().time||'99').localeCompare(c.data().time||'99'));
@@ -2678,14 +2682,14 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!list.length){const li=document.createElement('li'); li.className='none'; li.textContent='등록된 일정이 없습니다.'; ul.append(li)}
   }
   async function renderCalSide(by){
-    const k=calSel||todayISO, list=(by||new Map()).get(k)||complaints.filter(c=>c.data().date===k);
+    const k=calSel||todayISO, list=(by||new Map()).get(k)||calComplaints().filter(c=>c.data().date===k);
     try{renderEvSide(k)}catch(e){}
     {const h=document.getElementById('cal-sel'); h.textContent=`${HOL[k]?HOL[k]+' · ':''}고객 클레임`; const cn=document.createElement('span'); cn.className='cnt'; cn.textContent=list.length+'건'; h.append(cn)}
     const ul=document.getElementById('cal-list'); ul.replaceChildren();
     let ps={}; const ids=[...new Set(list.map(c=>c.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     list.forEach(c=>{const x=c.data(), li=document.createElement('li'); const top=document.createElement('div'); top.className='cl-top';
       const t=document.createElement('b'); t.textContent=[x.partner,x.item,x.lot?lotLabel(x.lot):'',x.qty?Number(x.qty).toLocaleString('ko-KR')+' EA':''].filter(Boolean).join(' · ');
-      const who=document.createElement('span'); who.textContent=(ps[x.author]&&ps[x.author].name)||'직원'; top.append(t,who);
+      const who=document.createElement('span'); who.textContent=x.frb?'클레임 현황':((ps[x.author]&&ps[x.author].name)||'직원'); top.append(t,who);
       const p=document.createElement('p'); p.textContent=x.body||''; li.append(top,p);
       if(x.author&&(x.author===myId||isAdm())){const bw=document.createElement('span'); bw.style.cssText='justify-self:end;white-space:nowrap';
         bw.append(editBtn(()=>editDoc({col:'complaints',id:c.id,data:x,title:'고객 클레임 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'partner',label:'거래처',req:true},{k:'item',label:'품번',upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'body',label:'클레임 내용',type:'textarea',req:true}]})));
