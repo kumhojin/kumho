@@ -725,6 +725,8 @@ button.editbtn{margin-right:4px}
       <fieldset class="acc" id="ac-keys"><legend>주요 정보 권한</legend>
         <label><input type="checkbox" value="notice"> 공지 올리기·삭제</label>
         <label><input type="checkbox" value="complaint" checked> 고객 클레임 등록</label>
+        <label><input type="checkbox" value="item"> 품목 정보 수정 (품목명·규격·분류)</label>
+        <label><input type="checkbox" value="priceEdit"> 품목 단가 보기·수정</label>
       </fieldset>
       <div class="sbtns"><button type="button" class="ghost" id="ac-new">새 계정</button><button type="submit" id="ac-save">계정 저장</button></div>
     </form>
@@ -1203,9 +1205,10 @@ button.editbtn{margin-right:4px}
     <p class="hint" id="it-hint">안 쓰는 품목을 ‘미사용’으로 바꾸면 판매(납품) 전표에 넣을 수 없고 품번 추천 목록에서도 빠집니다. 이름이 같은 품목이 여러 개일 때 쓰는 것만 남겨 두면 찾기 쉽습니다. 바꾸기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.</p>
     <label class="drop small" id="it-drop" for="it-file" hidden><input type="file" id="it-file" accept=".xlsx,.xls"><b>전체 품목 엑셀 놓기</b><span>생산품목코드 · 생산품목명 · 규격 · 최근 2년 판매(O/X) — O는 사용, X는 미사용으로 들어갑니다</span></label>
     <div class="row"><input id="it-search" class="grow" placeholder="품목코드, 품목명, 규격, 구분으로 찾기">
+      <select id="it-cat" style="width:auto" aria-label="종류"><option value="">종류: 전체</option><option>제품</option><option>반제품</option><option>재료</option><option>포장품</option><option>부재료</option><option>상품</option><option>금형</option></select>
       <div class="tabs" role="tablist" id="it-tabs"><button type="button" role="tab" data-f="all" aria-selected="true">전체</button><button type="button" role="tab" data-f="on" aria-selected="false">사용 중</button><button type="button" role="tab" data-f="off" aria-selected="false">미사용</button><button type="button" role="tab" data-f="dup" aria-selected="false">같은 이름 여러 개 사용 중</button></div></div>
     <div class="status" id="it-status"></div>
-    <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>구분</th><th>최근 판매일</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
+    <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>종류</th><th>구분</th><th>최근 판매일</th><th class="num pricecell">단가</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
   </section>
 
@@ -1684,6 +1687,7 @@ button.editbtn{margin-right:4px}
     db.collection('trials').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{trials=sn.docs;renderTrials()},()=>{});
     db.collection('claims').orderBy('createdAt','desc').limit(1000).onSnapshot(sn=>{claims=sn.docs;renderClaims();renderCal()},()=>{});
     db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slipsRaw=sn.docs;mergePrices()},()=>{});
+    db.collection('iteminfo').onSnapshot(sn=>{infoMap=new Map(sn.docs.map(d=>[d.id,d.data()])); prodCache=null; onItemsOff()},()=>{});
     db.doc('products/master').onSnapshot(sn=>{setMaster(sn.exists?sn.data():null)},()=>{});
     db.collection('itemoff').onSnapshot(sn=>{offMap=new Map(sn.docs.map(d=>[d.id,d.data()])); onItemsOff()},()=>{});
     db.collection('prices').onSnapshot(sn=>{priceMap=new Map(sn.docs.map(d=>[d.id,d.data()]));mergePrices()},()=>{});
@@ -2230,6 +2234,17 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     [...slBody.children].forEach(tr=>{const inp=tr.querySelector('input[data-k=item]'); const off=sale&&!!inp&&isOff(inp.value);
       tr.classList.toggle('offrow',off); if(inp){if(off) inp.title='미사용 품목 — 납품할 수 없습니다'; else if(inp.title.startsWith('미사용')) inp.title=''}})}
   slBody.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.k==='item') markOffRows()});
+  // 종류: 품목구분·품목그룹·이름으로 자동 분류 (품목 정보 수정에서 바꿀 수 있음)
+  let infoMap=new Map();
+  const CATS=['제품','반제품','재료','포장품','부재료','상품','금형'];
+  const PACK_RE=/비닐|지퍼백|박스|BOX|상자|골판지|파렛트|팔레트|PALLET|TRAY|트레이|봉투|PAD|칸막이|덮개|TOILON|리테이너봉/i;
+  function autoCat(e){const k=e.kind||'', g=e.group||'';
+    if(k==='원재료'||/원재료|분쇄재|스크랩/.test(g)) return '재료';
+    if(k==='부재료') return PACK_RE.test(e.name+' '+e.spec)?'포장품':'부재료';
+    if(g==='금형') return '금형'; if(k==='제품') return '제품'; if(k==='반제품') return '반제품'; if(k==='상품') return '상품'; return ''}
+  function itemPrice(code){const pp=priceMap.get('products'); const v=pp&&pp.map&&pp.map[code]; return v==null||v===''?null:v}
+  function canEditInfo(){return !!me&&can('item')}
+  function canEditPrice(){return !!me&&can('priceEdit')}
   function allItems(){const m=new Map();
     for(const [k,x] of master) m.set(k,{code:k,name:x.name,spec:x.spec,kind:x.kind,group:x.group,last:x.last});
     const add=(code,name,spec)=>{code=normItem(code); if(!code) return; const e=m.get(code)||{code,name:'',spec:''};
@@ -2240,6 +2255,8 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     try{for(const e of stockMap().values()) add(e.item)}catch(e){}
     try{for(const d of slipsRaw){const x=d.data(); if(x.type!=='구매') (x.rows||[]).forEach(o=>add(o.item,o.name,o.spec))}}catch(e){}
     for(const [k,d] of offMap) add(k,d.name,d.spec);
+    for(const [k,d] of infoMap){const e=m.get(k)||{code:k,name:'',spec:''}; ['name','spec','kind','group'].forEach(f=>{if(d[f]!=null) e[f]=d[f]}); if(d.cat) e.cat=d.cat; m.set(k,e)}
+    for(const e of m.values()){e.name=e.name||''; e.spec=e.spec||''; if(!e.cat) e.cat=autoCat(e)}
     return [...m.values()]}
   function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; tb.replaceChildren();
     const items=allItems(), byName=new Map();
@@ -2247,16 +2264,18 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     items.forEach(e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); if(k&&!isOff(e.code)) byName.set(k,(byName.get(k)||0)+1)});
     const dupN=e=>{if(isOff(e.code)) return 1; const k=e.name.replace(/\s+/g,'').toLowerCase(); return k?byName.get(k)||1:1};
     const q=document.getElementById('it-search').value.trim().toLowerCase();
-    let rows=items.filter(e=>(!q||[e.code,e.name,e.spec,e.kind||'',e.group||''].some(v=>String(v).toLowerCase().includes(q)))
+    const cat=document.getElementById('it-cat').value;
+    let rows=items.filter(e=>(!cat||e.cat===cat)&&(!q||[e.code,e.name,e.spec,e.kind||'',e.group||'',e.cat||''].some(v=>String(v).toLowerCase().includes(q)))
       &&(itF==='all'||(itF==='on'&&!isOff(e.code))||(itF==='off'&&isOff(e.code))||(itF==='dup'&&dupN(e)>1)))
       .sort((a,b)=>(a.name||'￿').localeCompare(b.name||'￿')||a.code.localeCompare(b.code));
     const total=rows.length; rows=rows.slice(0,500); const edit=canToggleItems(); document.getElementById('it-drop').hidden=!edit;
     for(const e of rows){const off=isOff(e.code), d=offMap.get(e.code), tr=document.createElement('tr'); tr.className=off?'off':'on';
       const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t; if(cl) td.className=cl; tr.append(td); return td};
       c(e.code,'code'); const nt=c(e.name||'—'); if(dupN(e)>1){const sp=document.createElement('span'); sp.className='pill dup'; sp.textContent=`같은 이름 ${dupN(e)}개 사용 중`; nt.append(sp)}
-      c(e.spec||''); c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
+      c(e.spec||''); c(e.cat||''); c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); {const pv=itemPrice(e.code); c(pv==null?'':Number(pv).toLocaleString('ko-KR'),'num pricecell')} const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
       c(d&&d.by?`${d.by} · ${fmt(d.createdAt)}`:master.has(e.code)?(master.get(e.code).sold?'2년 내 판매':'2년간 판매 없음'):'');
       const a=c(''); a.style.whiteSpace='nowrap';
+      if(canEditInfo()||canEditPrice()){const eb=document.createElement('button'); eb.type='button'; eb.className='ghost'; eb.textContent='정보 수정'; eb.onclick=()=>editItemRow(tr,e); a.append(eb,' ')}
       if(edit){const btn=document.createElement('button'); btn.type='button'; btn.className='ghost'; btn.textContent=off?'사용으로':'미사용으로';
         btn.onclick=async()=>{if(btn.dataset.c!=='1'){btn.dataset.c='1'; btn.textContent=off?'사용 확인':'미사용 확인'; return}
           btn.disabled=true; const stEl=document.getElementById('it-status');
@@ -2328,6 +2347,30 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function autoRows(body){[...body.querySelectorAll('input[data-k=item]')].forEach(i=>{if(i.value.trim()) try{onProdChange(i)}catch(e){}})}
   document.getElementById('sl-partner').addEventListener('change',()=>{if(!canSeePrice()) return;
     [...slBody.querySelectorAll('input[data-k=price]')].forEach(pr=>{if(pr.dataset.auto==='1'){pr.value=''; const it=pr.closest('tr').querySelector('input[data-k=item]'); const p=it&&prodOf(it.value); if(p&&p.code) setAuto(pr,lastPrice(p.code,slipType,document.getElementById('sl-partner').value.trim()))}})});
+  // 품목 정보·단가 수정 (계정 관리에서 허락한 사람만)
+  function editItemRow(tr,e){const info=canEditInfo(), price=canEditPrice(); tr.replaceChildren();
+    const td=document.createElement('td'); td.colSpan=10; tr.append(td);
+    const f=document.createElement('form'); f.className='sform'; f.style.margin='4px 0';
+    const field=(label,val,opt={})=>{const l=document.createElement('label'); l.textContent=label; let i;
+      if(opt.options){i=document.createElement('select'); opt.options.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o||'자동'; i.append(op)})}
+      else {i=document.createElement('input'); if(opt.num){i.type='number'; i.min='0'; i.step='any'}}
+      i.value=val??''; i.disabled=!!opt.dis; l.append(i); f.append(l); return i};
+    const code=document.createElement('b'); code.textContent=e.code; f.append(code);
+    const iName=field('품목명',e.name,{dis:!info}), iSpec=field('규격',e.spec,{dis:!info}), iCat=field('종류',(infoMap.get(e.code)||{}).cat||'',{dis:!info,options:['',...CATS]});
+    const iPrice=price?field('단가',itemPrice(e.code),{num:true}):null;
+    const sb=document.createElement('div'); sb.className='sbtns';
+    const cancel=document.createElement('button'); cancel.type='button'; cancel.className='ghost'; cancel.textContent='취소'; cancel.onclick=()=>renderItems();
+    const save=document.createElement('button'); save.type='submit'; save.textContent='저장'; sb.append(cancel,save); f.append(sb); td.append(f);
+    f.onsubmit=async ev=>{ev.preventDefault(); const st=document.getElementById('it-status'); save.disabled=true;
+      try{if(info&&(iName.value.trim()!==e.name||iSpec.value.trim()!==e.spec||iCat.value!==((infoMap.get(e.code)||{}).cat||'')))
+          await db.collection('iteminfo').doc(e.code).set({...(infoMap.get(e.code)||{}),item:e.code,name:iName.value.trim(),spec:iSpec.value.trim(),cat:iCat.value,by:me.name||me.user,author:myId,createdAt:Date.now()});
+        if(iPrice){const nv=iPrice.value===''?null:Number(iPrice.value), ov=itemPrice(e.code);
+          if(nv!==ov&&!(nv==null&&ov==null)){const cur=priceMap.get('products'); const map={...((cur&&cur.map)||{})}; if(nv==null) delete map[e.code]; else map[e.code]=nv;
+            await db.doc('prices/products').set({...(cur||{}),map,author:(cur&&cur.author)||myId,editedBy:me.name||me.user,updatedAt:Date.now(),createdAt:(cur&&cur.createdAt)||Date.now()})}}
+        st.textContent=`${e.code} 정보를 저장했습니다.`; prodCache=null; renderItems()}
+      catch(err){console.error(err); st.textContent='저장하지 못했습니다. 계정 관리에서 품목 정보·단가 수정 권한을 확인해 주세요.'; save.disabled=false}};
+    iName.focus()}
+  document.getElementById('it-cat').addEventListener('change',renderItems);
   async function itemsUpload(file){const st=document.getElementById('it-status');
     if(!db||!canToggleItems()){st.textContent='전체 품목 올리기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.';return}
     if(!window.XLSX){st.textContent='엑셀 읽기 도구를 불러오지 못했습니다. 새로고침해 주세요.';return}
@@ -2979,10 +3022,10 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(a&&a.role==='worker'){const w=WORK[a.station]||WORK['사상반']; ALLTEAMS.forEach(t=>p.teams[t]=t===w.team?'edit':'none'); p.complaint=false; return p}
     if(!a) return p; if(a.role==='admin'){p.price=true; p.lead=false; p.title='';
       // 관리자: 부서별 권한을 저장해 두었으면 그대로 따름 (저장된 게 없으면 전체 수정)
-      if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false}
-      else {ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.complaint=true}
+      if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit}
+      else {ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.complaint=p.item=p.priceEdit=true}
       return p}
-    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.price=p.lead||!!p.title; return p}
+    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.price=p.lead||!!p.title||p.priceEdit; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
   // 팀장: DB에는 role 'user' + perm.lead=true 로 저장 (기존 부서 권한 규칙을 그대로 씀)
   const EXEC=['사장','전무','상무'];
@@ -3068,7 +3111,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const rows=[...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
       c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
+      {const p=permOf(x); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.complaint&&'클레임',p.item&&'품목 수정'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed&&!(me&&me.user===x.user)){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           setRoleOptions(x.team||'생산',x.role==='admin'); document.getElementById('ac-role').value=roleVal(x); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
@@ -3093,7 +3136,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const perm={teams:{}}; document.querySelectorAll('#ac-perm select').forEach(sel=>perm.teams[sel.dataset.t]=sel.value);
     document.querySelectorAll('#ac-keys input').forEach(i=>perm[i.value]=i.checked);
     const rlSel=document.getElementById('ac-role').value, rl=(rlSel==='lead'||rlSel.startsWith('exec:'))?'user':rlSel, stn=document.getElementById('ac-station').value;
-    perm.lead=rlSel==='lead'; perm.title=rlSel.startsWith('exec:')?rlSel.slice(5):''; perm.price=perm.lead||!!perm.title;
+    perm.lead=rlSel==='lead'; perm.title=rlSel.startsWith('exec:')?rlSel.slice(5):''; perm.price=perm.lead||!!perm.title||!!perm.priceEdit;
     if(document.getElementById('ac-team').value==='본사'&&rl!=='admin'&&!perm.title){st.textContent='본사는 사장 · 전무 · 상무 중에서 골라 주세요.';return}
     const rec={user:u,name:document.getElementById('ac-name').value.trim(),team:rl==='worker'?WORK[stn].team:document.getElementById('ac-team').value,role:rl,station:rl==='worker'?stn:'',perm,
       createdAt:old?old.data().createdAt:Date.now(),updatedAt:Date.now()};
