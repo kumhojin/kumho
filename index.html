@@ -585,6 +585,25 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
 .frbsteps legend{font-size:12px;color:var(--muted);padding:0 4px}
 .frbsteps select,.frbsteps input{padding:5px 7px;font-size:13px}
 @media (max-width:760px){.frbform .g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+/* 품질 · 시험사출 */
+.trtable{min-width:1000px;font-size:13px}
+.trtable th{font-size:12px;white-space:nowrap;color:var(--muted);font-weight:600;padding:8px 6px}
+.trtable td{padding:8px 6px;vertical-align:top}
+.trtable tbody tr{cursor:pointer}
+.trtable tbody tr:hover td{background:var(--bg)}
+.trtable tbody tr.cur td{background:var(--accent-soft)}
+.trtable .nowrap{white-space:nowrap}
+.trtable .note{min-width:200px;color:var(--muted);white-space:pre-wrap}
+.rs{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:999px;white-space:nowrap;border:1px solid}
+.rs-합격{color:var(--ok);border-color:var(--ok);background:var(--ok-soft)}
+.rs-불합격{color:var(--bad);border-color:var(--bad);background:var(--bad-soft)}
+.rs-조건부{color:var(--accent);border-color:var(--accent);background:var(--accent-soft)}
+.rs-재시험,.rs-진행중{color:var(--muted);border-color:var(--line)}
+.trbar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between}
+.trbar input{max-width:260px}
+.trcond{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 10px}
+@media (max-width:760px){.trcond{grid-template-columns:repeat(3,minmax(0,1fr))}}
 </style>
 
 <script>document.body.classList.add('locked')</script>
@@ -848,6 +867,51 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
     <div class="empty" id="rc-empty">이 기간에 비교할 기록이 없습니다.</div>
   </section>
 
+  <section class="panel" id="trialbox" aria-labelledby="h-trial">
+    <h2 id="h-trial">시험사출 <span class="tag">신규 제품 · 금형 시험 기록</span></h2>
+    <div class="trbar"><div class="frbsum" id="tr-sum"></div><input id="tr-q" placeholder="품번 · 품명 · 금형 · 거래처 찾기" autocomplete="off"></div>
+    <div class="scroll"><table class="rules trtable"><thead><tr><th>시험일</th><th>차수</th><th>품번 / 품명</th><th>거래처</th><th>금형</th><th>호기</th><th>원료</th><th>사출 조건</th><th>수량</th><th>결과</th><th>문제점 · 개선 사항</th><th>담당</th></tr></thead><tbody id="tr-list"></tbody></table></div>
+    <div class="empty" id="tr-empty" hidden>시험사출 기록이 없습니다.</div>
+    <form id="trform" data-write class="frbform">
+      <div class="row" style="justify-content:space-between"><b id="tr-ftitle">새 시험사출 기록</b><span class="row"><button type="button" class="ghost" id="tr-copy" hidden>다음 차수로 복사</button><button type="button" class="ghost" id="tr-new">새로 쓰기</button></span></div>
+      <div class="g4">
+        <label>시험일<input id="t-date" type="date" required></label>
+        <label>차수<input id="t-round" maxlength="10" placeholder="T1, 1차"></label>
+        <label>품번<input id="t-item" maxlength="40" list="s-items" required></label>
+        <label>품명<input id="t-name" maxlength="40"></label>
+        <label>거래처<input id="t-partner" maxlength="30" list="sl-partners"></label>
+        <label>금형 번호<input id="t-mold" maxlength="30"></label>
+        <label>호기<input id="t-mc" maxlength="20" placeholder="3호기"></label>
+        <label>원료 (수지)<input id="t-resin" maxlength="40" placeholder="PA66 GF30"></label>
+      </div>
+      <div class="subh" style="font-size:13px;margin:0">사출 조건</div>
+      <div class="trcond">
+        <label>실린더 온도 (℃)<input id="t-temp" maxlength="40" placeholder="280/275/270"></label>
+        <label>금형 온도 (℃)<input id="t-mtemp" maxlength="20"></label>
+        <label>사출 압력<input id="t-pres" maxlength="20"></label>
+        <label>사출 속도<input id="t-speed" maxlength="20"></label>
+        <label>보압 · 시간<input id="t-hold" maxlength="20"></label>
+        <label>사이클 (초)<input id="t-cycle" maxlength="10" inputmode="decimal"></label>
+        <label>건조 (℃ · 시간)<input id="t-dry" maxlength="20" placeholder="80℃ · 4h"></label>
+        <label>형체력 (톤)<input id="t-clamp" maxlength="10" inputmode="decimal"></label>
+        <label>계량 · 배압<input id="t-meter" maxlength="20"></label>
+        <label>제품 중량 (g)<input id="t-weight" maxlength="10" inputmode="decimal"></label>
+        <label>런너 포함 (g)<input id="t-shot" maxlength="10" inputmode="decimal"></label>
+        <label>캐비티 수<input id="t-cav" maxlength="5" inputmode="numeric" placeholder="1×2"></label>
+      </div>
+      <fieldset class="acc" id="t-defects"><legend>성형 불량 (해당 항목 체크)</legend></fieldset>
+      <div class="g4">
+        <label>시험 수량<input id="t-qty" type="number" min="0" inputmode="numeric"></label>
+        <label>양품 수량<input id="t-good" type="number" min="0" inputmode="numeric"></label>
+        <label>결과<select id="t-result"><option>진행중</option><option>합격</option><option>조건부</option><option>재시험</option><option>불합격</option></select></label>
+        <label>담당<input id="t-owner" maxlength="20"></label>
+        <label class="wide">문제점<textarea id="t-issue" maxlength="500" placeholder="예: 게이트부 미성형, 웰드라인"></textarea></label>
+        <label class="wide">개선 사항 · 다음 조치<textarea id="t-fix" maxlength="500" placeholder="예: 금형 온도 10℃ 상향 후 2차 시험"></textarea></label>
+        <label>다음 시험 예정일<input id="t-next" type="date"></label>
+      </div>
+      <div class="row" style="justify-content:space-between"><span class="status" id="tr-status"></span><span class="row"><button type="button" class="ghost" id="tr-del" hidden>삭제</button><button type="submit" id="tr-save">저장</button></span></div>
+    </form>
+  </section>
   <section class="panel" id="claimbox" aria-labelledby="h-claim">
     <h2 id="h-claim">클레임 현황 <span class="tag">신속 대응 추적표 · Fast Response Tracking</span></h2>
     <div class="frbsum" id="frb-sum"></div>
@@ -1308,12 +1372,12 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
       ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
     {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
-    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
+    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['trial','시험사출','품질',['trialbox']],['nqc','부서 공지','품질',['notice']]]},
     {g:'고객대응',items:[['claim','클레임 현황','고객대응',['claimbox']]]},
     {g:'계발',items:[['ndev','부서 공지','계발',['notice','soon']]]},
     {g:'총무팀',items:[['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
-  const SECTIONS=['claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
+  const SECTIONS=['trialbox','claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
   const side=document.getElementById('side');
   const mq=window.matchMedia('(max-width:860px)');
   let openG=new Set(); try{JSON.parse(localStorage.getItem('openGroups')||'[]').forEach(x=>openG.add(x))}catch(e){}
@@ -1478,6 +1542,7 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
     db.collection('plans').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{plans=sn.docs;renderPlans();try{renderBoard()}catch(e){}},()=>{});
     db.collection('complaints').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{complaints=sn.docs;renderCal()},()=>{});
     db.collection('events').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{events=sn.docs;renderCal()},()=>{});
+    db.collection('trials').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{trials=sn.docs;renderTrials()},()=>{});
     db.collection('claims').orderBy('createdAt','desc').limit(1000).onSnapshot(sn=>{claims=sn.docs;renderClaims()},()=>{});
     db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slipsRaw=sn.docs;mergePrices()},()=>{});
     db.collection('prices').onSnapshot(sn=>{priceMap=new Map(sn.docs.map(d=>[d.id,d.data()]));mergePrices()},()=>{});
@@ -2420,9 +2485,52 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       st.textContent='저장했습니다.'}catch(err){st.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}});
   fv('frb-del').onclick=async()=>{const b=fv('frb-del'); if(!frbCur) return; if(b.dataset.c!=='1'){b.dataset.c='1'; b.textContent='삭제 확인'; return}
     try{await db.collection('claims').doc(frbCur).delete(); frbEdit(null); fv('frb-status').textContent='삭제했습니다.'}catch(e){fv('frb-status').textContent='지우지 못했습니다.'}};
+
+  // ===== 품질 · 시험사출 =====
+  let trials=[], trCur=null; const TF=['date','round','item','name','partner','mold','mc','resin','temp','mtemp','pres','speed','hold','cycle','dry','clamp','meter','weight','shot','cav','qty','good','result','owner','issue','fix','next'];
+  const tg=id=>document.getElementById(id);
+  const DEFECTS=['미성형','버(BURR)','싱크마크','웰드라인','휨·변형','은줄(실버)','기포·보이드','흑점·이물','가스 탄 자국','플로우마크','치수 불량','이형 불량'];
+  DEFECTS.forEach(dn=>{const l=document.createElement('label'); const c=document.createElement('input'); c.type='checkbox'; c.value=dn; l.append(c,document.createTextNode(dn)); tg('t-defects').append(l)});
+  const getDef=()=>[...tg('t-defects').querySelectorAll('input:checked')].map(c=>c.value);
+  const setDef=a=>tg('t-defects').querySelectorAll('input').forEach(c=>c.checked=(a||[]).includes(c.value));
+  function renderTrials(){const tb=tg('tr-list'); if(!tb) return; tb.replaceChildren();
+    const q=(tg('tr-q').value||'').trim().toLowerCase();
+    const all=trials.map(c=>({id:c.id,x:c.data()})).sort((a,b)=>(b.x.date||'').localeCompare(a.x.date||'')||(b.x.createdAt||0)-(a.x.createdAt||0));
+    const list=q?all.filter(({x})=>[x.item,x.name,x.mold,x.partner,x.resin,x.owner,(x.defects||[]).join(' ')].join(' ').toLowerCase().includes(q)):all;
+    list.forEach(({id,x})=>{const tr=document.createElement('tr'); if(id===trCur) tr.className='cur';
+      const td=(t,c)=>{const e=document.createElement('td'); if(c) e.className=c; if(t instanceof Node) e.append(t); else e.textContent=t??''; tr.append(e)};
+      td((x.date||'').slice(5).replace('-','/'),'nowrap'); td(x.round||'','nowrap');
+      const pn=document.createElement('div'); pn.textContent=x.item||''; if(x.name){const sm=document.createElement('div'); sm.style.cssText='font-size:12px;color:var(--muted)'; sm.textContent=x.name; pn.append(sm)} td(pn);
+      td(x.partner||''); td(x.mold||'','nowrap'); td(x.mc||'','nowrap'); td(x.resin||'');
+      td([x.temp&&'실린더 '+x.temp+'℃',x.mtemp&&'금형 '+x.mtemp+'℃',x.pres&&'압력 '+x.pres,x.speed&&'속도 '+x.speed,x.hold&&'보압 '+x.hold,x.cycle&&'사이클 '+x.cycle+'초',x.dry&&'건조 '+x.dry,x.clamp&&'형체력 '+x.clamp+'t',x.weight&&'중량 '+x.weight+'g',x.cav&&'캐비티 '+x.cav].filter(Boolean).join(' · '),'note');
+      td(x.qty!=null&&x.qty!==''?(x.good!=null&&x.good!==''?`${x.good}/${x.qty}`:String(x.qty)):'','nowrap');
+      const rs=document.createElement('span'); rs.className='rs rs-'+(x.result||'진행중'); rs.textContent=x.result||'진행중'; td(rs);
+      td([(x.defects||[]).length?'['+x.defects.join(', ')+']':'',x.issue,x.fix&&'→ '+x.fix].filter(Boolean).join('\n'),'note'); td(x.owner||'','nowrap');
+      tr.onclick=()=>trEdit(id,x); tb.append(tr)});
+    tg('tr-empty').hidden=!!list.length;
+    const sum=tg('tr-sum'); sum.replaceChildren(); const cnt=r=>all.filter(({x})=>(x.result||'진행중')===r).length;
+    [['전체',all.length],['진행중',cnt('진행중')+cnt('재시험')],['합격',cnt('합격')+cnt('조건부')],['불합격',cnt('불합격')]].forEach(([l,n])=>{const sp=document.createElement('span'); sp.textContent=l+' '; const b=document.createElement('b'); b.textContent=n+'건'; sp.append(b); sum.append(sp)})}
+  tg('tr-q').addEventListener('input',renderTrials);
+  function trEdit(id,x){trCur=id; x=x||{}; TF.forEach(k=>{const e=tg('t-'+k); e.value=x[k]??(k==='result'?'진행중':'')}); setDef(x.defects);
+    if(!id&&!x.date) tg('t-date').value=todayISO;
+    tg('tr-ftitle').textContent=id?`${x.item||''} ${x.round||''} 수정`:'새 시험사출 기록'; tg('tr-del').hidden=!id; tg('tr-copy').hidden=!id; tg('tr-del').dataset.c=''; tg('tr-del').textContent='삭제'; tg('tr-status').textContent='';
+    renderTrials(); if(id) tg('trform').scrollIntoView({behavior:'smooth',block:'start'})}
+  tg('tr-new').onclick=()=>trEdit(null);
+  tg('tr-copy').onclick=()=>{const c=trials.find(t=>t.id===trCur); if(!c) return; const x={...c.data()};
+    const m=String(x.round||'').match(/(\d+)/); x.round=m?String(x.round).replace(m[1],Number(m[1])+1):''; x.date=x.next||todayISO; x.next=''; x.result='진행중'; x.qty=''; x.good=''; x.issue=''; x.fix=''; x.defects=[];
+    trEdit(null,x); tg('tr-status').textContent='조건을 복사했습니다. 바뀐 값만 고치고 저장하세요.'};
+  tg('trform').addEventListener('submit',async e=>{e.preventDefault(); const st=tg('tr-status');
+    if(!db||!canEditTeam('품질')){st.textContent='품질 수정 권한이 있어야 저장할 수 있습니다.';return}
+    const rec={}; TF.forEach(k=>{let v=tg('t-'+k).value.trim(); if((k==='qty'||k==='good')&&v!=='') v=Number(v); rec[k]=v}); rec.item=String(rec.item).toUpperCase(); rec.defects=getDef(); rec.updatedBy=myId; rec.updatedAt=Date.now();
+    try{if(trCur){const old=trials.find(c=>c.id===trCur); await db.collection('trials').doc(trCur).set({...(old?old.data():{}),...rec})}
+      else{rec.createdAt=Date.now(); rec.author=myId; const r=await db.collection('trials').add(rec); trCur=r.id}
+      st.textContent='저장했습니다.'; tg('tr-del').hidden=false; tg('tr-copy').hidden=false}catch(err){st.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}});
+  tg('tr-del').onclick=async()=>{const b=tg('tr-del'); if(!trCur) return; if(b.dataset.c!=='1'){b.dataset.c='1'; b.textContent='삭제 확인'; return}
+    try{await db.collection('trials').doc(trCur).delete(); trEdit(null); tg('tr-status').textContent='삭제했습니다.'}catch(e){tg('tr-status').textContent='지우지 못했습니다.'}};
   // 고객 클레임 달력
   let complaints=[], events=[], calY=d.getFullYear(), calM=d.getMonth(), calSel=null;
   const todayISO=iso(d);
+  try{if(!tg('t-date').value) tg('t-date').value=todayISO}catch(e){}
   // 한국 공휴일 (보라색 표시). 새 해가 오면 여기에 추가
   const HOL={};
   const HOLSRC={2025: "01-01 신정|01-27 임시공휴일|01-28 설날 연휴|01-29 설날|01-30 설날 연휴|03-01 삼일절|03-03 대체공휴일|05-01 근로자의 날|05-05 어린이날·부처님오신날|05-06 대체공휴일|06-03 대통령 선거|06-06 현충일|08-15 광복절|10-03 개천절|10-05 추석 연휴|10-06 추석|10-07 추석 연휴|10-08 대체공휴일|10-09 한글날|12-25 크리스마스", 2026: "01-01 신정|02-16 설날 연휴|02-17 설날|02-18 설날 연휴|03-01 삼일절|03-02 대체공휴일|05-01 노동절|05-05 어린이날|05-24 부처님오신날|05-25 대체공휴일|06-03 지방선거|06-06 현충일|07-17 제헌절|08-15 광복절|08-17 대체공휴일|09-24 추석 연휴|09-25 추석|09-26 추석 연휴|10-03 개천절|10-05 대체공휴일|10-09 한글날|12-25 크리스마스", 2027: "01-01 신정|02-06 설날 연휴|02-07 설날|02-08 설날 연휴|02-09 대체공휴일|03-01 삼일절|05-01 노동절|05-03 대체공휴일|05-05 어린이날|05-13 부처님오신날|06-06 현충일|07-17 제헌절|07-19 대체공휴일|08-15 광복절|08-16 대체공휴일|09-14 추석 연휴|09-15 추석|09-16 추석 연휴|10-03 개천절|10-04 대체공휴일|10-09 한글날|10-11 대체공휴일|12-25 크리스마스|12-27 대체공휴일", 2028: "01-01 신정|01-26 설날 연휴|01-27 설날|01-28 설날 연휴|03-01 삼일절|04-12 국회의원 선거|05-01 노동절|05-02 부처님오신날|05-05 어린이날|06-06 현충일|07-17 제헌절|08-15 광복절|10-02 추석 연휴|10-03 추석·개천절|10-04 추석 연휴|10-05 대체공휴일|10-09 한글날|12-25 크리스마스"};
