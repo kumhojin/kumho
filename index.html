@@ -1558,7 +1558,7 @@ button.editbtn{margin-right:4px}
     const ok=document.createElement('button'); ok.type='button'; ok.textContent='변경 확인'; a.append(st,no,ok); edBox.append(a);
     const close=()=>{edm.hidden=true; document.removeEventListener('keydown',esc)}; const esc=e=>{if(e.key==='Escape'&&!edBox.querySelector('.difft')) close()};
     no.onclick=close; document.addEventListener('keydown',esc);
-    ok.onclick=async()=>{const vals={}; o.fields.forEach(f=>{let v=inp[f.k].value; v=typeof v==='string'?v.trim():v; if(f.type==='number') v=v===''?null:Number(v); if(f.upper) v=String(v||'').toUpperCase(); vals[f.k]=v});
+    ok.onclick=async()=>{if(isWorker()&&!canTouch(x)){st.textContent='작업자는 오늘 입력한 내역만 고칠 수 있습니다.';return} const vals={}; o.fields.forEach(f=>{let v=inp[f.k].value; v=typeof v==='string'?v.trim():v; if(f.type==='number') v=v===''?null:Number(v); if(f.upper) v=String(v||'').toUpperCase(); vals[f.k]=v});
       if(o.fields.some(f=>f.req&&(vals[f.k]===''||vals[f.k]==null))){st.textContent='필수 항목을 채워 주세요.';return}
       const ch=diffOf(o.fields,view,vals); if(!ch.length){st.textContent='바뀐 내용이 없습니다.';return}
       document.removeEventListener('keydown',esc);
@@ -1569,6 +1569,13 @@ button.editbtn{margin-right:4px}
     edm.hidden=false; setTimeout(()=>{const f=edBox.querySelector('input,select,textarea'); if(f) f.focus()},0)}
   function toastMsg(t){const el=document.getElementById('toast'); if(!el) return; el.textContent=t; el.hidden=false; clearTimeout(toastMsg._t); toastMsg._t=setTimeout(()=>el.hidden=true,3000)}
   const isAdm=()=>{try{return !!me&&me.role==='admin'}catch(e){return false}};
+  // 작업자는 '오늘 입력한 것'만 고치거나 지울 수 있음
+  const dayOf=t=>{const x=new Date(t); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
+  // 작업자는 오늘 자기가 입력한 것만 보임
+  function wOnlyToday(x){let w=false; try{w=isWorker()}catch(e){} if(!w) return true; const t=x.addedAt||x.createdAt; return x.author===myId&&!!t&&dayOf(t)===dayOf(Date.now())}
+  function canTouch(x){if(!x||!x.author) return false; let w=false; try{w=isWorker()}catch(e){}
+    if(isAdm()) return true; if(x.author!==myId) return false; if(!w) return true;
+    const t=x.addedAt||x.createdAt; return !!t&&dayOf(t)===dayOf(Date.now())}
   function editBtn(fn){const b=document.createElement('button'); b.type='button'; b.className='ghost editbtn'; b.textContent='수정'; b.onclick=e=>{e.stopPropagation(); fn()}; return b}
   function fmt(ts){const t=new Date(ts);return `${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`}
   async function render(){
@@ -2237,7 +2244,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(bad.length){xStatus.textContent=`${bad.join(', ')}번 줄에 품번, LOT, 수량을 넣어 주세요.`;return}
     if(!rows.length){xStatus.textContent='입력한 줄이 없습니다.';return}
     const btn=document.getElementById('x-save'); btn.disabled=true; xStatus.textContent='저장 중…';
-    try{const now=Date.now(); for(const o of rows){const ref=await db.collection('transfers').add({date,item:o.item,lot:o.lot,qty:o.qty>0?o.qty:0,bad:o.bad,memo:o.memo||'',author:myId,createdAt:now});
+    try{const now=Date.now(); for(const o of rows){const ref=await db.collection('transfers').add({date,item:o.item,lot:o.lot,qty:o.qty>0?o.qty:0,bad:o.bad,memo:o.memo||'',author:myId,createdAt:now,addedAt:now});
         if(o.bad>0) await db.collection('records').add({kind:'불량',loc:'',date,item:o.item,lot:o.lot,qty:o.bad,unit:'EA',memo:'사상반 입력',xfer:ref.id,author:myId,createdAt:now})}
       xBody.replaceChildren(); xAdd(5); xStatus.textContent=`${rows.length}개 품목을 저장했습니다. 자재가 받은 수량과 자동으로 비교됩니다.`}
     catch(err){xStatus.textContent='저장하지 못했습니다. 보기 전용 권한이면 관리자에게 편집 권한을 요청하세요.'}
@@ -2246,10 +2253,10 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   // ===== 내가 입력한 내역 (날짜별) — 작업자가 그날 한 일을 한눈에 =====
   const wDay={};
   function wToday(boxId,label,rows,cols,sums){const box=document.getElementById(boxId); if(!box) return;
-    const day=wDay[boxId]||todayISO; box.replaceChildren();
+    let wk=false; try{wk=isWorker()}catch(e){} const day=wk?todayISO:(wDay[boxId]||todayISO); box.replaceChildren();
     const h=document.createElement('div'); h.className='wh'; const t=document.createElement('b'); t.textContent=(day===todayISO?'오늘 ':`${Number(day.slice(5,7))}월 ${Number(day.slice(8))}일 `)+label;
     const di=document.createElement('input'); di.type='date'; di.value=day; di.max=todayISO; di.setAttribute('aria-label','날짜 선택'); di.onchange=()=>{wDay[boxId]=di.value||todayISO; wRender()};
-    h.append(t,di); box.append(h);
+    h.append(t); if(!wk) h.append(di); box.append(h);
     const list=rows(day);
     if(!list.length){const p=document.createElement('div'); p.className='none'; p.textContent='이 날 입력한 내역이 없습니다.'; box.append(p); return}
     const sm=document.createElement('div'); sm.className='wsum'; sums(list).forEach(([l,v])=>{const sp=document.createElement('span'); sp.textContent=l+' '; const b=document.createElement('b'); b.textContent=v; sp.append(b); sm.append(sp)}); box.append(sm);
@@ -2264,12 +2271,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     wToday('rq-today','내가 한 재료 요청',d=>mineBy(reqs,x=>iso(new Date(x.createdAt))===d),x=>[[x.item],[nf(x.qty)+' '+(x.unit||''),'num'],[x.status||'요청']],
       l=>[['요청',l.length+'건'],['처리 완료',l.filter(x=>x.status==='완료').length+'건']]);
   }catch(e){}}
-  async function renderXfers(){wRender(); const list=document.getElementById('x-list'); list.replaceChildren(); const mine=(isWorker()?xfers.filter(s=>s.data().author===myId):xfers).slice(0,50);
+  async function renderXfers(){wRender(); const list=document.getElementById('x-list'); list.replaceChildren(); const mine=xfers.filter(s=>wOnlyToday(s.data())).slice(0,50);
     document.getElementById('x-empty').hidden=mine.length>0;
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
       c(x.date,'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(Number(x.bad||0)?Number(x.bad).toLocaleString('ko-KR'):'—','num'); c(x.memo); c((ps[x.author]&&ps[x.author].name)||'직원');
-      const a=c(''); if(x.author&&(x.author===myId||isAdm())){a.style.whiteSpace='nowrap';
+      const a=c(''); if(!canTouch(x)&&x.author===myId){a.textContent='지난 기록'; a.style.cssText='font-size:12px;color:var(--muted);white-space:nowrap'; a.title='작업자는 오늘 입력한 내역만 고칠 수 있습니다. 지난 기록은 관리자에게 요청하세요.'} if(canTouch(x)){a.style.whiteSpace='nowrap';
         a.append(editBtn(()=>editDoc({col:'transfers',id:s.id,data:x,title:'자재로 보낸 내역 수정',note:'불량 수량을 바꾸면 불량 LOT 기록도 함께 바뀝니다.',
           fields:[{k:'date',label:'일자',type:'date',req:true},{k:'item',label:'품번',req:true,upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number',req:true},{k:'bad',label:'불량 수량',type:'number'},{k:'memo',label:'메모',wide:true}],
           after:async(n)=>{const q=await db.collection('records').where('xfer','==',s.id).get(); const bad=Number(n.bad)||0;
@@ -2440,12 +2447,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function renderReqs(){
     wRender();
     // 생산: 최근 요청
-    const rl=document.getElementById('rq-list'); rl.replaceChildren(); const mine=(isWorker()?reqs.filter(r=>r.data().author===myId):reqs).slice(0,40);
+    const rl=document.getElementById('rq-list'); rl.replaceChildren(); const mine=reqs.filter(r=>wOnlyToday(r.data())).slice(0,40);
     document.getElementById('rq-empty').hidden=mine.length>0;
     const dl=document.getElementById('rq-items'); dl.replaceChildren(); [...new Set(reqs.map(r=>r.data().item).filter(Boolean))].slice(0,60).forEach(v=>{const o=document.createElement('option');o.value=v;dl.append(o)});
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
       c(fmtT(x.createdAt),'num'); c(x.item); c(`${Number(x.qty).toLocaleString('ko-KR')} ${x.unit||''}`,'num'); c(x.need||''); c(reqWho(x)); stPill(c(''),x.status);
-      const a=c(''); if(x.author===myId&&x.status==='요청'){const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='취소';
+      const a=c(''); if(x.author===myId&&x.status==='요청'&&canTouch(x)){const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='취소';
         b.onclick=async()=>{if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='취소 확인';return} try{await db.collection('requests').doc(s.id).update({status:'취소',doneAt:Date.now()})}catch(e){rqStatus.textContent='취소하지 못했습니다.'}}; a.append(b)}
       rl.append(tr)}
     // 자재: 요청 확인
@@ -2527,17 +2534,17 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!rows.length){rvStatus.textContent='입력한 줄이 없습니다.';return}
     const btn=document.getElementById('rv-save'); btn.disabled=true; rvStatus.textContent='저장 중…';
     try{const t=new Date(date+'T12:00:00').getTime(), at=isNaN(t)?Date.now():t;
-      for(const o of rows) await db.collection('stock').add({item:o.item,lot:o.lot,qty:o.qty,memo:'생산에서 받음'+(o.memo?' · '+o.memo:''),src:'recv',date,author:myId,createdAt:at});
+      for(const o of rows) await db.collection('stock').add({item:o.item,lot:o.lot,qty:o.qty,memo:'생산에서 받음'+(o.memo?' · '+o.memo:''),src:'recv',date,author:myId,createdAt:at,addedAt:Date.now()});
       rvBody.replaceChildren(); rvAdd(5); rvStatus.textContent=`${rows.length}개 품목을 저장했습니다. 사상반이 보낸 수량과 자동으로 비교됩니다.`}
     catch(err){rvStatus.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}
     btn.disabled=false});
   async function renderRecv(){wRender(); const list=document.getElementById('rv-list'); if(!list) return; list.replaceChildren();
-    const mine=moves.filter(s=>{const x=s.data(); return x.src==='recv'&&(!isWorker()||x.author===myId)}).slice(0,50);
+    const mine=moves.filter(s=>{const x=s.data(); return x.src==='recv'&&wOnlyToday(x)}).slice(0,50);
     document.getElementById('rv-empty').hidden=mine.length>0;
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
       c(x.date||iso(new Date(x.createdAt)),'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(String(x.memo||'').replace(/^생산에서 받음( · )?/,'')); c((ps[x.author]&&ps[x.author].name)||'직원');
-      const a=c(''); if(x.author&&(x.author===myId||isAdm())){a.style.whiteSpace='nowrap';
+      const a=c(''); if(!canTouch(x)&&x.author===myId){a.textContent='지난 기록'; a.style.cssText='font-size:12px;color:var(--muted);white-space:nowrap'; a.title='작업자는 오늘 입력한 내역만 고칠 수 있습니다. 지난 기록은 관리자에게 요청하세요.'} if(canTouch(x)){a.style.whiteSpace='nowrap';
         a.append(editBtn(()=>editDoc({col:'stock',id:s.id,data:x,title:'생산에서 받은 내역 수정',
           view:v=>({...v,date:v.date||iso(new Date(v.createdAt)),memo:String(v.memo||'').replace(/^생산에서 받음( · )?/,'')}),
           save:v=>({...v,memo:'생산에서 받음'+(v.memo?' · '+v.memo:'')}),
