@@ -604,6 +604,27 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
 .trbar input{max-width:260px}
 .trcond{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 10px}
 @media (max-width:760px){.trcond{grid-template-columns:repeat(3,minmax(0,1fr))}}
+
+/* 수정 창 · 변경 확인 */
+.edm{position:fixed;inset:0;z-index:65;display:grid;place-items:center;background:rgba(0,0,0,.45);padding:16px}
+.edm[hidden]{display:none}
+.edm .box{width:min(560px,100%);max-height:calc(100dvh - 32px);overflow:auto;background:var(--surface);color:var(--ink);border-radius:10px;padding:20px;display:grid;gap:14px;box-shadow:0 16px 48px rgba(0,0,0,.3)}
+.edm h3{margin:0;font-family:var(--f-display);font-size:17px}
+.edm .sub{margin:-8px 0 0;color:var(--muted);font-size:13px}
+.edm .fg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.edm label{display:grid;gap:4px;font-size:12px;color:var(--muted);min-width:0}
+.edm label.wide{grid-column:1/-1}
+.edm .acts{display:flex;justify-content:flex-end;gap:8px;align-items:center}
+.edm .acts .status{margin-right:auto}
+.difft{width:100%;border-collapse:collapse;font-size:14px}
+.difft th{font-size:12px;color:var(--muted);text-align:left;font-weight:600;padding:6px 8px;border-bottom:1px solid var(--line)}
+.difft td{padding:8px;border-bottom:1px solid var(--line);vertical-align:top;overflow-wrap:anywhere}
+.difft td.o{color:var(--bad);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--bad) 50%,transparent)}
+.difft td.n{color:var(--ok);font-weight:600}
+.difft td.ar{color:var(--muted);width:18px;padding-inline:0}
+.edwarn{font-size:13px;padding:10px 12px;border-radius:6px;background:var(--accent-soft);color:var(--ink);border-left:3px solid var(--accent)}
+button.editbtn{margin-right:4px}
+@media (max-width:520px){.edm .fg{grid-template-columns:minmax(0,1fr)}}
 </style>
 
 <script>document.body.classList.add('locked')</script>
@@ -1487,6 +1508,52 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
         empty=document.getElementById('nempty'), status=document.getElementById('n-status'),
         submit=document.getElementById('n-submit');
   let db=null,user=null,docs=[];
+
+  // ===== 공통: 기록 수정 창 + 변경 확인 =====
+  const edm=document.createElement('div'); edm.className='edm'; edm.hidden=true; edm.setAttribute('role','dialog'); edm.setAttribute('aria-modal','true');
+  edm.innerHTML='<div class="box"></div>'; document.body.append(edm); const edBox=edm.firstChild;
+  const showVal=v=>(v===''||v==null)?'(비어 있음)':String(v);
+  // 바뀐 항목 [{label,old,new}]를 보여주고 확인을 받음 → true/false
+  function confirmDiff(title,changes,note){return new Promise(res=>{
+    edBox.replaceChildren(); const h=document.createElement('h3'); h.textContent='변경 내용을 확인해 주세요';
+    const sub=document.createElement('p'); sub.className='sub'; sub.textContent=title; edBox.append(h,sub);
+    const t=document.createElement('table'); t.className='difft'; t.innerHTML='<thead><tr><th>항목</th><th>이전</th><th></th><th>변경 후</th></tr></thead>'; const tb=document.createElement('tbody');
+    changes.forEach(c=>{const tr=document.createElement('tr'); [[c.label,''],[showVal(c.old),'o'],['→','ar'],[showVal(c.new),'n']].forEach(([v,cl])=>{const td=document.createElement('td'); td.textContent=v; if(cl) td.className=cl; tr.append(td)}); tb.append(tr)});
+    t.append(tb); edBox.append(t);
+    if(note){const w=document.createElement('div'); w.className='edwarn'; w.textContent=note; edBox.append(w)}
+    const a=document.createElement('div'); a.className='acts'; const no=document.createElement('button'); no.type='button'; no.className='ghost'; no.textContent='취소';
+    const ok=document.createElement('button'); ok.type='button'; ok.textContent=`${changes.length}개 항목 변경 저장`; a.append(no,ok); edBox.append(a);
+    const done=v=>{edm.hidden=true; document.removeEventListener('keydown',esc); res(v)}; const esc=e=>{if(e.key==='Escape') done(false)};
+    no.onclick=()=>done(false); ok.onclick=()=>done(true); document.addEventListener('keydown',esc); edm.hidden=false; ok.focus()})}
+  // 두 객체를 필드 목록으로 비교
+  function diffOf(fields,oldX,newX){return fields.filter(f=>String(oldX[f.k]??'')!==String(newX[f.k]??'')).map(f=>({label:f.label,old:oldX[f.k],new:newX[f.k]}))}
+  // 수정 창: o={col,id,data,title,fields:[{k,label,type,opts,wide}],view?(x)→화면값,save?(vals,x)→저장값,after?(newX,oldX)}
+  function editDoc(o){const x=o.data||{}, view=o.view?o.view(x):x;
+    edBox.replaceChildren(); const h=document.createElement('h3'); h.textContent=o.title||'수정'; edBox.append(h);
+    const fg=document.createElement('div'); fg.className='fg'; const inp={};
+    o.fields.forEach(f=>{const l=document.createElement('label'); if(f.wide||f.type==='textarea') l.className='wide'; l.append(f.label);
+      let e; if(f.type==='textarea'){e=document.createElement('textarea'); e.maxLength=1000}
+      else if(f.type==='select'){e=document.createElement('select'); (f.opts||[]).forEach(v=>{const op=document.createElement('option'); op.value=v; op.textContent=v; e.append(op)})}
+      else{e=document.createElement('input'); e.type=f.type||'text'; if(f.type==='number'){e.inputMode='numeric'; e.step='any'}}
+      e.value=view[f.k]??''; inp[f.k]=e; l.append(e); fg.append(l)});
+    edBox.append(fg);
+    const a=document.createElement('div'); a.className='acts'; const st=document.createElement('span'); st.className='status';
+    const no=document.createElement('button'); no.type='button'; no.className='ghost'; no.textContent='취소';
+    const ok=document.createElement('button'); ok.type='button'; ok.textContent='변경 확인'; a.append(st,no,ok); edBox.append(a);
+    const close=()=>{edm.hidden=true; document.removeEventListener('keydown',esc)}; const esc=e=>{if(e.key==='Escape'&&!edBox.querySelector('.difft')) close()};
+    no.onclick=close; document.addEventListener('keydown',esc);
+    ok.onclick=async()=>{const vals={}; o.fields.forEach(f=>{let v=inp[f.k].value; v=typeof v==='string'?v.trim():v; if(f.type==='number') v=v===''?null:Number(v); if(f.upper) v=String(v||'').toUpperCase(); vals[f.k]=v});
+      if(o.fields.some(f=>f.req&&(vals[f.k]===''||vals[f.k]==null))){st.textContent='필수 항목을 채워 주세요.';return}
+      const ch=diffOf(o.fields,view,vals); if(!ch.length){st.textContent='바뀐 내용이 없습니다.';return}
+      document.removeEventListener('keydown',esc);
+      if(!await confirmDiff(o.title||'수정',ch,o.note)){editDoc({...o}); o.fields.forEach(f=>{const el=edBox.querySelectorAll('input,select,textarea')[o.fields.indexOf(f)]; if(el) el.value=vals[f.k]??''}); return}
+      const saveX=o.save?o.save(vals,x):vals; const newX={...x,...saveX,editedBy:myId,editedAt:Date.now()};
+      try{await db.collection(o.col).doc(o.id).set(newX); if(o.after) await o.after(newX,x); toastMsg('변경 내용을 저장했습니다.')}
+      catch(e){toastMsg('저장하지 못했습니다. 권한을 확인해 주세요.')}};
+    edm.hidden=false; setTimeout(()=>{const f=edBox.querySelector('input,select,textarea'); if(f) f.focus()},0)}
+  function toastMsg(t){const el=document.getElementById('toast'); if(!el) return; el.textContent=t; el.hidden=false; clearTimeout(toastMsg._t); toastMsg._t=setTimeout(()=>el.hidden=true,3000)}
+  const isAdm=()=>{try{return !!me&&me.role==='admin'}catch(e){return false}};
+  function editBtn(fn){const b=document.createElement('button'); b.type='button'; b.className='ghost editbtn'; b.textContent='수정'; b.onclick=e=>{e.stopPropagation(); fn()}; return b}
   function fmt(ts){const t=new Date(ts);return `${t.getMonth()+1}/${t.getDate()} ${String(t.getHours()).padStart(2,'0')}:${String(t.getMinutes()).padStart(2,'0')}`}
   async function render(){
     renderDash(); const shown=docs.filter(s=>{const tm=s.data().team||'전체';return team==='홈'||tm==='전체'||tm===team});
@@ -1501,12 +1568,13 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
       m.textContent=`${(ps[n.author]&&ps[n.author].name)||'직원'} · ${fmt(n.createdAt)}`;
       li.append(pill,t,m);
       if(n.body){const b=document.createElement('div');b.className='n-body';b.textContent=n.body;li.append(b)}
-      if(user&&n.author&&n.author===myId){
+      if(user&&n.author&&(n.author===myId||isAdm())){
+        const ed=editBtn(()=>editDoc({col:'notices',id:s.id,data:n,title:'공지 수정',fields:[{k:'title',label:'제목',req:true,wide:true},{k:'team',label:'대상 부서',type:'select',opts:['전체','생산','생산관리팀','품질','계발','총무팀']},{k:'body',label:'내용',type:'textarea'}]}));
         const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
-        del.style.gridColumn='3'; del.style.justifySelf='end';
+        const wrapB=document.createElement('span'); wrapB.style.cssText='grid-column:3;justify-self:end;white-space:nowrap'; wrapB.append(ed,del);
         del.onclick=async()=>{ if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return}
           try{await db.collection('notices').doc(s.id).delete()}catch(e){status.textContent='삭제하지 못했습니다. 권한을 확인해 주세요.'} };
-        li.append(del);
+        li.append(wrapB);
       }
       list.append(li);
     }
@@ -1617,7 +1685,9 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
       cell(r.qty!=null&&r.qty!==''?`${Number(r.qty).toLocaleString('ko-KR')} ${r.unit||''}`:'—','num');
       cell(r.memo); cell((ps[r.author]&&ps[r.author].name)||'직원');
       const act=cell('');
-      if(r.author&&r.author===myId){
+      if(r.author&&(r.author===myId||isAdm())){
+        act.style.whiteSpace='nowrap';
+        act.append(editBtn(()=>editDoc({col:'records',id:s.id,data:r,title:`${r.kind||''} LOT 기록 수정`,fields:[{k:'date',label:'일자',type:'date',req:true},{k:'item',label:'품번',req:true,upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'unit',label:'단위'},{k:'memo',label:'메모',wide:true}]})));
         const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
         del.onclick=async()=>{ if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return}
           try{await db.collection('records').doc(s.id).delete()}catch(e){lstatus.textContent='삭제하지 못했습니다. 권한을 확인해 주세요.'} };
@@ -2085,7 +2155,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
         c(x.rows.reduce((a,o)=>a+o.qty,0).toLocaleString('ko-KR'),'num'); c((ps[x.author]&&ps[x.author].name)||'직원');
         const act=c(''); act.style.whiteSpace='nowrap';
         const ex=document.createElement('button'); ex.type='button'; ex.className='ghost'; ex.textContent='이카운트 엑셀'; ex.onclick=()=>slipExcel(x); act.append(ex);
-        if(x.author&&x.author===myId){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
+        if(x.author&&(x.author===myId||isAdm())){
+          act.append(' ',editBtn(()=>editDoc({col:'slips',id:s.id,data:x,title:`${x.type} 전표 수정`,note:'품목·수량을 바꾸려면 전표를 지우고 다시 저장해 주세요. (재고 반영 때문)',
+            fields:[{k:'date',label:'일자',type:'date',req:true},...(x.type==='입고'?[]:[{k:'partner',label:'거래처'}]),...(x.type==='판매'?[{k:'driver',label:'운송 기사'}]:[])],
+            after:async(n,o)=>{if(x.type==='구매'){const q=await db.collection('records').where('slip','==',s.id).get(); for(const r of q.docs){const d=r.data(); await db.collection('records').doc(r.id).set({...d,date:n.date,memo:String(d.memo||'').replace('구매 · '+(o.partner||''),'구매 · '+(n.partner||''))})}}
+              if(x.type==='판매'&&n.partner!==o.partner){const q=await db.collection('stock').where('slip','==',s.id).get(); for(const r of q.docs) await db.collection('stock').doc(r.id).set({...r.data(),memo:'판매 · '+n.partner})}}})));
+          const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
           del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return}
             try{const col=x.type==='구매'?'records':'stock'; const q=await db.collection(col).where('slip','==',s.id).get();
               for(const dd of q.docs) await db.collection(col).doc(dd.id).delete();
@@ -2156,7 +2231,14 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
       c(x.date,'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(Number(x.bad||0)?Number(x.bad).toLocaleString('ko-KR'):'—','num'); c(x.memo); c((ps[x.author]&&ps[x.author].name)||'직원');
-      const a=c(''); if(x.author&&x.author===myId){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
+      const a=c(''); if(x.author&&(x.author===myId||isAdm())){a.style.whiteSpace='nowrap';
+        a.append(editBtn(()=>editDoc({col:'transfers',id:s.id,data:x,title:'자재로 보낸 내역 수정',note:'불량 수량을 바꾸면 불량 LOT 기록도 함께 바뀝니다.',
+          fields:[{k:'date',label:'일자',type:'date',req:true},{k:'item',label:'품번',req:true,upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number',req:true},{k:'bad',label:'불량 수량',type:'number'},{k:'memo',label:'메모',wide:true}],
+          after:async(n)=>{const q=await db.collection('records').where('xfer','==',s.id).get(); const bad=Number(n.bad)||0;
+            if(bad>0){if(q.docs.length){for(const r of q.docs) await db.collection('records').doc(r.id).set({...r.data(),date:n.date,item:n.item,lot:n.lot,qty:bad})}
+              else await db.collection('records').add({kind:'불량',loc:'',date:n.date,item:n.item,lot:n.lot,qty:bad,unit:'EA',memo:'사상반 입력',xfer:s.id,author:myId,createdAt:Date.now()})}
+            else for(const r of q.docs) await db.collection('records').doc(r.id).delete()}})));
+        const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
         del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('transfers').doc(s.id).delete();
           if(Number(x.bad)>0){try{const q=await db.collection('records').where('xfer','==',s.id).get(); for(const r of q.docs) await db.collection('records').doc(r.id).delete()}catch(e){}}}catch(e){xStatus.textContent='지우지 못했습니다.'}}; a.append(del)}
       list.append(tr)}}
@@ -2416,7 +2498,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
       c(x.date||iso(new Date(x.createdAt)),'num'); c(x.item); c(lotLabel(x.lot)); c(Number(x.qty).toLocaleString('ko-KR'),'num'); c(String(x.memo||'').replace(/^생산에서 받음( · )?/,'')); c((ps[x.author]&&ps[x.author].name)||'직원');
-      const a=c(''); if(x.author&&x.author===myId){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
+      const a=c(''); if(x.author&&(x.author===myId||isAdm())){a.style.whiteSpace='nowrap';
+        a.append(editBtn(()=>editDoc({col:'stock',id:s.id,data:x,title:'생산에서 받은 내역 수정',
+          view:v=>({...v,date:v.date||iso(new Date(v.createdAt)),memo:String(v.memo||'').replace(/^생산에서 받음( · )?/,'')}),
+          save:v=>({...v,memo:'생산에서 받음'+(v.memo?' · '+v.memo:'')}),
+          fields:[{k:'date',label:'일자',type:'date',req:true},{k:'item',label:'품번',req:true,upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number',req:true},{k:'memo',label:'메모',wide:true}]})));
+        const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
         del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('stock').doc(s.id).delete()}catch(e){rvStatus.textContent='지우지 못했습니다.'}}; a.append(del)}
       list.append(tr)}}
   document.getElementById('rc-only').addEventListener('change',renderRecon);
@@ -2480,6 +2567,12 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const steps={}; FRB_STEPS.forEach(([k])=>{const s=fv('fs-'+k).value, d=fv('fd-'+k).value; if(s||d) steps[k]={s,date:d}});
     const rec={no:fv('f-no').value.trim().toUpperCase(),opened:fv('f-opened').value,model:fv('f-model').value.trim(),where:fv('f-where').value.trim(),part:fv('f-part').value.trim(),partNo:fv('f-partno').value.trim(),
       dept:fv('f-dept').value.trim(),owner:fv('f-owner').value.trim(),issue:fv('f-issue').value.trim(),next:fv('f-next').value,recur:fv('f-recur').value==='1',action:fv('f-action').value.trim(),steps,updatedBy:myId,updatedAt:Date.now()};
+    if(frbCur){const old=claims.find(c=>c.id===frbCur), ox=old?old.data():{};
+      const F=[['no','순번'],['opened','발견일'],['model','차종'],['where','발견 장소'],['part','품명'],['partNo','품번'],['dept','주관 부서'],['owner','담당'],['issue','문제 내용'],['next','보고 예정일'],['action','조치 사항']].map(([k,label])=>({k,label}));
+      const ch=diffOf(F,ox,rec); if(!!ox.recur!==rec.recur) ch.push({label:'재발 여부',old:ox.recur?'O':'X',new:rec.recur?'O':'X'});
+      FRB_STEPS.forEach(([k,d,l])=>{const a=(ox.steps&&ox.steps[k])||{}, b=steps[k]||{}; const fmtS=v=>[FRB_ST[v.s||'']==='—'?'':FRB_ST[v.s||''],v.date||''].filter(Boolean).join(' '); if(fmtS(a)!==fmtS(b)) ch.push({label:d+' '+l,old:fmtS(a),new:fmtS(b)})});
+      if(!ch.length){st.textContent='바뀐 내용이 없습니다.';return}
+      if(!await confirmDiff(`클레임 ${ox.no||''} 수정`,ch)){st.textContent='변경을 취소했습니다.';return}}
     try{if(frbCur){const old=claims.find(c=>c.id===frbCur); await db.collection('claims').doc(frbCur).set({...(old?old.data():{}),...rec})}
       else{rec.createdAt=Date.now(); rec.author=myId; const r=await db.collection('claims').add(rec); frbCur=r.id}
       st.textContent='저장했습니다.'}catch(err){st.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}});
@@ -2522,6 +2615,11 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   tg('trform').addEventListener('submit',async e=>{e.preventDefault(); const st=tg('tr-status');
     if(!db||!canEditTeam('계발')){st.textContent='계발 수정 권한이 있어야 저장할 수 있습니다.';return}
     const rec={}; TF.forEach(k=>{let v=tg('t-'+k).value.trim(); if((k==='qty'||k==='good')&&v!=='') v=Number(v); rec[k]=v}); rec.item=String(rec.item).toUpperCase(); rec.defects=getDef(); rec.updatedBy=myId; rec.updatedAt=Date.now();
+    if(trCur){const old=trials.find(c=>c.id===trCur), ox=old?old.data():{};
+      const LB={date:'시험일',round:'차수',item:'품번',name:'품명',partner:'거래처',mold:'금형 번호',mc:'호기',resin:'원료',temp:'실린더 온도',mtemp:'금형 온도',pres:'사출 압력',speed:'사출 속도',hold:'보압 · 시간',cycle:'사이클',dry:'건조',clamp:'형체력',meter:'계량 · 배압',weight:'제품 중량',shot:'런너 포함 중량',cav:'캐비티 수',qty:'시험 수량',good:'양품 수량',result:'결과',owner:'담당',issue:'문제점',fix:'개선 사항',next:'다음 시험 예정일'};
+      const ch=diffOf(TF.map(k=>({k,label:LB[k]||k})),ox,rec); const od=(ox.defects||[]).join(', '), nd=(rec.defects||[]).join(', '); if(od!==nd) ch.push({label:'성형 불량',old:od,new:nd});
+      if(!ch.length){st.textContent='바뀐 내용이 없습니다.';return}
+      if(!await confirmDiff(`${ox.item||''} ${ox.round||''} 시험사출 수정`,ch)){st.textContent='변경을 취소했습니다.';return}}
     try{if(trCur){const old=trials.find(c=>c.id===trCur); await db.collection('trials').doc(trCur).set({...(old?old.data():{}),...rec})}
       else{rec.createdAt=Date.now(); rec.author=myId; const r=await db.collection('trials').add(rec); trCur=r.id}
       st.textContent='저장했습니다.'; tg('tr-del').hidden=false; tg('tr-copy').hidden=false}catch(err){st.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}});
@@ -2572,8 +2670,10 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const by=document.createElement('span'); by.className='by'; by.textContent=x.authorName||(ps[x.author]&&ps[x.author].name)||'총무팀';
       li.append(tm,tt,by);
       if(x.body){const p=document.createElement('p'); p.textContent=x.body; li.append(p)}
-      if(ok){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
-        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('events').doc(e.id).delete()}catch(err){document.getElementById('ev-status').textContent='지우지 못했습니다. 직접 올린 일정만 지울 수 있을 수 있습니다.'}}; li.append(del)}
+      if(ok){const bw=document.createElement('span'); bw.style.cssText='grid-column:3;justify-self:end;white-space:nowrap';
+        bw.append(editBtn(()=>editDoc({col:'events',id:e.id,data:x,title:'일정 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'time',label:'시간',type:'time'},{k:'title',label:'일정',req:true,wide:true},{k:'body',label:'메모',wide:true}]})));
+        const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제'; bw.append(del);
+        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('events').doc(e.id).delete()}catch(err){document.getElementById('ev-status').textContent='지우지 못했습니다. 직접 올린 일정만 지울 수 있을 수 있습니다.'}}; li.append(bw)}
       ul.append(li)});
     if(!list.length){const li=document.createElement('li'); li.className='none'; li.textContent='등록된 일정이 없습니다.'; ul.append(li)}
   }
@@ -2587,8 +2687,10 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const t=document.createElement('b'); t.textContent=[x.partner,x.item,x.lot?lotLabel(x.lot):'',x.qty?Number(x.qty).toLocaleString('ko-KR')+' EA':''].filter(Boolean).join(' · ');
       const who=document.createElement('span'); who.textContent=(ps[x.author]&&ps[x.author].name)||'직원'; top.append(t,who);
       const p=document.createElement('p'); p.textContent=x.body||''; li.append(top,p);
-      if(x.author&&x.author===myId){const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제'; del.style.justifySelf='end';
-        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('complaints').doc(c.id).delete()}catch(e){document.getElementById('cp-status').textContent='지우지 못했습니다.'}}; li.append(del)}
+      if(x.author&&(x.author===myId||isAdm())){const bw=document.createElement('span'); bw.style.cssText='justify-self:end;white-space:nowrap';
+        bw.append(editBtn(()=>editDoc({col:'complaints',id:c.id,data:x,title:'고객 클레임 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'partner',label:'거래처',req:true},{k:'item',label:'품번',upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'body',label:'클레임 내용',type:'textarea',req:true}]})));
+        const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제'; bw.append(del);
+        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('complaints').doc(c.id).delete()}catch(e){document.getElementById('cp-status').textContent='지우지 못했습니다.'}}; li.append(bw)}
       ul.append(li)});
     if(!list.length){const li=document.createElement('li'); li.className='none'; li.textContent=k>todayISO?'아직 오지 않은 날입니다.':'이 날은 고객 클레임이 없습니다.'; ul.append(li)}
     document.getElementById('cp-save').textContent=`${k.slice(5).replace('-','/')} 클레임 등록`;
