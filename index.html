@@ -3058,6 +3058,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     catch(err){const m=String(err&&err.message||''); st.textContent=/registered|exists|duplicate/i.test(m)?'이미 있는 아이디입니다.':'저장하지 못했습니다: '+m}});
   function acRoleUI(){const w=document.getElementById('ac-role').value==='worker';
     document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
+    // 관리자는 모든 부서 전체 수정이라 부서별 권한 칸이 안 쓰임 → 막고 안내
+    {const adm=document.getElementById('ac-role').value==='admin', f=document.getElementById('ac-perm'); f.disabled=adm; document.getElementById('ac-keys').disabled=adm;
+      let note=f.querySelector('.adnote'); if(!note){note=document.createElement('p'); note.className='hint adnote'; note.textContent='관리자는 모든 부서를 보고 고칠 수 있어서 아래 부서별 권한은 쓰이지 않습니다. 부서별로 권한을 주려면 권한을 일반 또는 팀장으로 바꾸세요.'; f.insertBefore(note,f.children[1]||null)} note.hidden=!adm}
     if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team;
     acRoleUI._last=document.getElementById('ac-role').value}
   // 부서가 본사면 권한은 사장 · 전무 · 상무만 (원래 관리자인 계정은 관리자 유지 가능)
