@@ -256,6 +256,7 @@ header.top{background:var(--steel);color:#eef1f4;position:sticky;top:env(safe-ar
 .itemtable tr.off td.st b{color:var(--bad)}
 .itemtable tr.on td.st b{color:var(--ok)}
 .itemtable .dup{margin-left:6px}
+#ac-list tr.acgrp td{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:13px;padding-top:8px;padding-bottom:6px}
 .pinfo{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
 .pinfo.warn{color:var(--bad)}
 .sliptable td input[data-k=name],.sliptable td input[data-k=spec]{min-width:110px}
@@ -3111,8 +3112,15 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!pr||pr.role==='none'){if(me||pr){me=null; clearLogin(); applyLogin()} return}
     const was=me; me=profToMe(pr); saveLogin(me); if(!was){location.reload();return} applyLogin()})();
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
-    const rows=[...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
-    rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
+    // 부서별로 묶고, 부서 안에서는 팀장이 맨 위 → 관리자 → 일반 → 작업자, 같으면 이름 순
+    const TORD=['본사','생산관리팀','생산','품질','계발','총무팀'], TLBL={'생산관리팀':'자재 · 생산관리팀'};
+    const rank=x=>x.role==='admin'?0:isExecAcct(x)?({사장:1,전무:2,상무:3}[x.perm.title]||3):isLeadAcct(x)?4:isMgrAcct(x)?5:x.role==='worker'?7:6;
+    const tk=x=>{const i=TORD.indexOf(x.team||''); return i<0?TORD.length:i};
+    const rows=[...accounts].sort((a,b)=>{const x=a.data(), y=b.data(); return tk(x)-tk(y)||String(x.team||'').localeCompare(String(y.team||''))||rank(x)-rank(y)||String(x.name||x.user).localeCompare(String(y.name||y.user))});
+    let lastTeam=null;
+    rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr');
+      if((x.team||'')!==lastTeam){lastTeam=x.team||''; const n=rows.filter(r=>(r.data().team||'')===lastTeam).length;
+        const h=document.createElement('tr'); h.className='acgrp'; const td=document.createElement('td'); td.colSpan=7; td.textContent=`${TLBL[lastTeam]||lastTeam||'부서 없음'} · ${n}명`; h.append(td); tb.append(h)} const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
       c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
       {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.complaint&&'클레임',p.item&&'품목 수정',p.itemToggle&&'사용·미사용'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; const self=!!(me&&me.user===x.user); if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
