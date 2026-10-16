@@ -256,6 +256,9 @@ header.top{background:var(--steel);color:#eef1f4;position:sticky;top:env(safe-ar
 .itemtable tr.off td.st b{color:var(--bad)}
 .itemtable tr.on td.st b{color:var(--ok)}
 .itemtable .dup{margin-left:6px}
+.pinfo{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
+.pinfo.warn{color:var(--bad)}
+.sliptable td input[data-k=name],.sliptable td input[data-k=spec]{min-width:110px}
 .subh{font-family:var(--f-display);font-size:15px;margin:6px 0 0}
 .sliplist{min-width:620px}
 .sliplist .num,.sliptable .num{text-align:right;font-family:var(--f-mono);font-variant-numeric:tabular-nums}
@@ -721,7 +724,6 @@ button.editbtn{margin-right:4px}
       </fieldset>
       <fieldset class="acc" id="ac-keys"><legend>주요 정보 권한</legend>
         <label><input type="checkbox" value="notice"> 공지 올리기·삭제</label>
-        <label><input type="checkbox" value="price"> 단가 보기·입력</label>
         <label><input type="checkbox" value="complaint" checked> 고객 클레임 등록</label>
       </fieldset>
       <div class="sbtns"><button type="button" class="ghost" id="ac-new">새 계정</button><button type="submit" id="ac-save">계정 저장</button></div>
@@ -988,7 +990,7 @@ button.editbtn{margin-right:4px}
         <label for="sl-date">일자<input id="sl-date" type="date" required></label>
         <label for="sl-partner" id="sl-pwrap">거래처<input id="sl-partner" maxlength="60" list="sl-partners" placeholder="거래처명"></label>
         <label for="sl-driver" id="sl-dwrap" hidden>운송 기사<select id="sl-driver"><option value="">선택</option><option>기사1</option><option>기사2</option><option>기사3</option></select></label>
-        <div class="fixed" id="sl-fixed">생산된공장 <b>250 김사빈</b> · 받는창고 <b>300 제품창고</b></div>
+        <div class="fixed" id="sl-fixed">생산된공장 <b>250 사상반</b> · 받는창고 <b>300 제품창고</b></div>
       </div>
       <div class="scroll"><table class="rules sliptable"><thead id="sl-head"></thead><tbody id="sl-body"></tbody>
         <tfoot><tr><td colspan="9"><div class="row" style="justify-content:space-between">
@@ -1801,8 +1803,7 @@ button.editbtn{margin-right:4px}
     document.querySelector('.stable tfoot').hidden=!term||!rows.length;
     document.querySelector('.stable tfoot th').textContent=term?`‘${ssearch.value.trim()}’ 합계`:'합계'; renderDash();
     document.getElementById('sempty').hidden=rows.length>0;
-    const dl=document.getElementById('s-items'); dl.replaceChildren();
-    [...new Set([...m.values()].map(e=>e.item))].filter(v=>!isOff(v)).forEach(v=>{const o=document.createElement('option');o.value=v;dl.append(o)});
+    prodCache=null; try{buildItemList()}catch(e){}
     const log=document.getElementById('slog'); log.replaceChildren();
     for(const s of moves.slice(0,100)){const x=s.data(), li=document.createElement('li'), q=Number(x.qty)||0;
       li.className=q>0?'in':'out';
@@ -1996,7 +1997,7 @@ JSON 하나로만 답하라: {"products":[{"item":"품번","name":"품명 또는
   const EC={
     '생산입고':{desc:'손으로 쓴 일일 제품 입고현황 사진이나 파일을 넣으면 생산입고 업로드 엑셀로 정리합니다. 입고현황 1장 = 생산입고 1건.',src:'일일 제품 입고현황 놓기',
       rules:`- 입고현황 한 장은 생산입고 한 건이다(모든 행이 같은 일자, 같은 전표).
-- 생산된공장은 항상 250 (김사빈), 받는창고는 항상 300 (제품창고).
+- 생산된공장은 항상 250 (사상반), 받는창고는 항상 300 (제품창고).
 - 품목코드는 항상 200으로 시작한다(210으로 시작하는 코드는 쓰지 않는다).
 - "//" 나 " 표시는 윗행과 같다는 뜻.
 - 품명 → 품목코드: M3=20010799, JM S/L (A-D)=20010351-2, JM S/L (N-Q)=20010759, W.LWR=20010451-1-1, DN8=20010785, GBB0334 (1)=20010828(2호는 20010828-1), GBB0297=20010807, GBB0285=20010809, GBB0333=20010846, GBB0292=20010805, GBB0261=20010787, GBB0239=20010757, GBB0317=20010813, GBB0335=20010827, 120-9000=20010765, HM UPR (E-H)=20010591-3 (A~D는 -2, 5~8은 -1). GBBO처럼 O가 보이면 숫자 0으로 읽는다.
@@ -2105,9 +2106,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
 
   // 입고·판매·구매 전표 (여러 품목)
   const SLIP={
-    '입고':{title:'입고 등록',ec:'생산입고',partner:false,cols:[['item','품번',''],['lot','LOT','예: VJO (비우면 일자로 채움)'],['qty','수량',''],['memo','적요','']],
+    '입고':{title:'입고 등록',ec:'생산입고',partner:false,cols:[['item','품번',''],['lot','LOT','예: VJO (비우면 일자로 채움)'],['qty','수량',''],['memo','적요',''],['name','품목명','자동'],['spec','규격','자동']],
       hint:'저장하면 각 줄이 완제품 재고에 더해집니다.'},
-    '판매':{title:'판매 등록',ec:'판매입력',partner:true,cols:[['item','품번',''],['lot','LOT','비우면 오래된 LOT부터'],['qty','수량',''],['price','단가',''],['memo','적요','']],
+    '판매':{title:'판매 등록',ec:'판매입력',partner:true,cols:[['item','품번',''],['lot','LOT','비우면 오래된 LOT부터'],['qty','수량',''],['price','단가','자동'],['memo','적요',''],['name','품목명','자동'],['spec','규격','자동']],
       hint:'저장하면 완제품 재고에서 빠집니다. LOT를 비우면 그 품번의 오래된 LOT부터 뺍니다.'},
     '구매':{title:'구매 등록',ec:'구매입력',partner:true,cols:[['item','품목',''],['spec','규격',''],['lot','LOT',''],['qty','수량',''],['price','단가',''],['memo','적요','']],
       hint:'저장하면 각 줄이 창고 원자재 LOT 기록으로 들어갑니다.'}};
@@ -2126,7 +2127,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
         const rows=a.map((r,i)=>{const o=[...r]; map.forEach((pos,j)=>o.splice(pos,0,(b[i]||[])[j]??'')); return o});
         ecInv={...ecInvBase,headers,rows:JSON.stringify(rows)}}catch(e){ecInv=ecInvBase}}
     else ecInv=ecInvBase;
-    try{renderSlips()}catch(e){} try{renderBoard()}catch(e){} try{if(ecf==='재고현황') renderInv()}catch(e){} try{if(curItem==='items') renderItems()}catch(e){}
+    prodCache=null; try{buildItemList()}catch(e){} try{renderSlips()}catch(e){} try{renderBoard()}catch(e){} try{if(ecf==='재고현황') renderInv()}catch(e){} try{if(curItem==='items') renderItems()}catch(e){}
     autoMovePrices()}
   // 예전에 단가가 전표·재고현황 안에 같이 저장된 경우, 관리자 화면에서 한 번 옮겨 둠
   let movingPrices=false;
@@ -2164,7 +2165,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function pasteGrid(tr,ci,text){const lines=text.replace(/\r/g,'').split('\n').filter((l,i,a)=>l.trim()||i<a.length-1).filter(l=>l.trim());
     let row=tr; lines.forEach(l=>{const cells=l.split('\t'); if(!row) row=addRows(1);
       const inps=row.querySelectorAll('input'); cells.forEach((c,j)=>{const inp=inps[ci+j]; if(inp) inp.value=String(c).trim().replace(/,/g,inp.type==='number'?'':',')});
-      row=row.nextElementSibling}); renumber(); slStatus.textContent=`${lines.length}줄을 붙여 넣었습니다.`}
+      row=row.nextElementSibling}); renumber(); slStatus.textContent=`${lines.length}줄을 붙여 넣었습니다.`; try{autoRows(slBody)}catch(e){}}
   function setSlipType(t){if(!SLIP[t]) return; const changed=t!==slipType; slipType=t; const S=SLIP[t];
     document.getElementById('slip-title').textContent=S.title;
     document.getElementById('sl-pwrap').hidden=!S.partner; document.getElementById('sl-fixed').hidden=t!=='입고'; document.getElementById('sl-dwrap').hidden=t!=='판매';
@@ -2219,7 +2220,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function isOff(code){const d=offMap.get(normItem(code)); return !!(d&&d.off)}
   function markOffRows(){const sale=slipType==='판매';
     [...slBody.children].forEach(tr=>{const inp=tr.querySelector('input[data-k=item]'); const off=sale&&!!inp&&isOff(inp.value);
-      tr.classList.toggle('offrow',off); if(inp) inp.title=off?'미사용 품목 — 납품할 수 없습니다':''})}
+      tr.classList.toggle('offrow',off); if(inp){if(off) inp.title='미사용 품목 — 납품할 수 없습니다'; else if(inp.title.startsWith('미사용')) inp.title=''}})}
   slBody.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.k==='item') markOffRows()});
   function allItems(){const m=new Map();
     const add=(code,name,spec)=>{code=normItem(code); if(!code) return; const e=m.get(code)||{code,name:'',spec:''};
@@ -2228,7 +2229,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const ci=f(/품목코드|품번/), ni=f(/품목명|품명/), si=f(/규격/);
       if(ci>=0) invRows().forEach(r=>add(r[ci],ni>=0?r[ni]:'',si>=0?r[si]:''))}}catch(e){}
     try{for(const e of stockMap().values()) add(e.item)}catch(e){}
-    try{for(const d of slipsRaw){const x=d.data(); if(x.type!=='구매') (x.rows||[]).forEach(o=>add(o.item))}}catch(e){}
+    try{for(const d of slipsRaw){const x=d.data(); if(x.type!=='구매') (x.rows||[]).forEach(o=>add(o.item,o.name,o.spec))}}catch(e){}
     for(const [k,d] of offMap) add(k,d.name,d.spec);
     return [...m.values()]}
   function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; tb.replaceChildren();
@@ -2257,7 +2258,66 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     document.getElementById('it-empty').hidden=total>0;
     const offN=items.filter(e=>isOff(e.code)).length;
     document.getElementById('it-status').textContent=`품목 ${items.length}개 · 미사용 ${offN}개${total>500?` · 앞 500개만 표시 (검색으로 좁혀 주세요)`:''}${edit?'':' · 보기 전용'}`}
-  function onItemsOff(){try{renderItems()}catch(e){} try{markOffRows()}catch(e){} try{renderStock()}catch(e){}}
+  // ---------- 품목 자동 채우기: 품번이나 품목명을 넣으면 나머지(품목코드·품목명·규격·단가)를 채움 ----------
+  let prodCache=null;
+  const nName=v=>String(v||'').replace(/\s+/g,'').toLowerCase();
+  function prodIdx(){if(prodCache) return prodCache; const items=allItems(), code=new Map(), codeL=new Map(), name=new Map();
+    items.forEach(e=>{code.set(e.code,e); codeL.set(e.code.toLowerCase(),e); const k=nName(e.name); if(k){if(!name.has(k)) name.set(k,[]); name.get(k).push(e)}});
+    return prodCache={items,code,codeL,name}}
+  function prodOf(code){return prodIdx().code.get(normItem(code))||{}}
+  function resolveProd(v){v=normItem(v); if(!v) return {}; const I=prodIdx();
+    const c=I.code.get(v)||I.codeL.get(v.toLowerCase()); if(c) return {p:c};
+    const all=I.name.get(nName(v))||[], on=all.filter(e=>!isOff(e.code));
+    if(on.length===1) return {p:on[0]}; if(on.length>1) return {many:on}; return {}}
+  function buildItemList(){const dl=document.getElementById('s-items'); if(!dl) return; dl.replaceChildren();
+    prodIdx().items.filter(e=>!isOff(e.code)).slice(0,4000).forEach(e=>{const o=document.createElement('option'); o.value=e.code;
+      const l=[e.name,e.spec].filter(Boolean).join(' · '); if(l) o.label=l; dl.append(o)})}
+  // 단가: 같은 거래처의 최근 전표 → 아무 거래처 최근 전표 → 이카운트 재고현황 단가 칸
+  function lastPrice(code,type,partner){if(!canSeePrice()) return null; let any=null;
+    for(const d of slips){const x=d.data(); if(x.type!==type) continue;
+      const r=(x.rows||[]).find(o=>normItem(o.item)===code&&o.price!=null&&o.price!==''); if(!r) continue;
+      if(partner&&x.partner===partner) return r.price; if(any==null) any=r.price}
+    if(any!=null) return any;
+    try{if(ecInv&&ecInv.headers){const H=ecInv.headers, ci=H.findIndex(h=>/품목코드|품번/.test(h));
+      const pi=H.findIndex(h=>type==='구매'?/구매단가|입고단가|매입가/.test(h):/판매단가|출고단가|판매가/.test(h)), pj=pi>=0?pi:H.findIndex(h=>/단가/.test(h));
+      if(ci>=0&&pj>=0){const r=invRows().find(r=>normItem(r[ci])===code); const n=r&&Number(String(r[pj]).replace(/,/g,'')); if(n) return n}}}catch(e){}
+    return null}
+  const setAuto=(inp,v)=>{if(!inp||v==null||v==='') return; if(inp.value.trim()===''||inp.dataset.auto==='1'){inp.value=v; inp.dataset.auto='1'}};
+  // 표가 아닌 입력칸: 품번 칸 ↔ 품명 칸 짝
+  const CODE_TO_NAME={'t-item':'t-name','f-partno':'f-part'}, NAME_TO_CODE={'t-name':'t-item','f-part':'f-partno'};
+  const CODE_IDS=['s-item','t-item','f-partno','cp-item','l-item','p-gitem'];
+  function pinfo(inp,text,warn){let el=inp.parentElement&&inp.parentElement.querySelector(':scope > .pinfo');
+    if(inp.closest('td')){inp.title=text||''; return}
+    if(!text){if(el) el.remove(); return} if(!el){el=document.createElement('span'); el.className='pinfo'; inp.after(el)} el.textContent=text; el.classList.toggle('warn',!!warn)}
+  function fillFrom(inp,p){const tr=inp.closest('tr');
+    const label=[p.name,p.spec].filter(Boolean).join(' · ');
+    if(tr&&inp.closest('#sl-body')){const q=k=>tr.querySelector(`input[data-k=${k}]`);
+      if(q('item')) q('item').value=p.code; setAuto(q('name'),p.name); setAuto(q('spec'),p.spec);
+      if(q('price')&&canSeePrice()) setAuto(q('price'),lastPrice(p.code,slipType,document.getElementById('sl-partner').value.trim()));
+      if(q('item')) q('item').title=label; try{markOffRows()}catch(e){} return}
+    if(tr){const it=tr.querySelector('input[data-k=item]'); if(it){it.value=p.code; it.title=label} return}
+    const codeInp=NAME_TO_CODE[inp.id]?document.getElementById(NAME_TO_CODE[inp.id]):inp;
+    codeInp.value=p.code; const nm=CODE_TO_NAME[codeInp.id]; if(nm) setAuto(document.getElementById(nm),p.name);
+    pinfo(codeInp,label?`${label}${isOff(p.code)?' · 미사용 품목':''}`:'',isOff(p.code))}
+  function onProdChange(inp){const nameField=inp.dataset.k==='name'||!!NAME_TO_CODE[inp.id];
+    if(!inp.value.trim()){if(!nameField) pinfo(inp,''); return}
+    const r=resolveProd(inp.value);
+    if(r.p){if(nameField&&nName(r.p.name)!==nName(inp.value)) return; fillFrom(inp,r.p); return}
+    const target=nameField&&NAME_TO_CODE[inp.id]?document.getElementById(NAME_TO_CODE[inp.id]):inp;
+    if(r.many){const msg=`같은 이름 ${r.many.length}개: ${r.many.map(e=>e.code+(e.spec?' ('+e.spec+')':'')).join(', ')} — 품번을 골라 주세요`;
+      pinfo(target,msg,true); if(inp.closest('#sl-body')) slStatus.textContent=`‘${inp.value.trim()}’ `+msg}
+    else if(!nameField) pinfo(inp,'')}
+  function isProdInput(t){if(!t||t.tagName!=='INPUT') return false;
+    if(CODE_IDS.includes(t.id)||NAME_TO_CODE[t.id]) return true;
+    if(t.closest('#rq-body')) return false;
+    return (t.dataset.k==='item'||(t.dataset.k==='name'&&!!t.closest('#sl-body')))&&!!t.closest('table')}
+  document.addEventListener('focusin',e=>{const t=e.target; if(isProdInput(t)&&!t.hasAttribute('list')&&!(t.dataset.k==='name'||NAME_TO_CODE[t.id])) t.setAttribute('list','s-items')});
+  document.addEventListener('input',e=>{const t=e.target; if(t&&t.dataset&&t.dataset.auto) delete t.dataset.auto});
+  document.addEventListener('change',e=>{if(isProdInput(e.target)) try{onProdChange(e.target)}catch(err){console.warn(err)}});
+  function autoRows(body){[...body.querySelectorAll('input[data-k=item]')].forEach(i=>{if(i.value.trim()) try{onProdChange(i)}catch(e){}})}
+  document.getElementById('sl-partner').addEventListener('change',()=>{if(!canSeePrice()) return;
+    [...slBody.querySelectorAll('input[data-k=price]')].forEach(pr=>{if(pr.dataset.auto==='1'){pr.value=''; const it=pr.closest('tr').querySelector('input[data-k=item]'); const p=it&&prodOf(it.value); if(p&&p.code) setAuto(pr,lastPrice(p.code,slipType,document.getElementById('sl-partner').value.trim()))}})});
+  function onItemsOff(){prodCache=null; try{buildItemList()}catch(e){} try{renderItems()}catch(e){} try{markOffRows()}catch(e){} try{renderStock()}catch(e){}}
   document.getElementById('it-search').addEventListener('input',renderItems);
   document.querySelectorAll('#it-tabs button').forEach(b=>b.onclick=()=>{itF=b.dataset.f;
     document.querySelectorAll('#it-tabs button').forEach(x=>x.setAttribute('aria-selected',x===b)); renderItems()});
@@ -2298,7 +2358,8 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       if(/공장/.test(k)) return x.type==='입고'?'250':'';
       if(/창고/.test(k)) return x.type==='입고'?'300':'';
       if(/lot|로트/i.test(k)) return o.lot||'';
-      if(/규격/.test(k)) return o.spec||'';
+      if(/규격/.test(k)) return o.spec||prodOf(o.item).spec||'';
+      if(/품목명|품명/.test(k)) return o.name||prodOf(o.item).name||'';
       if(/품목코드|품번|품목/.test(k)) return o.item;
       if(/수량|입고량/.test(k)) return o.qty;
       if(/단가/.test(k)) return o.price??'';
@@ -2873,12 +2934,18 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   const WORK={'생산':{team:'생산',items:['reqnew']},'사상반':{team:'생산',items:['xfer']},'자재':{team:'생산관리팀',items:['recv']}};
   function isWorker(){return !!me&&me.role==='worker'}
   function workItems(){const w=WORK[me&&me.station]||WORK['사상반']; return w.items}
+  const EXECS=['사장','전무','상무'];
   function permOf(a){const p={teams:{},notice:false,price:false,complaint:true};
     if(a&&a.role==='worker'){const w=WORK[a.station]||WORK['사상반']; ALLTEAMS.forEach(t=>p.teams[t]=t===w.team?'edit':'none'); p.complaint=false; return p}
     if(!a) return p; if(a.role==='admin'){ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.price=p.complaint=true; return p}
-    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.price=!!a.perm.price; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; return p}
+    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.price=p.lead||!!p.title; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
   // 팀장: DB에는 role 'user' + perm.lead=true 로 저장 (기존 부서 권한 규칙을 그대로 씀)
+  const EXEC=['사장','전무','상무'];
+  const isExecAcct=a=>!!a&&a.role==='user'&&!!(a.perm&&EXEC.includes(a.perm.title));
+  const roleVal=a=>a.role==='admin'?'admin':a.role==='worker'?'worker':isExecAcct(a)?'exec:'+a.perm.title:isLeadAcct(a)?'lead':'user';
+  const roleLabel=a=>a.role==='admin'?'관리자':a.role==='worker'?(a.station==='생산'?'생산 작업자':a.station==='사상반'?'생산 사상반':'자재 작업자'):isExecAcct(a)?a.perm.title:isLeadAcct(a)?'팀장':'일반';
+  function canSeePrice(){return !!me&&(me.role==='admin'||can('price'))}
   const isLeadAcct=a=>!!a&&a.role!=='admin'&&a.role!=='worker'&&!!(a.perm&&a.perm.lead);
   const ITEM_TEAMS=['생산관리팀','자재','품질','생산'];
   function canToggleItems(){return !!me&&(me.role==='admin'||(isLeadAcct(me)&&ITEM_TEAMS.includes(me.team)))}
@@ -2909,7 +2976,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   setTimeout(endCheck,1500);
   function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me){document.body.classList.remove('worker'); try{document.getElementById('bell').hidden=true;document.getElementById('bellpanel').hidden=true}catch(e){}}
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
-      document.getElementById('who-name').textContent=`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 관리자':isLeadAcct(me)?' · 팀장':''}`;
+      document.getElementById('who-name').textContent=`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 관리자':isExecAcct(me)?' · '+me.perm.title:isLeadAcct(me)?' · 팀장':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
       side.querySelectorAll('.sg').forEach(w=>{const g=MENU.find(m=>m.g===w.dataset.g), t=g&&g.items[0]&&g.items[0][2]; w.hidden=!!t&&!canSee(t)});
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
@@ -2956,11 +3023,11 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     const rows=[...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
-      c(x.user); c(x.name); c(x.team||''); c(x.role==='admin'?'관리자':x.role==='worker'?(x.station==='생산'?'생산 작업자':x.station==='사상반'?'생산 사상반':'자재 작업자'):isLeadAcct(x)?'팀장':'일반'); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
+      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
       {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed&&!(me&&me.user===x.user)){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
-          document.getElementById('ac-role').value=isLeadAcct(x)?'lead':(x.role||'user'); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
+          setRoleOptions(x.team||'생산',x.role==='admin'); document.getElementById('ac-role').value=roleVal(x); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
           const p=permOf(x); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value=p.teams[sel.dataset.t]||'none');
           document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=!!p[i.value]);
           document.getElementById('ac-status').textContent=`${x.user} 계정을 고치는 중입니다. 비밀번호 칸을 비우면 그대로 둡니다.`; document.getElementById('ac-user').focus()};
@@ -2981,7 +3048,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(pw&&pw.length<6){st.textContent='비밀번호는 6자 이상이어야 합니다.';return}
     const perm={teams:{}}; document.querySelectorAll('#ac-perm select').forEach(sel=>perm.teams[sel.dataset.t]=sel.value);
     document.querySelectorAll('#ac-keys input').forEach(i=>perm[i.value]=i.checked);
-    const rlSel=document.getElementById('ac-role').value, rl=rlSel==='lead'?'user':rlSel, stn=document.getElementById('ac-station').value; perm.lead=rlSel==='lead';
+    const rlSel=document.getElementById('ac-role').value, rl=(rlSel==='lead'||rlSel.startsWith('exec:'))?'user':rlSel, stn=document.getElementById('ac-station').value;
+    perm.lead=rlSel==='lead'; perm.title=rlSel.startsWith('exec:')?rlSel.slice(5):''; perm.price=perm.lead||!!perm.title;
+    if(document.getElementById('ac-team').value==='본사'&&rl!=='admin'&&!perm.title){st.textContent='본사는 사장 · 전무 · 상무 중에서 골라 주세요.';return}
     const rec={user:u,name:document.getElementById('ac-name').value.trim(),team:rl==='worker'?WORK[stn].team:document.getElementById('ac-team').value,role:rl,station:rl==='worker'?stn:'',perm,
       createdAt:old?old.data().createdAt:Date.now(),updatedAt:Date.now()};
     st.textContent='저장 중…';
@@ -2990,10 +3059,16 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function acRoleUI(){const w=document.getElementById('ac-role').value==='worker';
     document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
     if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team;
-    if(document.getElementById('ac-role').value==='admin'&&acRoleUI._last!=='admin') document.getElementById('ac-team').value='본사';
     acRoleUI._last=document.getElementById('ac-role').value}
+  // 부서가 본사면 권한은 사장 · 전무 · 상무만 (원래 관리자인 계정은 관리자 유지 가능)
+  function setRoleOptions(team,keepAdmin){const sel=document.getElementById('ac-role'), cur=sel.value;
+    const opts=team==='본사'?[...EXECS.map(t=>['exec:'+t,t]),...(keepAdmin?[['admin','관리자']]:[])]
+      :[['user','일반'],['lead','팀장'],['worker','작업자'],['admin','관리자']];
+    sel.replaceChildren(...opts.map(([v,l])=>{const o=document.createElement('option'); o.value=v; o.textContent=l; return o}));
+    if(opts.some(o=>o[0]===cur)) sel.value=cur}
+  document.getElementById('ac-team').addEventListener('change',()=>{setRoleOptions(document.getElementById('ac-team').value,document.getElementById('ac-role').value==='admin'); acRoleUI()});
   document.getElementById('ac-role').addEventListener('change',acRoleUI); document.getElementById('ac-station').addEventListener('change',acRoleUI);
-  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); document.getElementById('ac-team').value='생산'; acRoleUI._last=''; setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
+  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); document.getElementById('ac-team').value='생산'; setRoleOptions('생산'); acRoleUI._last=''; setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
   renderAccts(); applyLogin();
 
   // 권한 적용: 현재 메뉴 부서가 '보기만'이면 쓰기 막기, 공지·단가·클레임 개별 권한
