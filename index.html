@@ -711,7 +711,7 @@ button.editbtn{margin-right:4px}
       <label for="ac-name">이름<input id="ac-name" maxlength="20" required></label>
       <label for="ac-team">부서<select id="ac-team"><option>본사</option><option>생산</option><option>생산관리팀</option><option>품질</option><option>계발</option><option>총무팀</option></select></label>
       <label for="ac-pass">비밀번호<input id="ac-pass" type="password" minlength="6" autocomplete="new-password" placeholder="6자 이상 (수정 시 비우면 유지)"></label>
-      <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="lead">팀장</option><option value="worker">작업자</option><option value="admin">관리자</option></select></label>
+      <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="lead">팀장</option><option value="manager">관리자</option><option value="worker">작업자</option><option value="admin">시스템 관리자</option></select></label>
       <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="생산">생산 작업자 (재료 요청)</option><option value="사상반">생산 사상반 (자재로 보낸 수량·불량 입력)</option><option value="자재">자재 작업자 (생산에서 받은 수량 입력)</option></select></label>
       <fieldset class="acc" id="ac-perm"><legend>부서 메뉴 권한</legend>
         <div class="pgrid">
@@ -1620,7 +1620,7 @@ button.editbtn{margin-right:4px}
     edm.hidden=false; setTimeout(()=>{const f=edBox.querySelector('input,select,textarea'); if(f) f.focus()},0)}
   function toastMsg(t){const el=document.getElementById('toast'); if(!el) return; el.textContent=t; el.hidden=false; clearTimeout(toastMsg._t); toastMsg._t=setTimeout(()=>el.hidden=true,3000)}
   // 남이 쓴 기록 고치기·지우기: 관리자와 팀장 (그 부서 '보기+수정'일 때)
-  const isAdm=()=>{try{return !!me&&(me.role==='admin'||isLeadAcct(me))}catch(e){return false}};
+  const isAdm=()=>{try{return !!me&&(me.role==='admin'||isLeadAcct(me)||isMgrAcct(me))}catch(e){return false}};
   // 작업자는 '오늘 입력한 것'만 고치거나 지울 수 있음
   const dayOf=t=>{const x=new Date(t); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
   // 작업자는 오늘 자기가 입력한 것만 보임
@@ -2553,7 +2553,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     for(const s of xfers){const x=s.data(); if(!inM(x.date)) continue; const k=key(x.item,x.lot); m.set(k,(m.get(k)||0)-(Number(x.qty)||0))}
     for(const s of moves){const x=s.data(), n=Number(x.qty)||0; if(n<=0||!inM(iso(new Date(x.createdAt)))) continue; const k=key(x.item,x.lot); m.set(k,(m.get(k)||0)+n)}
     let n=0; m.forEach(v=>{if(v!==0) n++}); return {n,total:m.size}}
-  function renderRcAlert(){const el=document.getElementById('rc-alert'); if(!el) return; const isAdm=!!me&&me.role==='admin';
+  function renderRcAlert(){const el=document.getElementById('rc-alert'); if(!el) return; const isAdm=!!me&&(me.role==='admin'||isMgrAcct(me));
     if(!isAdm){el.hidden=true;return} const r=reconMismatch(iso(d).slice(0,7)); el.hidden=!r.total;
     el.classList.toggle('ok',r.n===0); el.querySelector('span').textContent=r.n?`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건 (전체 ${r.total}개 품번·LOT)`:`이번 달 사상반 ↔ 자재 수량이 모두 일치합니다 (${r.total}개 품번·LOT)`}
   [rcMonth,document.getElementById('rc-search'),document.getElementById('rc-only')].forEach(el=>el.addEventListener('input',renderRecon));
@@ -2727,7 +2727,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       if(x.doneAt&&x.status==='완료') ev.push({ts:x.doneAt,ic:'done',sym:'✓',t:`요청 완료: ${x.item}`,m:`${x.doneByName||'자재'} 처리 · ${fmtT(x.doneAt)}`,go:'reqlist'})}
     try{const r=reconMismatch(iso(d).slice(0,7)); if(r.n) ev.push({ts:0,sticky:true,ic:'bad',sym:'!',t:`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건`,m:'눌러서 오차 확인',go:'recon2'})}catch(e){}
     return ev.sort((a,b)=>(b.sticky-a.sticky)||(b.ts-a.ts)).slice(0,40)}
-  function renderBell(){const isAdm=!!me&&me.role==='admin'; bellBtn.hidden=!isAdm; if(!isAdm){bellPanel.hidden=true;return}
+  function renderBell(){const isAdm=!!me&&(me.role==='admin'||isMgrAcct(me)); bellBtn.hidden=!isAdm; if(!isAdm){bellPanel.hidden=true;return}
     const seen=bellSeen(), ev=bellEvents(), n=ev.filter(e=>e.ts>seen||e.sticky).length;
     const bn=document.getElementById('bell-n'); bn.textContent=n>99?'99+':n; bn.hidden=!n;
     const ul=document.getElementById('bell-list'); ul.replaceChildren();
@@ -3026,13 +3026,15 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       ALLTEAMS.forEach(t=>p.teams[t]=(a.perm&&a.perm.teams&&a.perm.teams[t])||'none'); const k=a.perm||{};
       p.notice=!!k.notice; p.complaint=!!k.complaint; p.item=!!k.item; p.priceEdit=!!k.priceEdit; p.itemToggle=!!k.itemToggle; p.price=p.priceEdit;
       return p}
-    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.itemToggle=!!a.perm.itemToggle; p.price=p.lead||!!p.title||p.priceEdit; return p}
+    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.manager=!!a.perm.manager; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.itemToggle=!!a.perm.itemToggle; p.price=p.lead||!!p.title||p.priceEdit; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
   // 팀장: DB에는 role 'user' + perm.lead=true 로 저장 (기존 부서 권한 규칙을 그대로 씀)
   const EXEC=['사장','전무','상무'];
   const isExecAcct=a=>!!a&&a.role==='user'&&!!(a.perm&&EXEC.includes(a.perm.title));
-  const roleVal=a=>a.role==='admin'?'admin':a.role==='worker'?'worker':isExecAcct(a)?'exec:'+a.perm.title:isLeadAcct(a)?'lead':'user';
-  const roleLabel=a=>a.role==='admin'?'관리자':a.role==='worker'?(a.station==='생산'?'생산 작업자':a.station==='사상반'?'생산 사상반':'자재 작업자'):isExecAcct(a)?a.perm.title:isLeadAcct(a)?'팀장':'일반';
+  // 시스템 관리자(admin): 계정 관리 전용 · 관리자(manager): 일반 직원처럼 권한을 받는 역할 (DB에는 role 'user' + perm.manager)
+  const isMgrAcct=a=>!!a&&a.role==='user'&&!!(a.perm&&a.perm.manager);
+  const roleVal=a=>a.role==='admin'?'admin':a.role==='worker'?'worker':isExecAcct(a)?'exec:'+a.perm.title:isMgrAcct(a)?'manager':isLeadAcct(a)?'lead':'user';
+  const roleLabel=a=>a.role==='admin'?'시스템 관리자':isMgrAcct(a)?'관리자':a.role==='worker'?(a.station==='생산'?'생산 작업자':a.station==='사상반'?'생산 사상반':'자재 작업자'):isExecAcct(a)?a.perm.title:isLeadAcct(a)?'팀장':'일반';
   function canSeePrice(){return !!me&&can('price')}
   const isLeadAcct=a=>!!a&&a.role!=='admin'&&a.role!=='worker'&&!!(a.perm&&a.perm.lead);
   const ITEM_TEAMS=['생산관리팀','자재','품질','생산'];
@@ -3064,7 +3066,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   setTimeout(endCheck,1500);
   function applyLogin(){const L=document.getElementById('login'); myId=me?me.user:null; if(!me){document.body.classList.remove('worker'); try{document.getElementById('bell').hidden=true;document.getElementById('bellpanel').hidden=true}catch(e){}}
     if(me){L.hidden=true; document.body.classList.remove('locked'); applyPerm();
-      document.getElementById('who-name').textContent=`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 관리자':isExecAcct(me)?' · '+me.perm.title:isLeadAcct(me)?' · 팀장':''}`;
+      document.getElementById('who-name').textContent=`${me.name} · ${me.role==='worker'?(me.station==='생산'?'생산 작업자':me.station==='사상반'?'생산 사상반':'자재 작업자'):(me.team||'')}${me.role==='admin'?' · 시스템 관리자':isMgrAcct(me)?' · 관리자':isExecAcct(me)?' · '+me.perm.title:isLeadAcct(me)?' · 팀장':''}`;
       side.querySelectorAll('.sitem[data-m="acct"]').forEach(b=>b.hidden=me.role!=='admin');
       side.querySelectorAll('.sg').forEach(w=>{const g=MENU.find(m=>m.g===w.dataset.g), t=g&&g.items[0]&&g.items[0][2]; w.hidden=!!t&&!canSee(t)});
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
@@ -3119,7 +3121,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
           const p=permOf(x); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value=p.teams[sel.dataset.t]||'none');
           document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=!!p[i.value]);
           document.getElementById('ac-role').disabled=self;
-          document.getElementById('ac-status').textContent=self?'내 계정을 고치는 중입니다. 내 권한(관리자)은 바꿀 수 없고, 부서 권한과 주요 정보 권한만 바꿀 수 있습니다.':`${x.user} 계정을 고치는 중입니다. 비밀번호 칸을 비우면 그대로 둡니다.`; document.getElementById('ac-user').focus()};
+          document.getElementById('ac-status').textContent=self?'내 계정을 고치는 중입니다. 내 권한(시스템 관리자)은 바꿀 수 없고, 부서 권한과 주요 정보 권한만 바꿀 수 있습니다.':`${x.user} 계정을 고치는 중입니다. 비밀번호 칸을 비우면 그대로 둡니다.`; document.getElementById('ac-user').focus()};
         a.append(ed,' '); if(self) return void tb.append(tr); const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
         del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return}
           try{await db.collection('accounts').doc(s.id).delete(); document.getElementById('ac-status').textContent=`${x.user} 계정을 지웠습니다.`}catch(e){document.getElementById('ac-status').textContent='지우지 못했습니다. 이 페이지의 편집 권한이 필요합니다.'}};
@@ -3137,9 +3139,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(pw&&pw.length<6){st.textContent='비밀번호는 6자 이상이어야 합니다.';return}
     const perm={teams:{}}; document.querySelectorAll('#ac-perm select').forEach(sel=>perm.teams[sel.dataset.t]=sel.value);
     document.querySelectorAll('#ac-keys input').forEach(i=>perm[i.value]=i.checked);
-    if(old&&me&&old.data().user===me.user&&document.getElementById('ac-role').value!==roleVal(old.data())){st.textContent='내 권한(관리자)은 직접 바꿀 수 없습니다.';return}
-    const rlSel=document.getElementById('ac-role').value, rl=(rlSel==='lead'||rlSel.startsWith('exec:'))?'user':rlSel, stn=document.getElementById('ac-station').value;
-    perm.lead=rlSel==='lead'; perm.title=rlSel.startsWith('exec:')?rlSel.slice(5):''; perm.price=perm.lead||!!perm.title||!!perm.priceEdit;
+    if(old&&me&&old.data().user===me.user&&document.getElementById('ac-role').value!==roleVal(old.data())){st.textContent='내 권한(시스템 관리자)은 직접 바꿀 수 없습니다.';return}
+    const rlSel=document.getElementById('ac-role').value, rl=(rlSel==='lead'||rlSel==='manager'||rlSel.startsWith('exec:'))?'user':rlSel, stn=document.getElementById('ac-station').value;
+    perm.lead=rlSel==='lead'; perm.manager=rlSel==='manager'; perm.title=rlSel.startsWith('exec:')?rlSel.slice(5):''; perm.price=perm.lead||!!perm.title||!!perm.priceEdit;
     if(document.getElementById('ac-team').value==='본사'&&rl!=='admin'&&!perm.title){st.textContent='본사는 사장 · 전무 · 상무 중에서 골라 주세요.';return}
     const rec={user:u,name:document.getElementById('ac-name').value.trim(),team:rl==='worker'?WORK[stn].team:document.getElementById('ac-team').value,role:rl,station:rl==='worker'?stn:'',perm,
       createdAt:old?old.data().createdAt:Date.now(),updatedAt:Date.now()};
@@ -3150,10 +3152,10 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
     if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team;
     acRoleUI._last=document.getElementById('ac-role').value}
-  // 부서가 본사면 권한은 사장 · 전무 · 상무만 (원래 관리자인 계정은 관리자 유지 가능)
+  // 부서가 본사면 권한은 사장 · 전무 · 상무만 (원래 시스템 관리자인 계정은 유지 가능)
   function setRoleOptions(team,keepAdmin){const sel=document.getElementById('ac-role'), cur=sel.value;
-    const opts=team==='본사'?[...EXECS.map(t=>['exec:'+t,t]),...(keepAdmin?[['admin','관리자']]:[])]
-      :[['user','일반'],['lead','팀장'],['worker','작업자'],['admin','관리자']];
+    const opts=team==='본사'?[...EXECS.map(t=>['exec:'+t,t]),...(keepAdmin?[['admin','시스템 관리자']]:[])]
+      :[['user','일반'],['lead','팀장'],['manager','관리자'],['worker','작업자'],['admin','시스템 관리자']];
     sel.replaceChildren(...opts.map(([v,l])=>{const o=document.createElement('option'); o.value=v; o.textContent=l; return o}));
     if(opts.some(o=>o[0]===cur)) sel.value=cur}
   document.getElementById('ac-team').addEventListener('change',()=>{setRoleOptions(document.getElementById('ac-team').value,document.getElementById('ac-role').value==='admin'); acRoleUI()});
