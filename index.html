@@ -508,24 +508,27 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
   font-family:var(--f-body);font-size:13px;font-weight:500;background:var(--surface);border:1px solid var(--line);border-radius:6px;color:var(--ink);box-shadow:none;overflow:hidden;cursor:pointer}
 #cal-days .cday:hover{border-color:var(--muted)}
 #cal-days .cday.ok{background:color-mix(in srgb,var(--ok-soft) 60%,var(--surface))}
-#cal-days .cday.bad{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 45%,var(--line))}
+#cal-days .cday.bad{background:var(--cl-soft);border-color:color-mix(in srgb,var(--cl) 45%,var(--line))}
 #cal-days .cday.future{background:var(--surface)}
 #cal-days .cday.hol{background:var(--surface);border-color:var(--line)}
 #cal-days .cday.hol.ok{background:color-mix(in srgb,var(--ok-soft) 60%,var(--surface))}
-#cal-days .cday.hol.bad{background:var(--bad-soft)}
+#cal-days .cday.hol.bad{background:var(--cl-soft)}
 #cal-days .dn{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;line-height:22px;min-width:22px;height:22px;margin:-2px 0 0 -2px;align-self:flex-start;text-align:center;border-radius:999px}
 #cal-days .cday.sun .dn,#cal-days .cday.hol .dn{color:var(--bad)}
 #cal-days .cday.sat .dn{color:#2f6db5}
 #cal-days .cday.hol .dn{color:var(--bad)}
 #cal-days .cday.today .dn{background:var(--ink);color:var(--surface)}
 #cal-days .cday.sel{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
-#cal-days .cday.hol small{position:static;font-family:var(--f-body);font-size:10px;font-weight:600;color:#7c3aed;padding:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#cal-days .cday em{position:absolute;right:5px;top:6px;font-style:normal;font-size:10px;font-weight:700;line-height:16px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--bad);color:#fff;text-align:center}
+#cal-days .cday.hol small{position:static;font-family:var(--f-body);font-size:10px;font-weight:600;color:var(--bad);padding:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#cal-days .cday em{position:absolute;right:5px;top:6px;font-style:normal;font-size:10px;font-weight:700;line-height:16px;min-width:16px;height:16px;padding:0 4px;border-radius:999px;background:var(--cl);color:#fff;text-align:center}
 #cal-days .ev{display:block;font-size:10.5px;font-weight:600;line-height:1.35;padding:1px 5px;border-radius:4px;background:var(--accent-soft);color:var(--accent);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #cal-days .evmore{font-size:10px;color:var(--muted);padding-left:2px}
 .cempty{aspect-ratio:auto;min-height:66px}
 .callegend{flex-wrap:wrap;gap:6px 16px;padding-top:2px}
-.c-ok{background:var(--ok-soft);outline:1px solid var(--ok)} .c-bad{background:var(--bad);border-radius:999px!important} .c-ev{background:var(--accent)} .c-hol{background:#7c3aed}
+.c-ok{background:var(--ok-soft);outline:1px solid var(--ok)} .c-bad{background:var(--cl);border-radius:999px!important} .c-ev{background:var(--accent)} .c-hol{background:var(--bad)}
+:root{--cl:#7c3aed;--cl-soft:#f1e8ff}
+:root[data-theme="dark"]{--cl:#a78bfa;--cl-soft:#2a1d45}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cl:#a78bfa;--cl-soft:#2a1d45}}
 .calside{gap:18px}
 .calsec{display:grid;gap:10px;min-width:0}
 .calsec+.calsec{border-top:1px solid var(--line);padding-top:16px}
@@ -540,9 +543,9 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
 #ev-list li.none{display:block}
 #evform[hidden]{display:none}
 .evnote{font-size:12px;color:var(--muted);margin:0}
-:root[data-theme="dark"] #cal-days .cday.hol small{color:#c4b5fd}
+:root[data-theme="dark"] #cal-days .cday.hol small{color:var(--bad)}
 :root[data-theme="dark"] #cal-days .cday.sat .dn,:root[data-theme="dark"] #cal-dow span:last-child{color:#7fb0ef}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #cal-days .cday.hol small{color:#c4b5fd}:root:not([data-theme="light"]) #cal-days .cday.sat .dn,:root:not([data-theme="light"]) #cal-dow span:last-child{color:#7fb0ef}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) #cal-days .cday.hol small{color:var(--bad)}:root:not([data-theme="light"]) #cal-days .cday.sat .dn,:root:not([data-theme="light"]) #cal-dow span:last-child{color:#7fb0ef}}
 @media (max-width:600px){
   #cal-days,#cal-dow{gap:4px}
   #cal-days .cday{min-height:52px;padding:4px;gap:2px}
