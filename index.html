@@ -1372,9 +1372,9 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
       ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
     {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
-    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['trial','시험사출','품질',['trialbox']],['nqc','부서 공지','품질',['notice']]]},
+    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
     {g:'고객대응',items:[['claim','클레임 현황','고객대응',['claimbox']]]},
-    {g:'계발',items:[['ndev','부서 공지','계발',['notice','soon']]]},
+    {g:'계발',items:[['trial','시험사출','계발',['trialbox']],['ndev','부서 공지','계발',['notice','soon']]]},
     {g:'총무팀',items:[['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
   const SECTIONS=['trialbox','claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
@@ -2520,7 +2520,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const m=String(x.round||'').match(/(\d+)/); x.round=m?String(x.round).replace(m[1],Number(m[1])+1):''; x.date=x.next||todayISO; x.next=''; x.result='진행중'; x.qty=''; x.good=''; x.issue=''; x.fix=''; x.defects=[];
     trEdit(null,x); tg('tr-status').textContent='조건을 복사했습니다. 바뀐 값만 고치고 저장하세요.'};
   tg('trform').addEventListener('submit',async e=>{e.preventDefault(); const st=tg('tr-status');
-    if(!db||!canEditTeam('품질')){st.textContent='품질 수정 권한이 있어야 저장할 수 있습니다.';return}
+    if(!db||!canEditTeam('계발')){st.textContent='계발 수정 권한이 있어야 저장할 수 있습니다.';return}
     const rec={}; TF.forEach(k=>{let v=tg('t-'+k).value.trim(); if((k==='qty'||k==='good')&&v!=='') v=Number(v); rec[k]=v}); rec.item=String(rec.item).toUpperCase(); rec.defects=getDef(); rec.updatedBy=myId; rec.updatedAt=Date.now();
     try{if(trCur){const old=trials.find(c=>c.id===trCur); await db.collection('trials').doc(trCur).set({...(old?old.data():{}),...rec})}
       else{rec.createdAt=Date.now(); rec.author=myId; const r=await db.collection('trials').add(rec); trCur=r.id}
