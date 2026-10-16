@@ -727,6 +727,7 @@ button.editbtn{margin-right:4px}
         <label><input type="checkbox" value="complaint" checked> 고객 클레임 등록</label>
         <label><input type="checkbox" value="item"> 품목 정보 수정 (품목명·규격·분류)</label>
         <label><input type="checkbox" value="priceEdit"> 품목 단가 보기·수정</label>
+        <label><input type="checkbox" value="itemToggle"> 품목 사용·미사용 바꾸기 (전체 품목 엑셀 올리기 포함)</label>
       </fieldset>
       <div class="sbtns"><button type="button" class="ghost" id="ac-new">새 계정</button><button type="submit" id="ac-save">계정 저장</button></div>
     </form>
@@ -2147,7 +2148,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     }catch(e){console.warn('단가 옮기기 실패',e)} movingPrices=false}
   async function saveInventory(headers,rows,file,at){
     const pIdx=headers.map((h,i)=>PRICE_COL.test(h)?i:-1).filter(i=>i>=0), keep=headers.map((h,i)=>i).filter(i=>!pIdx.includes(i));
-    if(pIdx.length&&(me&&(me.role==='admin'||can('price')))) await db.doc('prices/inventory').set({file,uploadedAt:at,headers:pIdx.map(i=>headers[i]),pos:pIdx,rows:JSON.stringify(rows.map(r=>pIdx.map(i=>r[i]??''))),author:myId,createdAt:at});
+    if(pIdx.length&&me&&can('price')) await db.doc('prices/inventory').set({file,uploadedAt:at,headers:pIdx.map(i=>headers[i]),pos:pIdx,rows:JSON.stringify(rows.map(r=>pIdx.map(i=>r[i]??''))),author:myId,createdAt:at});
     await db.doc('ecount/inventory').set({headers:keep.map(i=>headers[i]),rows:JSON.stringify(rows.map(r=>keep.map(i=>r[i]??''))),file,uploadedAt:at})}
   const slBody=document.getElementById('sl-body'), slStatus=document.getElementById('sl-status');
   document.getElementById('sl-date').value=iso(d);
@@ -2741,7 +2742,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   // 새 요청 토스트 (자재 담당·관리자)
   const toastEl=document.getElementById('toast'); let toastT=null;
   function toast(msg,goId){toastEl.textContent=msg; toastEl.hidden=false; toastEl.onclick=()=>{toastEl.hidden=true; if(goId){go(goId,true)}}; clearTimeout(toastT); toastT=setTimeout(()=>toastEl.hidden=true,8000)}
-  function seesMat(){return !!me&&!isWorker()&&(me.role==='admin'||canEditTeam('생산관리팀')||accessOf(me).includes('생산관리팀'))}
+  function seesMat(){return !!me&&!isWorker()&&(canEditTeam('생산관리팀')||accessOf(me).includes('생산관리팀'))}
   function onReqs(first,prev){renderReqs(); renderReqBadges(); renderBell();
     if(first) return;
     const fresh=reqs.map(r=>r.data()).filter((x,i)=>prev.get(reqs[i].id)===undefined&&x.status==='요청'&&x.author!==myId);
@@ -2944,7 +2945,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function calComplaints(){let ok=false; try{ok=claimOK()}catch(e){}
     if(!ok) return complaints;
     return complaints.concat(claims.filter(c=>c.data().opened).map(c=>{const x=c.data(); return {id:'frb-'+c.id,data:()=>({date:x.opened,partner:x.where||'',item:x.partNo||x.part||'',body:`${x.issue||''}${x.action?'\n조치: '+x.action:''}\n(클레임 현황 ${x.no||''})`,frb:true})}}))}
-  function canEvent(){try{return !!me&&(me.role==='admin'||me.team==='총무팀')}catch(e){return false}}
+  function canEvent(){try{return !!me&&(me.team==='총무팀'||canEditTeam('총무팀'))}catch(e){return false}}
   async function renderEvSide(k){
     const ok=canEvent(), list=events.filter(e=>e.data().date===k).sort((a,c)=>(a.data().time||'99').localeCompare(c.data().time||'99'));
     const h=document.getElementById('ev-sel'); h.textContent=`${k.slice(5).replace('-','월 ').replace(/^0/,'')}일 일정`;
@@ -3020,25 +3021,25 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   const EXECS=['사장','전무','상무'];
   function permOf(a){const p={teams:{},notice:false,price:false,complaint:true};
     if(a&&a.role==='worker'){const w=WORK[a.station]||WORK['사상반']; ALLTEAMS.forEach(t=>p.teams[t]=t===w.team?'edit':'none'); p.complaint=false; return p}
-    if(!a) return p; if(a.role==='admin'){p.price=true; p.lead=false; p.title='';
-      // 관리자: 부서별 권한을 저장해 두었으면 그대로 따름 (저장된 게 없으면 전체 수정)
-      if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit}
-      else {ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.complaint=p.item=p.priceEdit=true}
+    if(!a) return p; if(a.role==='admin'){p.lead=false; p.title=''; p.complaint=false;
+      // 관리자도 자동으로 주는 권한 없음: 계정 관리에서 체크한 것만
+      ALLTEAMS.forEach(t=>p.teams[t]=(a.perm&&a.perm.teams&&a.perm.teams[t])||'none'); const k=a.perm||{};
+      p.notice=!!k.notice; p.complaint=!!k.complaint; p.item=!!k.item; p.priceEdit=!!k.priceEdit; p.itemToggle=!!k.itemToggle; p.price=p.priceEdit;
       return p}
-    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.price=p.lead||!!p.title||p.priceEdit; return p}
+    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.itemToggle=!!a.perm.itemToggle; p.price=p.lead||!!p.title||p.priceEdit; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
   // 팀장: DB에는 role 'user' + perm.lead=true 로 저장 (기존 부서 권한 규칙을 그대로 씀)
   const EXEC=['사장','전무','상무'];
   const isExecAcct=a=>!!a&&a.role==='user'&&!!(a.perm&&EXEC.includes(a.perm.title));
   const roleVal=a=>a.role==='admin'?'admin':a.role==='worker'?'worker':isExecAcct(a)?'exec:'+a.perm.title:isLeadAcct(a)?'lead':'user';
   const roleLabel=a=>a.role==='admin'?'관리자':a.role==='worker'?(a.station==='생산'?'생산 작업자':a.station==='사상반'?'생산 사상반':'자재 작업자'):isExecAcct(a)?a.perm.title:isLeadAcct(a)?'팀장':'일반';
-  function canSeePrice(){return !!me&&(me.role==='admin'||can('price'))}
+  function canSeePrice(){return !!me&&can('price')}
   const isLeadAcct=a=>!!a&&a.role!=='admin'&&a.role!=='worker'&&!!(a.perm&&a.perm.lead);
   const ITEM_TEAMS=['생산관리팀','자재','품질','생산'];
-  function canToggleItems(){return !!me&&(me.role==='admin'||(isLeadAcct(me)&&ITEM_TEAMS.includes(me.team)))}
+  function canToggleItems(){return !!me&&can('itemToggle')}
   function accessOf(a){const p=permOf(a); return ALLTEAMS.filter(t=>p.teams[t]!=='none')}
   // 고객대응(클레임 현황): 품질 · 자재(생산관리팀) · 관리자만
-  function claimOK(){return !!me&&(me.role==='admin'||(me.role!=='worker'&&['품질','생산관리팀','자재'].includes(me.team)))}
+  function claimOK(){return !!me&&me.role!=='worker'&&['품질','생산관리팀','자재'].includes(me.team)}
   function canSee(t){if(t==='고객대응') return claimOK(); return t==='홈'||!me||accessOf(me).includes(t)}
   function canEditTeam(t){if(!me) return false; if(t==='홈') return true; if(t==='고객대응') return claimOK(); return permOf(me).teams[t]==='edit'}
   function can(k){return !!me&&permOf(me)[k]}
@@ -3110,15 +3111,16 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     const rows=[...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
-      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.complaint&&'클레임',p.item&&'품목 수정'].filter(Boolean).join(', ')||'없음')}
-      const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed&&!(me&&me.user===x.user)){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
+      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
+      {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.complaint&&'클레임',p.item&&'품목 수정',p.itemToggle&&'사용·미사용'].filter(Boolean).join(', ')||'없음')}
+      const a=c(''); a.style.whiteSpace='nowrap'; const self=!!(me&&me.user===x.user); if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           setRoleOptions(x.team||'생산',x.role==='admin'); document.getElementById('ac-role').value=roleVal(x); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
           const p=permOf(x); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value=p.teams[sel.dataset.t]||'none');
           document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=!!p[i.value]);
-          document.getElementById('ac-status').textContent=`${x.user} 계정을 고치는 중입니다. 비밀번호 칸을 비우면 그대로 둡니다.`; document.getElementById('ac-user').focus()};
-        a.append(ed,' ');const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
+          document.getElementById('ac-role').disabled=self;
+          document.getElementById('ac-status').textContent=self?'내 계정을 고치는 중입니다. 내 권한(관리자)은 바꿀 수 없고, 부서 권한과 주요 정보 권한만 바꿀 수 있습니다.':`${x.user} 계정을 고치는 중입니다. 비밀번호 칸을 비우면 그대로 둡니다.`; document.getElementById('ac-user').focus()};
+        a.append(ed,' '); if(self) return void tb.append(tr); const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제';
         del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return}
           try{await db.collection('accounts').doc(s.id).delete(); document.getElementById('ac-status').textContent=`${x.user} 계정을 지웠습니다.`}catch(e){document.getElementById('ac-status').textContent='지우지 못했습니다. 이 페이지의 편집 권한이 필요합니다.'}};
         a.append(del)}
@@ -3135,6 +3137,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(pw&&pw.length<6){st.textContent='비밀번호는 6자 이상이어야 합니다.';return}
     const perm={teams:{}}; document.querySelectorAll('#ac-perm select').forEach(sel=>perm.teams[sel.dataset.t]=sel.value);
     document.querySelectorAll('#ac-keys input').forEach(i=>perm[i.value]=i.checked);
+    if(old&&me&&old.data().user===me.user&&document.getElementById('ac-role').value!==roleVal(old.data())){st.textContent='내 권한(관리자)은 직접 바꿀 수 없습니다.';return}
     const rlSel=document.getElementById('ac-role').value, rl=(rlSel==='lead'||rlSel.startsWith('exec:'))?'user':rlSel, stn=document.getElementById('ac-station').value;
     perm.lead=rlSel==='lead'; perm.title=rlSel.startsWith('exec:')?rlSel.slice(5):''; perm.price=perm.lead||!!perm.title||!!perm.priceEdit;
     if(document.getElementById('ac-team').value==='본사'&&rl!=='admin'&&!perm.title){st.textContent='본사는 사장 · 전무 · 상무 중에서 골라 주세요.';return}
@@ -3155,7 +3158,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(opts.some(o=>o[0]===cur)) sel.value=cur}
   document.getElementById('ac-team').addEventListener('change',()=>{setRoleOptions(document.getElementById('ac-team').value,document.getElementById('ac-role').value==='admin'); acRoleUI()});
   document.getElementById('ac-role').addEventListener('change',acRoleUI); document.getElementById('ac-station').addEventListener('change',acRoleUI);
-  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); document.getElementById('ac-team').value='생산'; setRoleOptions('생산'); acRoleUI._last=''; setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
+  document.getElementById('ac-new').onclick=()=>{document.getElementById('acform').reset(); document.getElementById('ac-role').disabled=false; document.getElementById('ac-team').value='생산'; setRoleOptions('생산'); acRoleUI._last=''; setTimeout(acRoleUI,0); document.querySelectorAll('#ac-perm select').forEach(sel=>sel.value='view'); document.querySelectorAll('#ac-keys input').forEach(i=>i.checked=i.value==='complaint'); document.getElementById('ac-status').textContent=''};
   renderAccts(); applyLogin();
 
   // 권한 적용: 현재 메뉴 부서가 '보기만'이면 쓰기 막기, 공지·단가·클레임 개별 권한
