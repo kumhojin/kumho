@@ -1203,7 +1203,7 @@ button.editbtn{margin-right:4px}
     <p class="hint" id="it-hint">안 쓰는 품목을 ‘미사용’으로 바꾸면 판매(납품) 전표에 넣을 수 없고 품번 추천 목록에서도 빠집니다. 이름이 같은 품목이 여러 개일 때 쓰는 것만 남겨 두면 찾기 쉽습니다. 바꾸기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.</p>
     <label class="drop small" id="it-drop" for="it-file" hidden><input type="file" id="it-file" accept=".xlsx,.xls"><b>전체 품목 엑셀 놓기</b><span>생산품목코드 · 생산품목명 · 규격 · 최근 2년 판매(O/X) — O는 사용, X는 미사용으로 들어갑니다</span></label>
     <div class="row"><input id="it-search" class="grow" placeholder="품목코드, 품목명, 규격, 구분으로 찾기">
-      <div class="tabs" role="tablist" id="it-tabs"><button type="button" role="tab" data-f="all" aria-selected="true">전체</button><button type="button" role="tab" data-f="on" aria-selected="false">사용 중</button><button type="button" role="tab" data-f="off" aria-selected="false">미사용</button><button type="button" role="tab" data-f="dup" aria-selected="false">같은 이름 여러 개</button></div></div>
+      <div class="tabs" role="tablist" id="it-tabs"><button type="button" role="tab" data-f="all" aria-selected="true">전체</button><button type="button" role="tab" data-f="on" aria-selected="false">사용 중</button><button type="button" role="tab" data-f="off" aria-selected="false">미사용</button><button type="button" role="tab" data-f="dup" aria-selected="false">같은 이름 여러 개 사용 중</button></div></div>
     <div class="status" id="it-status"></div>
     <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>구분</th><th>최근 판매일</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
@@ -2243,8 +2243,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     return [...m.values()]}
   function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; tb.replaceChildren();
     const items=allItems(), byName=new Map();
-    items.forEach(e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); if(k) byName.set(k,(byName.get(k)||0)+1)});
-    const dupN=e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); return k?byName.get(k)||1:1};
+    // 같은 이름 문제: 둘 이상이 동시에 '사용'일 때만 (미사용 품목은 세지 않음)
+    items.forEach(e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); if(k&&!isOff(e.code)) byName.set(k,(byName.get(k)||0)+1)});
+    const dupN=e=>{if(isOff(e.code)) return 1; const k=e.name.replace(/\s+/g,'').toLowerCase(); return k?byName.get(k)||1:1};
     const q=document.getElementById('it-search').value.trim().toLowerCase();
     let rows=items.filter(e=>(!q||[e.code,e.name,e.spec,e.kind||'',e.group||''].some(v=>String(v).toLowerCase().includes(q)))
       &&(itF==='all'||(itF==='on'&&!isOff(e.code))||(itF==='off'&&isOff(e.code))||(itF==='dup'&&dupN(e)>1)))
@@ -2252,7 +2253,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const total=rows.length; rows=rows.slice(0,500); const edit=canToggleItems(); document.getElementById('it-drop').hidden=!edit;
     for(const e of rows){const off=isOff(e.code), d=offMap.get(e.code), tr=document.createElement('tr'); tr.className=off?'off':'on';
       const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t; if(cl) td.className=cl; tr.append(td); return td};
-      c(e.code,'code'); const nt=c(e.name||'—'); if(dupN(e)>1){const sp=document.createElement('span'); sp.className='pill dup'; sp.textContent=`같은 이름 ${dupN(e)}개`; nt.append(sp)}
+      c(e.code,'code'); const nt=c(e.name||'—'); if(dupN(e)>1){const sp=document.createElement('span'); sp.className='pill dup'; sp.textContent=`같은 이름 ${dupN(e)}개 사용 중`; nt.append(sp)}
       c(e.spec||''); c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
       c(d&&d.by?`${d.by} · ${fmt(d.createdAt)}`:master.has(e.code)?(master.get(e.code).sold?'2년 내 판매':'2년간 판매 없음'):'');
       const a=c(''); a.style.whiteSpace='nowrap';
