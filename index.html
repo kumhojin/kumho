@@ -2937,7 +2937,11 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   const EXECS=['사장','전무','상무'];
   function permOf(a){const p={teams:{},notice:false,price:false,complaint:true};
     if(a&&a.role==='worker'){const w=WORK[a.station]||WORK['사상반']; ALLTEAMS.forEach(t=>p.teams[t]=t===w.team?'edit':'none'); p.complaint=false; return p}
-    if(!a) return p; if(a.role==='admin'){ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.price=p.complaint=true; return p}
+    if(!a) return p; if(a.role==='admin'){p.price=true; p.lead=false; p.title='';
+      // 관리자: 부서별 권한을 저장해 두었으면 그대로 따름 (저장된 게 없으면 전체 수정)
+      if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false}
+      else {ALLTEAMS.forEach(t=>p.teams[t]='edit'); p.notice=p.complaint=true}
+      return p}
     if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.price=p.lead||!!p.title; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
   // 팀장: DB에는 role 'user' + perm.lead=true 로 저장 (기존 부서 권한 규칙을 그대로 씀)
@@ -3023,8 +3027,8 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     const rows=[...accounts].sort((a,b)=>a.data().user.localeCompare(b.data().user));
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr'); const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
-      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='admin'?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='admin'?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
+      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체 수정':x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
+      {const p=permOf(x); c(x.role==='admin'&&!(x.perm&&x.perm.teams)?'전체':x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&'단가',p.complaint&&'클레임'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; if(!x.fixed&&!(me&&me.user===x.user)){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           setRoleOptions(x.team||'생산',x.role==='admin'); document.getElementById('ac-role').value=roleVal(x); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
@@ -3058,9 +3062,6 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     catch(err){const m=String(err&&err.message||''); st.textContent=/registered|exists|duplicate/i.test(m)?'이미 있는 아이디입니다.':'저장하지 못했습니다: '+m}});
   function acRoleUI(){const w=document.getElementById('ac-role').value==='worker';
     document.getElementById('ac-wwrap').hidden=!w; document.getElementById('ac-perm').hidden=w; document.getElementById('ac-keys').hidden=w;
-    // 관리자는 모든 부서 전체 수정이라 부서별 권한 칸이 안 쓰임 → 막고 안내
-    {const adm=document.getElementById('ac-role').value==='admin', f=document.getElementById('ac-perm'); f.disabled=adm; document.getElementById('ac-keys').disabled=adm;
-      let note=f.querySelector('.adnote'); if(!note){note=document.createElement('p'); note.className='hint adnote'; note.textContent='관리자는 모든 부서를 보고 고칠 수 있어서 아래 부서별 권한은 쓰이지 않습니다. 부서별로 권한을 주려면 권한을 일반 또는 팀장으로 바꾸세요.'; f.insertBefore(note,f.children[1]||null)} note.hidden=!adm}
     if(w) document.getElementById('ac-team').value=WORK[document.getElementById('ac-station').value].team;
     acRoleUI._last=document.getElementById('ac-role').value}
   // 부서가 본사면 권한은 사장 · 전무 · 상무만 (원래 관리자인 계정은 관리자 유지 가능)
