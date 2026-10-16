@@ -1614,7 +1614,8 @@ button.editbtn{margin-right:4px}
       catch(e){toastMsg('저장하지 못했습니다. 권한을 확인해 주세요.')}};
     edm.hidden=false; setTimeout(()=>{const f=edBox.querySelector('input,select,textarea'); if(f) f.focus()},0)}
   function toastMsg(t){const el=document.getElementById('toast'); if(!el) return; el.textContent=t; el.hidden=false; clearTimeout(toastMsg._t); toastMsg._t=setTimeout(()=>el.hidden=true,3000)}
-  const isAdm=()=>{try{return !!me&&me.role==='admin'}catch(e){return false}};
+  // 남이 쓴 기록 고치기·지우기: 관리자와 팀장 (그 부서 '보기+수정'일 때)
+  const isAdm=()=>{try{return !!me&&(me.role==='admin'||isLeadAcct(me))}catch(e){return false}};
   // 작업자는 '오늘 입력한 것'만 고치거나 지울 수 있음
   const dayOf=t=>{const x=new Date(t); return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`};
   // 작업자는 오늘 자기가 입력한 것만 보임
