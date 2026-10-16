@@ -3042,8 +3042,8 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function canToggleItems(){return !!me&&can('itemToggle')}
   function accessOf(a){const p=permOf(a); return ALLTEAMS.filter(t=>p.teams[t]!=='none')}
   // 고객대응(클레임 현황): 품질 · 자재(생산관리팀) · 관리자만
-  function claimOK(){return !!me&&me.role!=='worker'&&['품질','생산관리팀','자재'].includes(me.team)}
-  // 고객대응(클레임 현황): 보기는 모든 직원(작업자 제외), 등록·수정은 품질 · 자재만
+  function claimOK(){return !!me&&me.role!=='worker'&&['본사','품질','생산관리팀','자재'].includes(me.team)}
+  // 고객대응(클레임 현황): 보기는 모든 직원(작업자 제외), 등록·수정은 본사 · 품질 · 자재
   function canSee(t){if(t==='고객대응') return !!me&&me.role!=='worker'; return t==='홈'||!me||accessOf(me).includes(t)}
   function canEditTeam(t){if(!me) return false; if(t==='홈') return true; if(t==='고객대응') return claimOK(); return permOf(me).teams[t]==='edit'}
   function can(k){return !!me&&permOf(me)[k]}
