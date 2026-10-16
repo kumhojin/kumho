@@ -3113,7 +3113,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const was=me; me=profToMe(pr); saveLogin(me); if(!was){location.reload();return} applyLogin()})();
   function renderAccts(){const tb=document.getElementById('ac-list'); tb.replaceChildren();
     // 부서별로 묶고, 부서 안에서는 팀장이 맨 위 → 관리자 → 일반 → 작업자, 같으면 이름 순
-    const TORD=['본사','생산관리팀','생산','품질','계발','총무팀'], TLBL={'생산관리팀':'자재 · 생산관리팀'};
+    const TORD=['본사','총무팀','생산관리팀','생산','품질','계발'], TLBL={'생산관리팀':'자재 · 생산관리팀'};
     const rank=x=>x.role==='admin'?0:isExecAcct(x)?({사장:1,전무:2,상무:3}[x.perm.title]||3):isLeadAcct(x)?4:isMgrAcct(x)?5:x.role==='worker'?7:6;
     const tk=x=>{const i=TORD.indexOf(x.team||''); return i<0?TORD.length:i};
     const rows=[...accounts].sort((a,b)=>{const x=a.data(), y=b.data(); return tk(x)-tk(y)||String(x.team||'').localeCompare(String(y.team||''))||rank(x)-rank(y)||String(x.name||x.user).localeCompare(String(y.name||y.user))});
