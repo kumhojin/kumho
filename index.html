@@ -3096,9 +3096,9 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     return sec.classList.contains('ro')}
   document.addEventListener('submit',e=>{const f=e.target; if(f.hasAttribute('data-write')&&blockedFor(f)){e.preventDefault();e.stopImmediatePropagation()}},true);
   document.addEventListener('click',e=>{const b=e.target.closest&&e.target.closest('button'); if(!b) return;
-    if(/^삭제/.test(b.textContent.trim())&&blockedFor(b)){e.preventDefault();e.stopImmediatePropagation()}},true);
+    if(/^(삭제|수정)/.test(b.textContent.trim())&&blockedFor(b)){e.preventDefault();e.stopImmediatePropagation()}},true);
   new MutationObserver(ms=>{for(const m of ms) m.addedNodes.forEach(n=>{if(n.nodeType!==1) return;
-    (n.matches&&n.matches('button.ghost')?[n]:[...n.querySelectorAll?n.querySelectorAll('button.ghost'):[]]).forEach(b=>{if(/^삭제/.test(b.textContent.trim())) b.classList.add('delbtn')})})})
+    (n.matches&&n.matches('button.ghost')?[n]:[...n.querySelectorAll?n.querySelectorAll('button.ghost'):[]]).forEach(b=>{if(/^(삭제|수정)/.test(b.textContent.trim())) b.classList.add('delbtn')})})})
     .observe(document.body,{childList:true,subtree:true});
 
   // 계획표 보관 (자재)
