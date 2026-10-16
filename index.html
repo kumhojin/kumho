@@ -725,7 +725,6 @@ button.editbtn{margin-right:4px}
       </fieldset>
       <fieldset class="acc" id="ac-keys"><legend>주요 정보 권한</legend>
         <label><input type="checkbox" value="notice"> 공지 올리기·삭제</label>
-        <label><input type="checkbox" value="complaint" checked> 고객 클레임 등록</label>
         <label><input type="checkbox" value="item"> 품목 정보 수정 (품목명·규격·분류)</label>
         <label><input type="checkbox" value="priceEdit"> 품목 단가 보기·수정</label>
         <label><input type="checkbox" value="itemToggle"> 품목 사용·미사용 바꾸기 (전체 품목 엑셀 올리기 포함)</label>
@@ -757,22 +756,10 @@ button.editbtn{margin-right:4px}
         <div class="calsec">
         <h3 id="ev-sel">일정</h3>
         <ul class="dlist" id="ev-list"></ul>
-        <form id="evform" class="cform2" hidden>
-          <div class="row"><input id="ev-time" type="time" style="max-width:130px" aria-label="시간 (선택)"><input id="ev-title" class="grow" maxlength="60" placeholder="일정 (예: 소방 점검, 전체 회의)" required></div>
-          <input id="ev-body" maxlength="200" placeholder="메모 (선택)">
-          <div class="row" style="justify-content:space-between"><span class="status" id="ev-status"></span><button type="submit" id="ev-save">일정 추가</button></div>
-        </form>
-        <p class="evnote" id="ev-note" hidden>일정은 총무팀과 관리자가 등록합니다.</p>
         </div>
         <div class="calsec">
         <h3 id="cal-sel">고객 클레임</h3>
         <ul class="dlist" id="cal-list"></ul>
-        <form id="cform2" data-write class="cform2">
-          <div class="row"><input id="cp-partner" class="grow" maxlength="60" placeholder="거래처" list="sl-partners" required><input id="cp-item" class="grow" maxlength="60" placeholder="품번" list="s-items"></div>
-          <div class="row"><input id="cp-lot" maxlength="20" placeholder="LOT (예: VJO)" style="max-width:150px"><input id="cp-qty" type="number" min="0" inputmode="numeric" placeholder="수량" style="max-width:110px"></div>
-          <textarea id="cp-body" maxlength="500" placeholder="클레임 내용" required></textarea>
-          <div class="row" style="justify-content:space-between"><span class="status" id="cp-status"></span><button type="submit" id="cp-save">클레임 등록</button></div>
-        </form>
         </div>
       </div>
     </div>
@@ -1202,6 +1189,40 @@ button.editbtn{margin-right:4px}
 
   <div class="empty" id="soon">이 부서 전용 도구는 준비 중입니다. 지금은 부서 공지와 포털 도우미를 쓸 수 있습니다.</div>
 
+  <section class="panel" id="evbox" aria-labelledby="h-evreg">
+    <h2 id="h-evreg">일정 등록 <span class="tag">총무팀 · 대시보드 달력에 표시</span></h2>
+    <form id="evform" data-write class="frbform">
+      <div class="g4">
+        <label>날짜<input id="ev-date" type="date" required></label>
+        <label>시간 (선택)<input id="ev-time" type="time"></label>
+        <label class="wide">일정<input id="ev-title" maxlength="60" placeholder="예: 소방 점검, 전체 회의" required></label>
+        <label class="wide">메모 (선택)<input id="ev-body" maxlength="200"></label>
+      </div>
+      <div class="row" style="justify-content:space-between"><span class="status" id="ev-status"></span><button type="submit" id="ev-save">일정 추가</button></div>
+    </form>
+    <h3 class="subh">다가오는 일정</h3>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>날짜</th><th>시간</th><th>일정</th><th>메모</th><th>등록</th><th></th></tr></thead><tbody id="ev-admin"></tbody></table></div>
+    <div class="empty" id="ev-aempty">다가오는 일정이 없습니다.</div>
+  </section>
+
+  <section class="panel" id="cpbox" aria-labelledby="h-cpreg">
+    <h2 id="h-cpreg">고객 클레임 등록 <span class="tag">품질 · 대시보드 달력에 표시</span></h2>
+    <form id="cform2" data-write class="frbform">
+      <div class="g4">
+        <label>날짜<input id="cp-date" type="date" required></label>
+        <label>거래처<input id="cp-partner" maxlength="60" list="sl-partners" required></label>
+        <label>품번<input id="cp-item" maxlength="60" list="s-items"></label>
+        <label>LOT<input id="cp-lot" maxlength="20" placeholder="예: VJO"></label>
+        <label>수량<input id="cp-qty" type="number" min="0" inputmode="numeric"></label>
+      </div>
+      <label>클레임 내용<textarea id="cp-body" maxlength="500" required></textarea></label>
+      <div class="row" style="justify-content:space-between"><span class="status" id="cp-status"></span><button type="submit" id="cp-save">클레임 등록</button></div>
+    </form>
+    <h3 class="subh">최근 고객 클레임</h3>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>날짜</th><th>거래처</th><th>품번</th><th>LOT</th><th class="num">수량</th><th>내용</th><th>등록</th><th></th></tr></thead><tbody id="cp-admin"></tbody></table></div>
+    <div class="empty" id="cp-aempty">등록된 고객 클레임이 없습니다.</div>
+  </section>
+
   <section class="panel" id="itembox" aria-labelledby="h-items">
     <h2 id="h-items">품목 관리 <span class="tag">사용 · 미사용</span></h2>
     <p class="hint" id="it-hint">안 쓰는 품목을 ‘미사용’으로 바꾸면 판매(납품) 전표에 넣을 수 없고 품번 추천 목록에서도 빠집니다. 이름이 같은 품목이 여러 개일 때 쓰는 것만 남겨 두면 찾기 쉽습니다. 바꾸기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.</p>
@@ -1460,12 +1481,12 @@ button.editbtn{margin-right:4px}
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
       ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
     {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
-    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
+    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['cpreg','고객 클레임 등록','품질',['cpbox']],['nqc','부서 공지','품질',['notice']]]},
     {g:'고객대응',items:[['claim','클레임 현황','고객대응',['claimbox']]]},
     {g:'계발',items:[['trial','시험사출','계발',['trialbox']],['ndev','부서 공지','계발',['notice','soon']]]},
-    {g:'총무팀',items:[['nga','부서 공지','총무팀',['notice','soon']]]}];
+    {g:'총무팀',items:[['evreg','일정 등록','총무팀',['evbox']],['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
-  const SECTIONS=['itembox','trialbox','claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
+  const SECTIONS=['evbox','cpbox','itembox','trialbox','claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','soon','teams'];
   const side=document.getElementById('side');
   const mq=window.matchMedia('(max-width:860px)');
   let openG=new Set(); try{JSON.parse(localStorage.getItem('openGroups')||'[]').forEach(x=>openG.add(x))}catch(e){}
@@ -2941,18 +2962,16 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       if(evs.length>2){const e=document.createElement('span'); e.className='evmore'; e.textContent='+'+(evs.length-2); b.append(e)}
       b.setAttribute('aria-label',`${calM+1}월 ${dd}일, ${hol?hol+', ':''}${evs.length?'일정 '+evs.length+'건, ':''}${k>todayISO?'예정':list.length?'클레임 '+list.length+'건':'클레임 없음'}`);
       b.onclick=()=>{calSel=k; renderCal()}; box.append(b)}
-    renderCalSide(by)}
+    renderCalSide(by); try{renderEvAdmin()}catch(e){} try{renderCpAdmin()}catch(e){}}
   // 달력의 고객 클레임 = 직접 등록한 클레임 + 클레임 현황(신속 대응 추적표, 볼 수 있는 사람만)
-  function calComplaints(){let ok=false; try{ok=claimOK()}catch(e){}
+  function calComplaints(){const ok=!!me&&me.role!=='worker';
     if(!ok) return complaints;
     return complaints.concat(claims.filter(c=>c.data().opened).map(c=>{const x=c.data(); return {id:'frb-'+c.id,data:()=>({date:x.opened,partner:x.where||'',item:x.partNo||x.part||'',body:`${x.issue||''}${x.action?'\n조치: '+x.action:''}\n(클레임 현황 ${x.no||''})`,frb:true})}}))}
   function canEvent(){try{return !!me&&(me.team==='총무팀'||canEditTeam('총무팀'))}catch(e){return false}}
   async function renderEvSide(k){
-    const ok=canEvent(), list=events.filter(e=>e.data().date===k).sort((a,c)=>(a.data().time||'99').localeCompare(c.data().time||'99'));
+    const ok=false, list=events.filter(e=>e.data().date===k).sort((a,c)=>(a.data().time||'99').localeCompare(c.data().time||'99'));
     const h=document.getElementById('ev-sel'); h.textContent=`${k.slice(5).replace('-','월 ').replace(/^0/,'')}일 일정`;
     const cn=document.createElement('span'); cn.className='cnt'; cn.textContent=list.length+'건'; h.append(cn);
-    document.getElementById('evform').hidden=!ok; document.getElementById('ev-note').hidden=ok||!!list.length;
-    document.getElementById('ev-save').textContent=`${k.slice(5).replace('-','/')} 일정 추가`;
     const ul=document.getElementById('ev-list'); ul.replaceChildren();
     let ps={}; const ids=[...new Set(list.map(e=>e.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     list.forEach(e=>{const x=e.data(), li=document.createElement('li');
@@ -2978,20 +2997,42 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const t=document.createElement('b'); t.textContent=[x.partner,x.item,x.lot?lotLabel(x.lot):'',x.qty?Number(x.qty).toLocaleString('ko-KR')+' EA':''].filter(Boolean).join(' · ');
       const who=document.createElement('span'); who.textContent=x.frb?'클레임 현황':((ps[x.author]&&ps[x.author].name)||'직원'); top.append(t,who);
       const p=document.createElement('p'); p.textContent=x.body||''; li.append(top,p);
-      if(x.author&&(x.author===myId||isAdm())){const bw=document.createElement('span'); bw.style.cssText='justify-self:end;white-space:nowrap';
+      if(false){const bw=document.createElement('span'); bw.style.cssText='justify-self:end;white-space:nowrap';
         bw.append(editBtn(()=>editDoc({col:'complaints',id:c.id,data:x,title:'고객 클레임 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'partner',label:'거래처',req:true},{k:'item',label:'품번',upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'body',label:'클레임 내용',type:'textarea',req:true}]})));
         const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제'; bw.append(del);
         del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('complaints').doc(c.id).delete()}catch(e){document.getElementById('cp-status').textContent='지우지 못했습니다.'}}; li.append(bw)}
       ul.append(li)});
     if(!list.length){const li=document.createElement('li'); li.className='none'; li.textContent=k>todayISO?'아직 오지 않은 날입니다.':'이 날은 고객 클레임이 없습니다.'; ul.append(li)}
-    document.getElementById('cp-save').textContent=`${k.slice(5).replace('-','/')} 클레임 등록`;
   }
+  // 일정 등록(총무팀) · 고객 클레임 등록(품질) 화면의 목록
+  document.getElementById('ev-date').value=todayISO; document.getElementById('cp-date').value=todayISO;
+  const delBtn=(onOk,stId)=>{const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='삭제';
+    b.onclick=async()=>{if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='삭제 확인';return} try{await onOk()}catch(e){document.getElementById(stId).textContent='지우지 못했습니다. 권한을 확인해 주세요.'}}; return b};
+  async function renderEvAdmin(){const tb=document.getElementById('ev-admin'); if(!tb) return; tb.replaceChildren();
+    const ok=canEvent(), from=iso(new Date(Date.now()-7*864e5));
+    const list=events.filter(e=>(e.data().date||'')>=from).sort((a,b)=>(a.data().date+(a.data().time||'99')).localeCompare(b.data().date+(b.data().time||'99'))).slice(0,100);
+    document.getElementById('ev-aempty').hidden=list.length>0;
+    let ps={}; const ids=[...new Set(list.map(e=>e.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
+    list.forEach(e=>{const x=e.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t??''; if(cl) td.className=cl; tr.append(td); return td};
+      c(x.date,'num'); c(x.time||'종일'); c(x.title); c(x.body||''); c(x.authorName||(ps[x.author]&&ps[x.author].name)||'총무팀');
+      const a=c(''); a.style.whiteSpace='nowrap';
+      if(ok){a.append(editBtn(()=>editDoc({col:'events',id:e.id,data:x,title:'일정 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'time',label:'시간',type:'time'},{k:'title',label:'일정',req:true,wide:true},{k:'body',label:'메모',wide:true}]})),' ',delBtn(()=>db.collection('events').doc(e.id).delete(),'ev-status'))}
+      tb.append(tr)})}
+  async function renderCpAdmin(){const tb=document.getElementById('cp-admin'); if(!tb) return; tb.replaceChildren();
+    const list=[...complaints].sort((a,b)=>String(b.data().date||'').localeCompare(String(a.data().date||''))).slice(0,100);
+    document.getElementById('cp-aempty').hidden=list.length>0;
+    let ps={}; const ids=[...new Set(list.map(c=>c.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
+    list.forEach(cd=>{const x=cd.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t??''; if(cl) td.className=cl; tr.append(td); return td};
+      c(x.date,'num'); c(x.partner); c(x.item||''); c(x.lot?lotLabel(x.lot):''); c(x.qty!=null&&x.qty!==''?Number(x.qty).toLocaleString('ko-KR'):'','num'); c(x.body||''); c((ps[x.author]&&ps[x.author].name)||'직원');
+      const a=c(''); a.style.whiteSpace='nowrap';
+      if(x.author&&(x.author===myId||isAdm())){a.append(editBtn(()=>editDoc({col:'complaints',id:cd.id,data:x,title:'고객 클레임 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'partner',label:'거래처',req:true},{k:'item',label:'품번',upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'body',label:'클레임 내용',type:'textarea',req:true}]})),' ',delBtn(()=>db.collection('complaints').doc(cd.id).delete(),'cp-status'))}
+      tb.append(tr)})}
   document.getElementById('cal-prev').onclick=()=>{calM--; if(calM<0){calM=11;calY--} renderCal()};
   document.getElementById('cal-next').onclick=()=>{calM++; if(calM>11){calM=0;calY++} renderCal()};
   document.getElementById('evform').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('ev-status');
     if(!db){st.textContent='로그인한 직원만 등록할 수 있습니다.';return}
-    if(!canEvent()){st.textContent='일정은 총무팀과 관리자만 등록할 수 있습니다.';return}
-    const k=calSel||todayISO, title=document.getElementById('ev-title').value.trim(); if(!title) return;
+    if(!canEvent()){st.textContent='일정은 총무팀만 등록할 수 있습니다.';return}
+    const k=document.getElementById('ev-date').value, title=document.getElementById('ev-title').value.trim(); if(!title) return;
     const rec={date:k,time:document.getElementById('ev-time').value||'',title,body:document.getElementById('ev-body').value.trim(),author:myId,authorName:(me&&me.name)||'',createdAt:Date.now()};
     const btn=document.getElementById('ev-save'); btn.disabled=true;
     try{await db.collection('events').add(rec); ['ev-time','ev-title','ev-body'].forEach(id=>document.getElementById(id).value=''); st.textContent='일정을 등록했습니다.'}
@@ -2999,7 +3040,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     btn.disabled=false});
   document.getElementById('cform2').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('cp-status');
     if(!db){st.textContent='등록은 로그인한 직원만 할 수 있습니다.';return}
-    const k=calSel||todayISO; if(k>todayISO){st.textContent='오늘 이후 날짜에는 등록할 수 없습니다.';return}
+    const k=document.getElementById('cp-date').value; if(!k) return; if(k>todayISO){st.textContent='오늘 이후 날짜에는 등록할 수 없습니다.';return}
     const g=id=>document.getElementById(id).value.trim();
     const rec={date:k,partner:g('cp-partner'),item:g('cp-item'),lot:g('cp-lot').toUpperCase(),qty:g('cp-qty')===''?null:Number(g('cp-qty')),body:g('cp-body'),author:myId,createdAt:Date.now()};
     if(!rec.partner||!rec.body) return;
@@ -3123,7 +3164,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       if((x.team||'')!==lastTeam){lastTeam=x.team||''; const n=rows.filter(r=>(r.data().team||'')===lastTeam).length;
         const h=document.createElement('tr'); h.className='acgrp'; const td=document.createElement('td'); td.colSpan=7; td.textContent=`${TLBL[lastTeam]||lastTeam||'부서 없음'} · ${n}명`; h.append(td); tb.append(h)} const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
       c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.complaint&&'클레임',p.item&&'품목 수정',p.itemToggle&&'사용·미사용'].filter(Boolean).join(', ')||'없음')}
+      {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.item&&'품목 수정',p.itemToggle&&'사용·미사용'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; const self=!!(me&&me.user===x.user); if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           setRoleOptions(x.team||'생산',x.role==='admin'); document.getElementById('ac-role').value=roleVal(x); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';
@@ -3184,7 +3225,6 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const hasWrite=el.querySelector('[data-write]');
       if(ro&&hasWrite&&x!=='dash'){if(!bar){bar=document.createElement('div'); bar.className='robar'; el.insertBefore(bar,el.children[1]||null)} bar.textContent=x==='notice'?'공지는 볼 수만 있습니다. 공지 올리기는 관리자가 허락한 사람만 할 수 있습니다.':'보기 전용입니다. 이 부서 자료를 고치려면 관리자에게 수정 권한을 요청하세요.'; bar.hidden=false}
       else if(bar) bar.hidden=true});
-    const cf=document.getElementById('cform2'); if(cf) cf.hidden=!can('complaint');
     document.body.classList.toggle('noprice',!can('price'));
   }
   // 저장·삭제를 권한 없이 누르면 막기 (화면 밖 단축키나 남은 버튼 대비)
