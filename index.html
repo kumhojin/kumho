@@ -1201,10 +1201,11 @@ button.editbtn{margin-right:4px}
   <section class="panel" id="itembox" aria-labelledby="h-items">
     <h2 id="h-items">품목 관리 <span class="tag">사용 · 미사용</span></h2>
     <p class="hint" id="it-hint">안 쓰는 품목을 ‘미사용’으로 바꾸면 판매(납품) 전표에 넣을 수 없고 품번 추천 목록에서도 빠집니다. 이름이 같은 품목이 여러 개일 때 쓰는 것만 남겨 두면 찾기 쉽습니다. 바꾸기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.</p>
-    <div class="row"><input id="it-search" class="grow" placeholder="품목코드, 품목명, 규격으로 찾기">
+    <label class="drop small" id="it-drop" for="it-file" hidden><input type="file" id="it-file" accept=".xlsx,.xls"><b>전체 품목 엑셀 놓기</b><span>생산품목코드 · 생산품목명 · 규격 · 최근 2년 판매(O/X) — O는 사용, X는 미사용으로 들어갑니다</span></label>
+    <div class="row"><input id="it-search" class="grow" placeholder="품목코드, 품목명, 규격, 구분으로 찾기">
       <div class="tabs" role="tablist" id="it-tabs"><button type="button" role="tab" data-f="all" aria-selected="true">전체</button><button type="button" role="tab" data-f="on" aria-selected="false">사용 중</button><button type="button" role="tab" data-f="off" aria-selected="false">미사용</button><button type="button" role="tab" data-f="dup" aria-selected="false">같은 이름 여러 개</button></div></div>
     <div class="status" id="it-status"></div>
-    <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
+    <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>구분</th><th>최근 판매일</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
   </section>
 
@@ -1683,6 +1684,7 @@ button.editbtn{margin-right:4px}
     db.collection('trials').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{trials=sn.docs;renderTrials()},()=>{});
     db.collection('claims').orderBy('createdAt','desc').limit(1000).onSnapshot(sn=>{claims=sn.docs;renderClaims();renderCal()},()=>{});
     db.collection('slips').orderBy('createdAt','desc').limit(200).onSnapshot(sn=>{slipsRaw=sn.docs;mergePrices()},()=>{});
+    db.doc('products/master').onSnapshot(sn=>{setMaster(sn.exists?sn.data():null)},()=>{});
     db.collection('itemoff').onSnapshot(sn=>{offMap=new Map(sn.docs.map(d=>[d.id,d.data()])); onItemsOff()},()=>{});
     db.collection('prices').onSnapshot(sn=>{priceMap=new Map(sn.docs.map(d=>[d.id,d.data()]));mergePrices()},()=>{});
     db.collection('stock').orderBy('createdAt','desc').limit(1000).onSnapshot(s=>{moves=s.docs;renderStock();try{renderRecv();renderRecon()}catch(e){}},
@@ -2218,12 +2220,18 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   // ---------- 품목 사용·미사용 (팀장) ----------
   let offMap=new Map(), itF='all';
   const normItem=v=>String(v||'').trim();
-  function isOff(code){const d=offMap.get(normItem(code)); return !!(d&&d.off)}
+  // 전체 품목 목록 (이카운트 품목 엑셀): 최근 2년 판매 O = 사용, X = 미사용 (품목 관리에서 바꾼 것이 우선)
+  let master=new Map(), masterInfo=null;
+  function setMaster(d){master=new Map(); masterInfo=d?{file:d.file,uploadedAt:d.uploadedAt,count:d.count}:null;
+    try{(d?JSON.parse(d.rows||'[]'):[]).forEach(r=>{const code=normItem(r[0]); if(code) master.set(code,{code,name:String(r[1]||'').trim(),spec:String(r[2]||'').trim(),kind:r[3]||'',group:r[4]||'',sold:!!r[5],last:r[6]||'',qty:r[7]||0})})}catch(e){console.warn(e)}
+    prodCache=null; onItemsOff()}
+  function isOff(code){code=normItem(code); const d=offMap.get(code); if(d) return !!d.off; const m=master.get(code); return !!m&&!m.sold}
   function markOffRows(){const sale=slipType==='판매';
     [...slBody.children].forEach(tr=>{const inp=tr.querySelector('input[data-k=item]'); const off=sale&&!!inp&&isOff(inp.value);
       tr.classList.toggle('offrow',off); if(inp){if(off) inp.title='미사용 품목 — 납품할 수 없습니다'; else if(inp.title.startsWith('미사용')) inp.title=''}})}
   slBody.addEventListener('input',e=>{if(e.target.dataset&&e.target.dataset.k==='item') markOffRows()});
   function allItems(){const m=new Map();
+    for(const [k,x] of master) m.set(k,{code:k,name:x.name,spec:x.spec,kind:x.kind,group:x.group,last:x.last});
     const add=(code,name,spec)=>{code=normItem(code); if(!code) return; const e=m.get(code)||{code,name:'',spec:''};
       if(!e.name&&name) e.name=String(name).trim(); if(!e.spec&&spec) e.spec=String(spec).trim(); m.set(code,e)};
     try{if(ecInv&&ecInv.headers){const H=ecInv.headers, f=re=>H.findIndex(h=>re.test(String(h)));
@@ -2238,15 +2246,15 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     items.forEach(e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); if(k) byName.set(k,(byName.get(k)||0)+1)});
     const dupN=e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); return k?byName.get(k)||1:1};
     const q=document.getElementById('it-search').value.trim().toLowerCase();
-    let rows=items.filter(e=>(!q||[e.code,e.name,e.spec].some(v=>v.toLowerCase().includes(q)))
+    let rows=items.filter(e=>(!q||[e.code,e.name,e.spec,e.kind||'',e.group||''].some(v=>String(v).toLowerCase().includes(q)))
       &&(itF==='all'||(itF==='on'&&!isOff(e.code))||(itF==='off'&&isOff(e.code))||(itF==='dup'&&dupN(e)>1)))
       .sort((a,b)=>(a.name||'￿').localeCompare(b.name||'￿')||a.code.localeCompare(b.code));
-    const total=rows.length; rows=rows.slice(0,500); const edit=canToggleItems();
+    const total=rows.length; rows=rows.slice(0,500); const edit=canToggleItems(); document.getElementById('it-drop').hidden=!edit;
     for(const e of rows){const off=isOff(e.code), d=offMap.get(e.code), tr=document.createElement('tr'); tr.className=off?'off':'on';
       const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t; if(cl) td.className=cl; tr.append(td); return td};
       c(e.code,'code'); const nt=c(e.name||'—'); if(dupN(e)>1){const sp=document.createElement('span'); sp.className='pill dup'; sp.textContent=`같은 이름 ${dupN(e)}개`; nt.append(sp)}
-      c(e.spec||''); const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
-      c(d&&d.by?`${d.by} · ${fmt(d.createdAt)}`:'');
+      c(e.spec||''); c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
+      c(d&&d.by?`${d.by} · ${fmt(d.createdAt)}`:master.has(e.code)?(master.get(e.code).sold?'2년 내 판매':'2년간 판매 없음'):'');
       const a=c(''); a.style.whiteSpace='nowrap';
       if(edit){const btn=document.createElement('button'); btn.type='button'; btn.className='ghost'; btn.textContent=off?'사용으로':'미사용으로';
         btn.onclick=async()=>{if(btn.dataset.c!=='1'){btn.dataset.c='1'; btn.textContent=off?'사용 확인':'미사용 확인'; return}
@@ -2258,7 +2266,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       tb.append(tr)}
     document.getElementById('it-empty').hidden=total>0;
     const offN=items.filter(e=>isOff(e.code)).length;
-    document.getElementById('it-status').textContent=`품목 ${items.length}개 · 미사용 ${offN}개${total>500?` · 앞 500개만 표시 (검색으로 좁혀 주세요)`:''}${edit?'':' · 보기 전용'}`}
+    document.getElementById('it-status').textContent=`${masterInfo?`${masterInfo.file} (${fmt(masterInfo.uploadedAt)}) · `:''}품목 ${items.length}개 · 미사용 ${offN}개${total>500?` · 앞 500개만 표시 (검색으로 좁혀 주세요)`:''}${edit?'':' · 보기 전용'}`}
   // ---------- 품목 자동 채우기: 품번이나 품목명을 넣으면 나머지(품목코드·품목명·규격·단가)를 채움 ----------
   let prodCache=null;
   const nName=v=>String(v||'').replace(/\s+/g,'').toLowerCase();
@@ -2279,6 +2287,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const r=(x.rows||[]).find(o=>normItem(o.item)===code&&o.price!=null&&o.price!==''); if(!r) continue;
       if(partner&&x.partner===partner) return r.price; if(any==null) any=r.price}
     if(any!=null) return any;
+    if(type==='판매'){const pp=priceMap.get('products'); const v=pp&&pp.map&&pp.map[code]; if(v!=null&&v!=='') return v}
     try{if(ecInv&&ecInv.headers){const H=ecInv.headers, ci=H.findIndex(h=>/품목코드|품번/.test(h));
       const pi=H.findIndex(h=>type==='구매'?/구매단가|입고단가|매입가/.test(h):/판매단가|출고단가|판매가/.test(h)), pj=pi>=0?pi:H.findIndex(h=>/단가/.test(h));
       if(ci>=0&&pj>=0){const r=invRows().find(r=>normItem(r[ci])===code); const n=r&&Number(String(r[pj]).replace(/,/g,'')); if(n) return n}}}catch(e){}
@@ -2318,6 +2327,35 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function autoRows(body){[...body.querySelectorAll('input[data-k=item]')].forEach(i=>{if(i.value.trim()) try{onProdChange(i)}catch(e){}})}
   document.getElementById('sl-partner').addEventListener('change',()=>{if(!canSeePrice()) return;
     [...slBody.querySelectorAll('input[data-k=price]')].forEach(pr=>{if(pr.dataset.auto==='1'){pr.value=''; const it=pr.closest('tr').querySelector('input[data-k=item]'); const p=it&&prodOf(it.value); if(p&&p.code) setAuto(pr,lastPrice(p.code,slipType,document.getElementById('sl-partner').value.trim()))}})});
+  async function itemsUpload(file){const st=document.getElementById('it-status');
+    if(!db||!canToggleItems()){st.textContent='전체 품목 올리기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.';return}
+    if(!window.XLSX){st.textContent='엑셀 읽기 도구를 불러오지 못했습니다. 새로고침해 주세요.';return}
+    try{st.textContent='엑셀 읽는 중…';
+      const wb=XLSX.read(await file.arrayBuffer(),{type:'array',cellDates:true});
+      const find=(H,re)=>H.findIndex(h=>re.test(String(h).replace(/\s/g,'')));
+      let best=null;
+      for(const n of [...wb.SheetNames].sort((a,b)=>(b.includes('전체')?1:0)-(a.includes('전체')?1:0))){
+        const aoa=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:false,defval:'',dateNF:'yyyy-mm-dd'});
+        const hr=aoa.slice(0,15).findIndex(r=>r.some(c=>/품목코드|품번/.test(String(c)))); if(hr<0) continue;
+        best={n,aoa,hr}; break}
+      if(!best){st.textContent='품목코드(생산품목코드) 칸을 찾지 못했습니다.';return}
+      const H=best.aoa[best.hr], ix={code:find(H,/품목코드|품번/),name:find(H,/품목명|품명/),spec:find(H,/규격/),kind:find(H,/품목구분/),group:find(H,/품목그룹/),
+        sold:find(H,/^최근2년판매$|판매여부|사용여부|^O\/X$/),price:find(H,/판매단가/),last:find(H,/판매일/),qty:find(H,/판매수량/)};
+      if(ix.sold<0){st.textContent='‘최근 2년 판매’(O/X) 칸을 찾지 못했습니다.';return}
+      const g=(r,k)=>ix[k]>=0?String(r[ix[k]]??'').trim():'';
+      const rows=[], prices={}; const seen=new Set();
+      best.aoa.slice(best.hr+1).forEach(r=>{const code=g(r,'code'); if(!code||seen.has(code)) return; seen.add(code);
+        const o=/^[O○◯o]$/.test(g(r,'sold'));
+        rows.push([code,g(r,'name'),g(r,'spec'),g(r,'kind'),g(r,'group'),o?1:0,g(r,'last').slice(0,10),Number(g(r,'qty').replace(/,/g,''))||0]);
+        const pr=Number(g(r,'price').replace(/,/g,'')); if(pr) prices[code]=pr});
+      if(!rows.length){st.textContent='품목이 없습니다.';return}
+      st.textContent=`${rows.length}개 품목 저장 중…`; const at=Date.now();
+      await db.doc('products/master').set({rows:JSON.stringify(rows),count:rows.length,file:file.name,sheet:best.n,uploadedAt:at,author:myId,createdAt:at});
+      let pmsg=''; if(canSeePrice()&&Object.keys(prices).length){try{await db.doc('prices/products').set({map:prices,file:file.name,uploadedAt:at,author:myId,createdAt:at}); pmsg=` · 판매단가 ${Object.keys(prices).length}개`}catch(e){pmsg=' · 판매단가는 저장하지 못했습니다'}}
+      const on=rows.filter(r=>r[5]).length;
+      st.textContent=`${file.name}: ${rows.length}개 품목을 저장했습니다 (사용 ${on} · 미사용 ${rows.length-on})${pmsg}.`}
+    catch(err){console.error(err); st.textContent='저장하지 못했습니다: '+(err&&err.message||err)}}
+  wireDrop('it-drop','it-file',itemsUpload);
   function onItemsOff(){prodCache=null; try{buildItemList()}catch(e){} try{renderItems()}catch(e){} try{markOffRows()}catch(e){} try{renderStock()}catch(e){}}
   document.getElementById('it-search').addEventListener('input',renderItems);
   document.querySelectorAll('#it-tabs button').forEach(b=>b.onclick=()=>{itF=b.dataset.f;
