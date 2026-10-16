@@ -625,6 +625,19 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
 .edwarn{font-size:13px;padding:10px 12px;border-radius:6px;background:var(--accent-soft);color:var(--ink);border-left:3px solid var(--accent)}
 button.editbtn{margin-right:4px}
 @media (max-width:520px){.edm .fg{grid-template-columns:minmax(0,1fr)}}
+
+/* 오늘 내가 입력한 내역 */
+.wtoday{border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:8px;padding:12px 14px;display:grid;gap:8px;background:var(--surface)}
+.wtoday .wh{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;justify-content:space-between}
+.wtoday .wh b{font-family:var(--f-display);font-size:15px}
+.wtoday .wh input{width:auto;padding:5px 8px;font-size:13px}
+.wtoday .wsum{display:flex;flex-wrap:wrap;gap:6px}
+.wtoday .wsum span{font-size:13px;padding:3px 10px;border-radius:999px;background:var(--accent-soft);color:var(--ink)}
+.wtoday .wsum b{font-variant-numeric:tabular-nums}
+.wtoday table{width:100%;border-collapse:collapse;font-size:14px}
+.wtoday td{padding:6px 4px;border-top:1px solid var(--line)}
+.wtoday td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.wtoday .none{color:var(--muted);font-size:14px}
 </style>
 
 <script>document.body.classList.add('locked')</script>
@@ -807,6 +820,7 @@ button.editbtn{margin-right:4px}
           <button type="button" class="ghost" id="x-add">줄 추가</button></div></td></tr></tfoot></table></div>
       <div class="row" style="justify-content:space-between"><span class="status" id="x-status"></span><button type="submit" id="x-save">보낸 내역 저장</button></div>
     </form>
+    <div class="wtoday" id="x-today"></div>
     <h3 class="subh">최근 보낸 내역</h3>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>보낸 날</th><th>품번</th><th>LOT</th><th class="num">수량</th><th class="num">불량</th><th>메모</th><th>입력자</th><th></th></tr></thead><tbody id="x-list"></tbody></table></div>
     <div class="empty" id="x-empty">아직 보낸 내역이 없습니다.</div>
@@ -847,6 +861,7 @@ button.editbtn{margin-right:4px}
       <div class="row" style="justify-content:space-between"><span class="status" id="rq-status"></span><button type="submit" id="rq-save">재료 요청하기</button></div>
     </form>
     <datalist id="rq-items"></datalist>
+    <div class="wtoday" id="rq-today"></div>
     <h3 class="subh">최근 요청</h3>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>요청</th><th>재료</th><th class="num">수량</th><th>필요한 날</th><th>요청자</th><th>상태</th><th></th></tr></thead><tbody id="rq-list"></tbody></table></div>
     <div class="empty" id="rq-empty">아직 요청이 없습니다.</div>
@@ -870,6 +885,7 @@ button.editbtn{margin-right:4px}
         <tfoot><tr><td colspan="6"><div class="row" style="justify-content:flex-end"><button type="button" class="ghost" id="rv-add">줄 추가</button></div></td></tr></tfoot></table></div>
       <div class="row" style="justify-content:space-between"><span class="status" id="rv-status"></span><button type="submit" id="rv-save">받은 내역 저장</button></div>
     </form>
+    <div class="wtoday" id="rv-today"></div>
     <h3 class="subh">최근 받은 내역</h3>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>받은 날</th><th>품번</th><th>LOT</th><th class="num">수량</th><th>메모</th><th>입력자</th><th></th></tr></thead><tbody id="rv-list"></tbody></table></div>
     <div class="empty" id="rv-empty">아직 받은 내역이 없습니다.</div>
@@ -2226,7 +2242,29 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       xBody.replaceChildren(); xAdd(5); xStatus.textContent=`${rows.length}개 품목을 저장했습니다. 자재가 받은 수량과 자동으로 비교됩니다.`}
     catch(err){xStatus.textContent='저장하지 못했습니다. 보기 전용 권한이면 관리자에게 편집 권한을 요청하세요.'}
     btn.disabled=false});
-  async function renderXfers(){const list=document.getElementById('x-list'); list.replaceChildren(); const mine=(isWorker()?xfers.filter(s=>s.data().author===myId):xfers).slice(0,50);
+
+  // ===== 내가 입력한 내역 (날짜별) — 작업자가 그날 한 일을 한눈에 =====
+  const wDay={};
+  function wToday(boxId,label,rows,cols,sums){const box=document.getElementById(boxId); if(!box) return;
+    const day=wDay[boxId]||todayISO; box.replaceChildren();
+    const h=document.createElement('div'); h.className='wh'; const t=document.createElement('b'); t.textContent=(day===todayISO?'오늘 ':`${Number(day.slice(5,7))}월 ${Number(day.slice(8))}일 `)+label;
+    const di=document.createElement('input'); di.type='date'; di.value=day; di.max=todayISO; di.setAttribute('aria-label','날짜 선택'); di.onchange=()=>{wDay[boxId]=di.value||todayISO; wRender()};
+    h.append(t,di); box.append(h);
+    const list=rows(day);
+    if(!list.length){const p=document.createElement('div'); p.className='none'; p.textContent='이 날 입력한 내역이 없습니다.'; box.append(p); return}
+    const sm=document.createElement('div'); sm.className='wsum'; sums(list).forEach(([l,v])=>{const sp=document.createElement('span'); sp.textContent=l+' '; const b=document.createElement('b'); b.textContent=v; sp.append(b); sm.append(sp)}); box.append(sm);
+    const tb=document.createElement('table'); list.forEach(x=>{const tr=document.createElement('tr'); cols(x).forEach(([v,cl])=>{const td=document.createElement('td'); td.textContent=v??''; if(cl) td.className=cl; tr.append(td)}); tb.append(tr)}); box.append(tb)}
+  const nf=n=>Number(n||0).toLocaleString('ko-KR');
+  function wRender(){try{
+    const mineBy=(arr,f)=>arr.map(s=>s.data()).filter(x=>x.author===myId&&f(x));
+    wToday('x-today','내가 보낸 내역',d=>mineBy(xfers,x=>x.date===d),x=>[[x.item],[lotLabel(x.lot)],[nf(x.qty)+' EA','num'],[Number(x.bad)?'불량 '+nf(x.bad):'','num']],
+      l=>[['품목',l.length+'건'],['보낸 수량',nf(l.reduce((a,x)=>a+Number(x.qty||0),0))+' EA'],['불량',nf(l.reduce((a,x)=>a+Number(x.bad||0),0))+' EA']]);
+    wToday('rv-today','내가 받은 내역',d=>mineBy(moves,x=>x.src==='recv'&&(x.date||iso(new Date(x.createdAt)))===d),x=>[[x.item],[lotLabel(x.lot)],[nf(x.qty)+' EA','num']],
+      l=>[['품목',l.length+'건'],['받은 수량',nf(l.reduce((a,x)=>a+Number(x.qty||0),0))+' EA']]);
+    wToday('rq-today','내가 한 재료 요청',d=>mineBy(reqs,x=>iso(new Date(x.createdAt))===d),x=>[[x.item],[nf(x.qty)+' '+(x.unit||''),'num'],[x.status||'요청']],
+      l=>[['요청',l.length+'건'],['처리 완료',l.filter(x=>x.status==='완료').length+'건']]);
+  }catch(e){}}
+  async function renderXfers(){wRender(); const list=document.getElementById('x-list'); list.replaceChildren(); const mine=(isWorker()?xfers.filter(s=>s.data().author===myId):xfers).slice(0,50);
     document.getElementById('x-empty').hidden=mine.length>0;
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     for(const s of mine){const x=s.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
@@ -2400,6 +2438,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
   function reqWho(x){return x.authorName||x.author||'직원'}
   function stPill(td,stt){const p=document.createElement('span'); const v=RQS[stt]||RQS['요청']; p.className='st '+v[1]; p.textContent=v[0]; td.append(p)}
   function renderReqs(){
+    wRender();
     // 생산: 최근 요청
     const rl=document.getElementById('rq-list'); rl.replaceChildren(); const mine=(isWorker()?reqs.filter(r=>r.data().author===myId):reqs).slice(0,40);
     document.getElementById('rq-empty').hidden=mine.length>0;
@@ -2492,7 +2531,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       rvBody.replaceChildren(); rvAdd(5); rvStatus.textContent=`${rows.length}개 품목을 저장했습니다. 사상반이 보낸 수량과 자동으로 비교됩니다.`}
     catch(err){rvStatus.textContent='저장하지 못했습니다. 권한을 확인해 주세요.'}
     btn.disabled=false});
-  async function renderRecv(){const list=document.getElementById('rv-list'); if(!list) return; list.replaceChildren();
+  async function renderRecv(){wRender(); const list=document.getElementById('rv-list'); if(!list) return; list.replaceChildren();
     const mine=moves.filter(s=>{const x=s.data(); return x.src==='recv'&&(!isWorker()||x.author===myId)}).slice(0,50);
     document.getElementById('rv-empty').hidden=mine.length>0;
     let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
@@ -2770,7 +2809,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       side.querySelectorAll('.sitem').forEach(b=>{if(b.dataset.m==='acct'){b.hidden=me.role!=='admin';return} b.hidden=isWorker()&&!workItems().includes(b.dataset.m)});
       if(isWorker()) side.querySelectorAll('.sg').forEach(w=>{w.hidden=![...w.querySelectorAll('.sitem'),...((w._box&&w._box.querySelectorAll('.sitem'))||[])].some(b=>!b.hidden)});
       document.body.classList.toggle('worker',isWorker());
-      try{renderRcAlert(); renderBell(); renderReqBadges(); renderReqs()}catch(e){}
+      try{renderRcAlert(); renderBell(); renderReqBadges(); renderReqs(); renderXfers(); renderRecv()}catch(e){}
       try{renderCal()}catch(e){}
       const cur=ITEM[curItem]; if((curItem==='acct'&&me.role!=='admin')||(cur&&!canSee(cur.t))||(isWorker()&&!workItems().includes(curItem))) go(isWorker()?workItems()[0]:'dash',false)}
     else{L.hidden=false; document.body.classList.add('locked'); setTimeout(()=>document.getElementById('lg-user').focus(),0)}}
