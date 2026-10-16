@@ -731,6 +731,7 @@ html{-webkit-text-size-adjust:100%;text-size-adjust:100%}
       <div class="sliphead">
         <label for="sl-date">일자<input id="sl-date" type="date" required></label>
         <label for="sl-partner" id="sl-pwrap">거래처<input id="sl-partner" maxlength="60" list="sl-partners" placeholder="거래처명"></label>
+        <label for="sl-driver" id="sl-dwrap" hidden>운송 기사<select id="sl-driver"><option value="">선택</option><option>기사1</option><option>기사2</option><option>기사3</option></select></label>
         <div class="fixed" id="sl-fixed">생산된공장 <b>250 김사빈</b> · 받는창고 <b>300 제품창고</b></div>
       </div>
       <div class="scroll"><table class="rules sliptable"><thead id="sl-head"></thead><tbody id="sl-body"></tbody>
@@ -1810,7 +1811,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       row=row.nextElementSibling}); renumber(); slStatus.textContent=`${lines.length}줄을 붙여 넣었습니다.`}
   function setSlipType(t){if(!SLIP[t]) return; const changed=t!==slipType; slipType=t; const S=SLIP[t];
     document.getElementById('slip-title').textContent=S.title;
-    document.getElementById('sl-pwrap').hidden=!S.partner; document.getElementById('sl-fixed').hidden=t!=='입고';
+    document.getElementById('sl-pwrap').hidden=!S.partner; document.getElementById('sl-fixed').hidden=t!=='입고'; document.getElementById('sl-dwrap').hidden=t!=='판매';
     const hd=document.getElementById('sl-head'); hd.replaceChildren(); const tr=document.createElement('tr');
     ['#',...S.cols.map(c=>c[1]),''].forEach((h,i)=>{const th=document.createElement('th'); th.textContent=h; if(['수량','단가'].includes(h)) th.className='num'; if(h==='단가') th.classList.add('pricecell'); tr.append(th)}); hd.append(tr);
     if(changed||!slBody.children.length){slBody.replaceChildren(); addRows(5)}
@@ -1831,6 +1832,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(bad.length){slStatus.textContent=`${bad.join(', ')}번 줄을 확인해 주세요. 품번과 수량(1 이상)${slipType==='입고'?', LOT':''}이 필요합니다.`;return}
     if(!rows.length){slStatus.textContent='입력한 줄이 없습니다.';return}
     if(S.partner&&!partner){slStatus.textContent='거래처를 넣어 주세요.';return}
+    if(slipType==='판매'&&!document.getElementById('sl-driver').value){slStatus.textContent='운송 기사를 골라 주세요.';document.getElementById('sl-driver').focus();return}
     // 판매: 재고 확인 후 LOT별로 뺄 수량 정하기
     let outs=[];
     if(slipType==='판매'){const m=stockMap(), left=new Map([...m].map(([k,v])=>[k,v.qty])), short=[];
@@ -1842,7 +1844,8 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const btn=document.getElementById('sl-save'); btn.disabled=true; slStatus.textContent='저장 중…';
     try{
       const prices=rows.map(o=>o.price??null), cleanRows=rows.map(({price,...o})=>o);
-      const ref=await db.collection('slips').add({type:slipType,date,partner:S.partner?partner:'',rows:cleanRows,author:myId,createdAt:Date.now()});
+      const driver=slipType==='판매'?document.getElementById('sl-driver').value:'';
+      const ref=await db.collection('slips').add({type:slipType,date,partner:S.partner?partner:'',...(driver?{driver}:{}),rows:cleanRows,author:myId,createdAt:Date.now()});
       if(prices.some(v=>v!=null)&&can('price')) await db.doc('prices/'+ref.id).set({slip:ref.id,prices,author:myId,createdAt:Date.now()});
       const now=Date.now();
       if(slipType==='입고') for(const o of rows) await db.collection('stock').add({item:o.item,lot:o.lot,qty:o.qty,memo:'입고 전표'+(o.memo?' · '+o.memo:''),slip:ref.id,author:myId,createdAt:now});
@@ -1859,7 +1862,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     (async()=>{let ps={}; const ids=[...new Set(mine.map(s=>s.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
       for(const s of mine){const x=s.data(), tr=document.createElement('tr');
         const c=(t,cl)=>{const td=document.createElement('td');td.textContent=t;if(cl)td.className=cl;tr.append(td);return td};
-        c(x.date,'num'); c(x.partner||(x.type==='입고'?'250 → 300':'—'));
+        c(x.date,'num'); c((x.partner||(x.type==='입고'?'250 → 300':'—'))+(x.driver?` · ${x.driver}`:''));
         c(x.rows.map(o=>o.item).slice(0,3).join(', ')+(x.rows.length>3?` 외 ${x.rows.length-3}`:''));
         c(x.rows.reduce((a,o)=>a+o.qty,0).toLocaleString('ko-KR'),'num'); c((ps[x.author]&&ps[x.author].name)||'직원');
         const act=c(''); act.style.whiteSpace='nowrap';
