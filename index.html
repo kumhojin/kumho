@@ -2340,7 +2340,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       const hol=HOL[k]; if(hol){b.classList.add('hol'); b.title=hol; const sm=document.createElement('small'); sm.textContent=hol; b.append(sm)}
       if(list.length){const em=document.createElement('em'); em.textContent=list.length; em.title='고객 클레임 '+list.length+'건'; b.append(em)}
       const evs=(evBy.get(k)||[]).sort((a,c)=>(a.time||'99').localeCompare(c.time||'99'));
-      evs.slice(0,2).forEach(x=>{const e=document.createElement('span'); e.className='ev'; e.textContent=(x.time?x.time+' ':'')+x.title; b.append(e)});
+      evs.slice(0,2).forEach(x=>{const e=document.createElement('span'); e.className='ev'; e.textContent=x.title; e.title=(x.time?x.time+' ':'')+x.title; b.append(e)});
       if(evs.length>2){const e=document.createElement('span'); e.className='evmore'; e.textContent='+'+(evs.length-2); b.append(e)}
       b.setAttribute('aria-label',`${calM+1}월 ${dd}일, ${hol?hol+', ':''}${evs.length?'일정 '+evs.length+'건, ':''}${k>todayISO?'예정':list.length?'클레임 '+list.length+'건':'클레임 없음'}`);
       b.onclick=()=>{calSel=k; renderCal()}; box.append(b)}
