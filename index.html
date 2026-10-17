@@ -5,7 +5,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=20261017a">
+<link rel="stylesheet" href="css/app.css?v=20261017b">
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
@@ -84,6 +84,8 @@
         <label><input type="checkbox" value="item"> 품목 정보 수정 (품목명·규격·분류)</label>
         <label><input type="checkbox" value="priceEdit"> 품목 단가 보기·수정</label>
         <label><input type="checkbox" value="itemToggle"> 품목 사용·미사용 바꾸기 (전체 품목 엑셀 올리기 포함)</label>
+        <label><input type="checkbox" value="history"> 이카운트 거래 내역 보기</label>
+        <label><input type="checkbox" value="import"> 이카운트 자료 가져오기 · 되돌리기</label>
       </fieldset>
       <div class="sbtns"><button type="button" class="ghost" id="ac-new">새 계정</button><button type="submit" id="ac-save">계정 저장</button></div>
     </form>
@@ -191,7 +193,7 @@
         <button type="button" class="ghost" id="pp-prev">‹ 전날</button><button type="button" class="ghost" id="pp-next">다음날 ›</button>
         <span class="grow"></span>
         <button type="button" class="ghost" id="pp-copy">전날 계획 복사</button>
-        <label class="ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:4px 10px">엑셀·CSV 올리기<input id="pp-file" type="file" accept=".xlsx,.xls,.csv" hidden></label>
+        <label class="ghost" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:4px 10px">엑셀·CSV 올리기<input id="pp-file" type="file" accept=".xlsx,.xls" hidden></label>
       </div>
       <div class="scroll"><table class="rules sliptable"><thead><tr><th>#</th><th>호기</th><th>품번</th><th class="num">계획 수량</th><th>메모</th><th></th></tr></thead><tbody id="pp-body"></tbody>
         <tfoot><tr><td colspan="6"><div class="row" style="justify-content:space-between"><span class="hint">엑셀에서 "호기 · 품번 · 수량" 순서로 복사해 첫 칸에 붙여 넣어도 됩니다.</span><button type="button" class="ghost" id="pp-add">줄 추가</button></div></td></tr></tfoot></table></div>
@@ -401,7 +403,7 @@
       <span class="hint" id="p-guideinfo"></span>
     </div>
     <label class="drop" id="p-drop" for="p-file">
-      <input type="file" id="p-file" accept=".xlsx,.xls,.csv">
+      <input type="file" id="p-file" accept=".xlsx,.xls">
       <b>출하할 제품 파일을 여기에 끌어다 놓으세요</b>
       <span>또는 눌러서 선택 · .xlsx .xls .csv · 품번과 납품일별 수량이 있는 파일</span>
     </label>
@@ -411,7 +413,7 @@
     <details id="p-guide">
       <summary>박스당 입수표 (<span id="p-gname">중박스</span>) 관리</summary>
       <div class="gbox">
-        <label class="drop small" id="p-gdrop" data-write for="p-gfile"><input type="file" id="p-gfile" accept=".xlsx,.xls,.csv"><b>입수표 파일을 끌어다 놓기</b><span>품번별 입수를 AI가 읽어 저장합니다</span></label>
+        <label class="drop small" id="p-gdrop" data-write for="p-gfile"><input type="file" id="p-gfile" accept=".xlsx,.xls"><b>입수표 파일을 끌어다 놓기</b><span>품번별 입수를 AI가 읽어 저장합니다</span></label>
         <form class="row" id="p-gform" data-write>
           <input id="p-gitem" class="grow" maxlength="60" placeholder="품번" required>
           <input id="p-gper" type="number" min="1" inputmode="numeric" placeholder="입수 (EA)" style="max-width:140px" required>
@@ -440,7 +442,7 @@
         <div class="ecstep">
           <b>1. 이카운트 업로드 양식</b>
           <div id="ec-tinfo" class="hint"></div>
-          <label class="drop small" id="ec-tdrop" data-write for="ec-tfile"><input type="file" id="ec-tfile" accept=".xlsx,.xls,.csv"><b>양식 파일 놓기</b><span>이카운트 엑셀 업로드 화면에서 받은 양식 (한 번만)</span></label>
+          <label class="drop small" id="ec-tdrop" data-write for="ec-tfile"><input type="file" id="ec-tfile" accept=".xlsx,.xls"><b>양식 파일 놓기</b><span>이카운트 엑셀 업로드 화면에서 받은 양식 (한 번만)</span></label>
         </div>
         <div class="ecstep">
           <b>2. 원본 자료</b>
@@ -457,7 +459,7 @@
       </div>
     </div>
     <div id="ec-inv" hidden>
-      <label class="drop small" id="ec-idrop" data-write for="ec-ifile"><input type="file" id="ec-ifile" accept=".xlsx,.xls,.csv"><b>이카운트 재고현황 엑셀 놓기</b><span>재고현황 화면에서 엑셀로 내려받은 파일</span></label>
+      <label class="drop small" id="ec-idrop" data-write for="ec-ifile"><input type="file" id="ec-ifile" accept=".xlsx,.xls"><b>이카운트 재고현황 엑셀 놓기</b><span>재고현황 화면에서 엑셀로 내려받은 파일</span></label>
       <div class="row"><input id="ec-isearch" class="grow" placeholder="품목코드, 품목명, LOT로 찾기"><span class="status" id="ec-istatus"></span></div>
       <div class="scroll"><table class="rules ectable"><thead id="ec-ihead"></thead><tbody id="ec-ibody"></tbody></table></div>
       <div class="empty" id="ec-iempty">아직 올린 재고현황이 없습니다. 이카운트 재고현황을 엑셀로 내려받아 위에 놓으면 모든 직원이 여기서 찾아볼 수 있습니다.</div>
@@ -591,6 +593,56 @@
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
   </section>
 
+  <section class="panel" id="histbox" aria-labelledby="h-hist">
+    <h2 id="h-hist">거래 내역 <span class="tag">이카운트 기록</span></h2>
+    <p class="hint">이카운트에서 가져온 판매 · 구매 · 생산입고 기록을 서버에서 바로 찾고 합계를 냅니다. 기록이 아무리 많아도 필요한 만큼만 불러옵니다. 금액은 단가 권한이 있는 사람에게만 보입니다.</p>
+    <form class="row" id="hs-form">
+      <select id="hs-kind" style="width:auto" aria-label="종류"><option value="">종류: 전체</option><option>판매</option><option>구매</option><option>생산입고</option><option>출고</option><option>기타</option></select>
+      <label class="nowrap">부터 <input type="date" id="hs-from" style="width:auto"></label>
+      <label class="nowrap">까지 <input type="date" id="hs-to" style="width:auto"></label>
+      <input id="hs-partner" class="grow" placeholder="거래처 (코드 또는 이름 일부)" autocomplete="off">
+      <input id="hs-item" class="grow" placeholder="품목 (코드 앞부분 또는 이름 일부)" autocomplete="off">
+      <button type="submit">찾기</button>
+    </form>
+    <div class="tabs" role="tablist" id="hs-tabs"><button type="button" role="tab" data-v="list" aria-selected="true">내역</button><button type="button" role="tab" data-v="month" aria-selected="false">월별</button><button type="button" role="tab" data-v="year" aria-selected="false">연도별</button><button type="button" role="tab" data-v="item" aria-selected="false">품목별</button><button type="button" role="tab" data-v="partner" aria-selected="false">거래처별</button></div>
+    <div class="status" id="hs-status"></div>
+    <div class="scroll"><table class="rules sliplist" id="hs-table"><thead id="hs-head"></thead><tbody id="hs-body"></tbody></table></div>
+    <div class="row" id="hs-pager" hidden><button type="button" class="ghost" id="hs-prev">이전</button><span id="hs-page" class="hint"></span><button type="button" class="ghost" id="hs-next">다음</button></div>
+  </section>
+
+  <section class="panel" id="impbox" aria-labelledby="h-imp">
+    <h2 id="h-imp">자료 가져오기 <span class="tag">이카운트 엑셀</span></h2>
+    <p class="hint">이카운트에서 내려받은 엑셀(판매현황 · 구매현황 · 생산입고현황 등)을 그대로 놓으세요. 머리글을 찾아 칸을 자동으로 맞추고, 넣기 전에 미리 보기와 합계를 보여 줍니다. 같은 전표 · 같은 줄은 두 번 들어가지 않으므로 기간이 겹쳐도 됩니다. 잘못 넣었으면 아래 목록에서 그 가져오기만 되돌릴 수 있습니다.</p>
+    <div class="row"><select id="im-kind" style="width:auto" aria-label="종류"><option>판매</option><option>구매</option><option>생산입고</option><option>출고</option><option>기타</option></select>
+      <span class="hint">어떤 기록인지 먼저 고르세요.</span></div>
+    <label class="drop small" for="im-file"><input type="file" id="im-file" accept=".xlsx,.xls"><b>이카운트 엑셀 놓기</b><span>일자-No. · 거래처 · 품목코드 · 품목명 · 규격 · 수량 · 단가 · 공급가액 · 부가세 · 합계 · 창고 …</span></label>
+    <div id="im-map" hidden>
+      <h3 class="subh">칸 맞추기 <span class="hint" id="im-mapinfo"></span></h3>
+      <div class="pgrid" id="im-mapgrid"></div>
+      <div class="status" id="im-check"></div>
+      <div class="scroll"><table class="rules sliplist"><thead id="im-phead"></thead><tbody id="im-pbody"></tbody></table></div>
+      <div class="sbtns"><button type="button" class="ghost" id="im-cancel">취소</button><button type="button" id="im-go">가져오기</button></div>
+    </div>
+    <div class="status" id="im-status" role="status"></div>
+    <h3 class="subh">가져온 기록</h3>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>번호</th><th>날짜</th><th>종류</th><th>파일</th><th>기간</th><th class="num">줄</th><th class="num">새로 넣음</th><th class="num">수량 합계</th><th>한 사람</th><th>상태</th><th></th></tr></thead><tbody id="im-list"></tbody></table></div>
+  </section>
+
+  <section class="panel" id="auditbox" aria-labelledby="h-audit">
+    <h2 id="h-audit">변경 기록 <span class="tag">시스템 관리자</span></h2>
+    <p class="hint">포털 자료와 계정을 누가 언제 넣고 · 고치고 · 지웠는지 서버가 자동으로 남깁니다. 기록은 고치거나 지울 수 없습니다. 포털 자료(공지 · 재고 · 전표 · 클레임 등)는 ‘되돌리기’로 그 변경 바로 전 상태로 돌릴 수 있습니다. 직원 개인정보는 값을 남기지 않고 바뀐 칸 이름만 남깁니다.</p>
+    <form class="row" id="au-form">
+      <select id="au-tbl" style="width:auto" aria-label="자료"><option value="">자료: 전체</option><option value="docs">포털 자료</option><option value="profiles">계정</option><option value="staff">직원</option><option value="staff_private">직원 개인정보</option></select>
+      <select id="au-op" style="width:auto" aria-label="동작"><option value="">동작: 전체</option><option value="INSERT">넣기</option><option value="UPDATE">고치기</option><option value="DELETE">지우기</option></select>
+      <input id="au-key" class="grow" placeholder="어떤 자료 (예: claims, notices/아이디)" autocomplete="off">
+      <input id="au-user" class="grow" placeholder="한 사람 아이디" autocomplete="off">
+      <button type="submit">찾기</button>
+    </form>
+    <div class="status" id="au-status"></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>때</th><th>한 사람</th><th>동작</th><th>자료</th><th>바뀐 내용</th><th></th></tr></thead><tbody id="au-body"></tbody></table></div>
+    <div class="row" id="au-pager" hidden><button type="button" class="ghost" id="au-prev">이전</button><span id="au-page" class="hint"></span><button type="button" class="ghost" id="au-next">다음</button></div>
+  </section>
+
   <section id="teams" aria-labelledby="h-teams" style="display:grid;gap:14px">
     <h2 id="h-teams">부서 안내</h2>
     <div class="teams">
@@ -603,23 +655,24 @@
   </section>
 </div></main></div>
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
-<script src="js/theme.js?v=20261017a"></script>
+<script src="js/theme.js?v=20261017b"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=20261017a"></script>
+<script src="js/supabase-client.js?v=20261017b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core.js?v=20261017a"></script>
-<script src="js/ui-inventory.js?v=20261017a"></script>
-<script src="js/ui-shipping.js?v=20261017a"></script>
-<script src="js/ui-ecount.js?v=20261017a"></script>
-<script src="js/ui-slips.js?v=20261017a"></script>
-<script src="js/ui-items.js?v=20261017a"></script>
-<script src="js/ui-production.js?v=20261017a"></script>
-<script src="js/ui-claims.js?v=20261017a"></script>
-<script src="js/ui-trials.js?v=20261017a"></script>
-<script src="js/ui-dashboard.js?v=20261017a"></script>
-<script src="js/auth.js?v=20261017a"></script>
-<script src="js/ui-board.js?v=20261017a"></script>
-<script src="js/ui-bot.js?v=20261017a"></script>
-<script src="js/boot.js?v=20261017a"></script>
+<script src="js/core.js?v=20261017b"></script>
+<script src="js/ui-inventory.js?v=20261017b"></script>
+<script src="js/ui-shipping.js?v=20261017b"></script>
+<script src="js/ui-ecount.js?v=20261017b"></script>
+<script src="js/ui-slips.js?v=20261017b"></script>
+<script src="js/ui-items.js?v=20261017b"></script>
+<script src="js/ui-production.js?v=20261017b"></script>
+<script src="js/ui-claims.js?v=20261017b"></script>
+<script src="js/ui-trials.js?v=20261017b"></script>
+<script src="js/ui-dashboard.js?v=20261017b"></script>
+<script src="js/auth.js?v=20261017b"></script>
+<script src="js/ui-board.js?v=20261017b"></script>
+<script src="js/ui-bot.js?v=20261017b"></script>
+<script src="js/ui-history.js?v=20261017b"></script>
+<script src="js/boot.js?v=20261017b"></script>
 
 </body></html>
