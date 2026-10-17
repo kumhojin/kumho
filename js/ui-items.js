@@ -205,7 +205,7 @@
       st.textContent=`${file.name}: ${rows.length}개 품목을 저장했습니다 (사용 ${on} · 미사용 ${rows.length-on})${pmsg}.`}
     catch(err){console.error(err); st.textContent='저장하지 못했습니다: '+(err&&err.message||err)}}
   wireDrop('it-drop','it-file',itemsUpload);
-  function onItemsOff(){prodCache=null; try{buildItemList()}catch(e){} try{renderItems()}catch(e){} try{markOffRows()}catch(e){} try{renderStock()}catch(e){}}
+  function onItemsOff(){prodCache=null; try{buildItemList()}catch(e){} try{renderItems()}catch(e){} try{markOffRows()}catch(e){} try{renderStock()}catch(e){} try{safetyRefresh()}catch(e){}}
   document.getElementById('it-search').addEventListener('input',renderItems);
   document.querySelectorAll('#it-tabs button').forEach(b=>b.onclick=()=>{itF=b.dataset.f;
     document.querySelectorAll('#it-tabs button').forEach(x=>x.setAttribute('aria-selected',x===b)); renderItems()});

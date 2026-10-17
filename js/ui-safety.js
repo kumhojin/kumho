@@ -10,11 +10,11 @@
   const ok=()=>typeof can==='function'&&!!can('safety');
   let rows=[], ssF='out', ssInit=false;
   const CLS={'부족':'short','과다':'over','판매 없음':'dead','적정':'','재고 모름':'','재료':''};
-  // 재료·부재료·포장품은 팔지 않으므로 '판매 없음'으로 알리지 않음 · 미사용 품목은 빼고 봄
+  // 재료·부재료·포장품은 팔지 않으므로 '판매 없음'으로 알리지 않음 · 미사용 품목은 안전재고에서 아예 뺌
   const SELL=['제품','반제품','상품',''];
   function adjust(list){const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
     const cat=c=>{try{return (prodOf(c)||{}).cat||''}catch(e){return ''}};
-    return list.filter(x=>!(off(x.item_code)&&x.status!=='판매 없음')).map(x=>x.status==='판매 없음'&&!SELL.includes(cat(x.item_code))?{...x,status:'재료',gap:0}:x)}
+    return list.filter(x=>!off(x.item_code)).map(x=>x.status==='판매 없음'&&!SELL.includes(cat(x.item_code))?{...x,status:'재료',gap:0}:x)}
 
   async function loadAll(){const sb=SB(), out=[]; for(let from=0;from<50000;from+=1000){const r=await sb.rpc('safety_status').range(from,from+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break} return out}
   async function ssLoad(){const st=$('ss-status'); st.textContent='불러오는 중…';
@@ -92,5 +92,7 @@
     top.forEach(s=>{const li=document.createElement('li'); li.textContent=s; ul.append(li)});
     box.className='rcalert ssalert'; box.hidden=false}
 
+  // 품목 사용·미사용이 바뀌거나 품목 목록을 늦게 불러오면 다시 그림
+  let rfT=null; window.safetyRefresh=function(){clearTimeout(rfT); rfT=setTimeout(()=>{if(!me||!ok()) return; if(typeof curItem!=='undefined'&&curItem==='safety'&&rows.length) ssRender(); if(typeof curItem!=='undefined'&&curItem==='dash') ssAlert()},400)};
   window.safetyOpen=function(id){if(!me) return; if(id==='safety'){ssSetup(); ssLoad()} else if(id==='dash') ssAlert()};
 })();
