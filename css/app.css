@@ -663,3 +663,12 @@ button.editbtn{margin-right:4px}
 #pt-list tr.off td{opacity:.55}
 #pt-stats table{margin-top:6px;max-width:520px}
 .dsum .kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
+/* 안전재고 */
+.ssalert{align-items:flex-start}
+.ssalert ul{margin:4px 0 0;padding-left:18px;font-size:13px;font-weight:400}
+.ssalert.good{background:color-mix(in srgb,#27ae60 12%,var(--card,transparent));border-color:color-mix(in srgb,#27ae60 40%,transparent)}
+.sstable tr.short td{background:color-mix(in srgb,#e74c3c 10%,transparent)}
+.sstable tr.over td{background:color-mix(in srgb,#f39c12 12%,transparent)}
+.sstable tr.dead td{background:color-mix(in srgb,#7f8c8d 12%,transparent)}
+.ssst{font-weight:700}.ssst.short{color:#c0392b}.ssst.over{color:#d35400}.ssst.dead{color:var(--muted)}
+.ssalert.good{color:#1e8449}
