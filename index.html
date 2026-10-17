@@ -5,7 +5,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=20261017j">
+<link rel="stylesheet" href="css/app.css?v=20261017k">
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
@@ -598,6 +598,16 @@
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
   </section>
 
+  <section class="panel" id="whbox" aria-labelledby="wh-title">
+    <h2 id="wh-title">창고별 재고</h2>
+    <p class="hint">이카운트 창고별재고현황을 부서별로 나눠 보여 줍니다. 탭을 눌러 창고마다 무엇이 얼마나 있는지 보세요. 검사반은 품번으로 나눕니다 — 20으로 시작하는 반제품은 생산, 21 완제품 · 40 상품 · 31 부재료는 자재 · 생산관리팀. 마이너스 재고는 빨간색입니다.</p>
+    <div class="row"><input id="wh-q" class="grow" placeholder="품목코드 · 품목명 · 규격 · 구분으로 찾기" autocomplete="off"><label class="nowrap"><input type="checkbox" id="wh-off" style="width:auto"> 미사용 품목도 보기</label></div>
+    <div class="tabs" role="tablist" id="wh-tabs"></div>
+    <div class="status" id="wh-status"></div>
+    <div class="scroll"><table class="rules sliplist whtable"><thead id="wh-head"></thead><tbody id="wh-body"></tbody></table></div>
+    <div class="empty" id="wh-empty" hidden>해당하는 품목이 없습니다.</div>
+  </section>
+
   <section class="panel" id="ssbox" aria-labelledby="h-ss">
     <h2 id="h-ss">안전재고 <span class="tag">이카운트 2년 판매 기준 · 권한 있는 사람만</span></h2>
     <p class="hint">이카운트에서 가져온 지난 24개월 판매를 월별로 묶어, 품목마다 안전재고(최소)와 최대 재고를 계산합니다. 안전재고 = 만드는 동안 팔리는 양 + 판매가 들쭉날쭉한 만큼의 여유분, 최대 = 안전재고 + 월평균 판매 × 정한 개월. 현재 재고가 안전재고보다 적으면 ‘부족’, 최대보다 많으면 ‘과다’, 2년 동안 안 팔렸는데 재고가 있으면 ‘판매 없음’으로 보이고, 권한 있는 사람의 대시보드에 알림이 뜹니다. 품목마다 직접 정한 값이 있으면 그 값을 씁니다.</p>
@@ -729,26 +739,27 @@
   </section>
 </div></main></div>
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
-<script src="js/theme.js?v=20261017j"></script>
+<script src="js/theme.js?v=20261017k"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=20261017j"></script>
+<script src="js/supabase-client.js?v=20261017k"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core.js?v=20261017j"></script>
-<script src="js/ui-inventory.js?v=20261017j"></script>
-<script src="js/ui-shipping.js?v=20261017j"></script>
-<script src="js/ui-ecount.js?v=20261017j"></script>
-<script src="js/ui-slips.js?v=20261017j"></script>
-<script src="js/ui-items.js?v=20261017j"></script>
-<script src="js/ui-production.js?v=20261017j"></script>
-<script src="js/ui-claims.js?v=20261017j"></script>
-<script src="js/ui-trials.js?v=20261017j"></script>
-<script src="js/ui-dashboard.js?v=20261017j"></script>
-<script src="js/auth.js?v=20261017j"></script>
-<script src="js/ui-board.js?v=20261017j"></script>
-<script src="js/ui-bot.js?v=20261017j"></script>
-<script src="js/ui-history.js?v=20261017j"></script>
-<script src="js/ui-orders.js?v=20261017j"></script>
-<script src="js/ui-safety.js?v=20261017j"></script>
-<script src="js/boot.js?v=20261017j"></script>
+<script src="js/core.js?v=20261017k"></script>
+<script src="js/ui-inventory.js?v=20261017k"></script>
+<script src="js/ui-shipping.js?v=20261017k"></script>
+<script src="js/ui-ecount.js?v=20261017k"></script>
+<script src="js/ui-slips.js?v=20261017k"></script>
+<script src="js/ui-items.js?v=20261017k"></script>
+<script src="js/ui-production.js?v=20261017k"></script>
+<script src="js/ui-claims.js?v=20261017k"></script>
+<script src="js/ui-trials.js?v=20261017k"></script>
+<script src="js/ui-dashboard.js?v=20261017k"></script>
+<script src="js/auth.js?v=20261017k"></script>
+<script src="js/ui-board.js?v=20261017k"></script>
+<script src="js/ui-bot.js?v=20261017k"></script>
+<script src="js/ui-history.js?v=20261017k"></script>
+<script src="js/ui-orders.js?v=20261017k"></script>
+<script src="js/ui-warehouse.js?v=20261017k"></script>
+<script src="js/ui-safety.js?v=20261017k"></script>
+<script src="js/boot.js?v=20261017k"></script>
 
 </body></html>
