@@ -37,7 +37,24 @@
     for(const [k,d] of infoMap){const e=m.get(k)||{code:k,name:'',spec:''}; ['name','spec','kind','group'].forEach(f=>{if(d[f]!=null) e[f]=d[f]}); if(d.cat) e.cat=d.cat; if(Array.isArray(d.mats)) e.mats=d.mats; m.set(k,e)}
     for(const e of m.values()){e.name=e.name||''; e.spec=e.spec||''; if(!e.cat) e.cat=autoCat(e)}
     return [...m.values()]}
-  function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; if(typeof curItem!=='undefined'&&curItem!=='items'){if(tb.firstChild) tb.replaceChildren(); return} tb.replaceChildren();
+  // 현재 재고 (이카운트에서 가져온 것) — '안전재고 보기' 또는 '현재 재고 고치기' 권한이 있을 때만
+  let stockNow=null, stockLoading=false;
+  const canSeeStock=()=>!!me&&(can('safety')||can('stockEdit'));
+  async function loadStockNow(){if(stockLoading||!canSeeStock()||!window.kumhoSB) return; stockLoading=true;
+    try{const sb=kumhoSB(), m=new Map(); for(let f=0;f<50000;f+=1000){const r=await sb.from('stock_now').select('item_code,qty,updated_by,file_name').order('item_code').range(f,f+999); if(r.error) throw r.error; r.data.forEach(x=>m.set(x.item_code,x)); if(r.data.length<1000) break}
+      stockNow=m; renderItems()}catch(e){console.warn(e)} stockLoading=false}
+  function stockCell(td,e){if(!canSeeStock()) return; if(!stockNow){td.textContent='…'; return}
+    const x=stockNow.get(e.code), v=x?Number(x.qty):null; const sp=document.createElement('span'); sp.textContent=v==null?'—':v.toLocaleString('ko-KR'); if(v!=null&&v<0) sp.style.color='var(--bad)';
+    if(x&&x.file_name==='직접 수정') sp.title=`직접 고침 · ${x.updated_by||''}`; td.append(sp);
+    if(can('stockEdit')){const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='고치기'; b.style.marginLeft='6px'; b.style.padding='2px 8px';
+      b.onclick=()=>{td.replaceChildren(); const i=document.createElement('input'); i.type='number'; i.value=v==null?'':v; i.style.width='100px'; const s=document.createElement('button'); s.type='button'; s.textContent='저장'; s.style.padding='2px 8px';
+        const cx=document.createElement('button'); cx.type='button'; cx.className='ghost'; cx.textContent='취소'; cx.style.padding='2px 8px'; cx.onclick=()=>renderItems();
+        const go=async()=>{if(i.value===''||!isFinite(Number(i.value))){i.focus(); return} s.disabled=true; const r=await kumhoSB().rpc('stock_set',{p_code:e.code,p_qty:Number(i.value)});
+          const st=document.getElementById('it-status'); if(r.error){st.textContent='재고를 고치지 못했습니다: '+(/권한/.test(r.error.message)?'권한이 없습니다.':r.error.message); s.disabled=false; return}
+          stockNow.set(e.code,{item_code:e.code,qty:Number(i.value),updated_by:me.user,file_name:'직접 수정'}); const msg=`${e.code}${e.name?' ('+e.name+')':''} 현재 재고를 ${Number(i.value).toLocaleString('ko-KR')}(으)로 고쳤습니다.`; renderItems(); st.textContent=msg; try{safetyRefresh()}catch(x){}};
+        s.onclick=go; i.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault(); go()} if(ev.key==='Escape') renderItems()}); td.append(i,' ',s,' ',cx); i.focus(); i.select()};
+      td.append(b)}}
+  function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; if(typeof curItem!=='undefined'&&curItem!=='items'){if(tb.firstChild) tb.replaceChildren(); return} tb.replaceChildren(); if(stockNow==null&&canSeeStock()) loadStockNow();
     const items=allItems(), byName=new Map();
     // 같은 이름 문제: 둘 이상이 동시에 '사용'일 때만 (미사용 품목은 세지 않음)
     items.forEach(e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); if(k&&!isOff(e.code)) byName.set(k,(byName.get(k)||0)+1)});
@@ -58,7 +75,7 @@
       {const td=c(''); const goUses=code=>{const s=document.getElementById('it-search'); s.value='uses:'+code; document.getElementById('it-cat').value=''; renderItems(); s.focus()};
         if(e.mats&&e.mats.length) e.mats.forEach(m=>{const p=prodOf(m), b=document.createElement('button'); b.type='button'; b.className='matchip'; b.textContent=p.name||m; b.title=`${m}${p.spec?' · '+p.spec:''} — 이 재료를 쓰는 제품 보기`; b.onclick=()=>goUses(m); td.append(b)});
         else if(usedBy.get(e.code)){const b=document.createElement('button'); b.type='button'; b.className='matchip'; b.textContent=`제품 ${usedBy.get(e.code)}개`; b.title='이 재료를 쓰는 제품 보기'; b.onclick=()=>goUses(e.code); td.append(b)}}
-      c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); {const pv=itemPrice(e.code); c(pv==null?'':Number(pv).toLocaleString('ko-KR'),'num pricecell')} const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
+      c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); {const pv=itemPrice(e.code); c(pv==null?'':Number(pv).toLocaleString('ko-KR'),'num pricecell')} stockCell(c('','num stockcell nowrap'),e); const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
       c(d&&d.by?`${d.by} · ${fmt(d.createdAt)}`:master.has(e.code)?(master.get(e.code).sold?'2년 내 판매':'2년간 판매 없음'):'');
       const a=c(''); a.style.whiteSpace='nowrap';
       if(canEditInfo()||canEditPrice()){const eb=document.createElement('button'); eb.type='button'; eb.className='ghost'; eb.textContent='정보 수정'; eb.onclick=()=>editItemRow(tr,e); a.append(eb,' ')}
@@ -140,7 +157,7 @@
     [...slBody.querySelectorAll('input[data-k=price]')].forEach(pr=>{if(pr.dataset.auto==='1'){pr.value=''; const it=pr.closest('tr').querySelector('input[data-k=item]'); const p=it&&prodOf(it.value); if(p&&p.code) setAuto(pr,lastPrice(p.code,slipType,document.getElementById('sl-partner').value.trim()))}})});
   // 품목 정보·단가 수정 (계정 관리에서 허락한 사람만)
   function editItemRow(tr,e){const info=canEditInfo(), price=canEditPrice(); tr.replaceChildren();
-    const td=document.createElement('td'); td.colSpan=11; tr.append(td);
+    const td=document.createElement('td'); td.colSpan=12; tr.append(td);
     const f=document.createElement('form'); f.className='sform'; f.style.margin='4px 0';
     const field=(label,val,opt={})=>{const l=document.createElement('label'); l.textContent=label; let i;
       if(opt.options){i=document.createElement('select'); opt.options.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o||'자동'; i.append(op)})}
