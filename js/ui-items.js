@@ -37,7 +37,7 @@
     for(const [k,d] of infoMap){const e=m.get(k)||{code:k,name:'',spec:''}; ['name','spec','kind','group'].forEach(f=>{if(d[f]!=null) e[f]=d[f]}); if(d.cat) e.cat=d.cat; if(Array.isArray(d.mats)) e.mats=d.mats; m.set(k,e)}
     for(const e of m.values()){e.name=e.name||''; e.spec=e.spec||''; if(!e.cat) e.cat=autoCat(e)}
     return [...m.values()]}
-  function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; tb.replaceChildren();
+  function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; if(typeof curItem!=='undefined'&&curItem!=='items'){if(tb.firstChild) tb.replaceChildren(); return} tb.replaceChildren();
     const items=allItems(), byName=new Map();
     // 같은 이름 문제: 둘 이상이 동시에 '사용'일 때만 (미사용 품목은 세지 않음)
     items.forEach(e=>{const k=e.name.replace(/\s+/g,'').toLowerCase(); if(k&&!isOff(e.code)) byName.set(k,(byName.get(k)||0)+1)});

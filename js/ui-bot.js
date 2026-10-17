@@ -36,7 +36,7 @@ LOT·원자재·초물·불량 기록 질문은 search_records 도구로, 공지
        moves.forEach(s=>{const x=s.data(),n=Number(x.qty)||0; if(n<=0) return; const e=m.get(k(x.item,x.lot))||{item:x.item,lot:x.lot,사상반:0,창고:0}; e.창고+=n; m.set(k(x.item,x.lot),e)});
        return [...m.values()].filter(e=>!q||[e.item,e.lot].some(v=>String(v).toLowerCase().includes(q))).map(e=>({...e,차이:e.창고-e.사상반})).slice(0,50)}},
     {name:'list_complaints',description:'고객 클레임 목록. month는 YYYY-MM (비우면 최근 전체).',inputSchema:{type:'object',properties:{month:{type:'string'}}},
-     execute:({month})=>complaints.map(c=>c.data()).filter(x=>!month||String(x.date).startsWith(month)).slice(0,50).map(({date,partner,item,lot,qty,body})=>({date,partner,item,lot,qty,body}))},
+     execute:({month})=>calComplaints().map(c=>c.data()).filter(x=>!month||String(x.date).startsWith(month)).slice(0,50).map(({date,partner,item,lot,qty,body})=>({date,partner,item,lot,qty,body}))},
     {name:'list_plans',description:'저장된 출하 계획표 목록(CAN/CAC). query는 파일명·품번·납품일 일부.',inputSchema:{type:'object',properties:{query:{type:'string'}}},
      execute:({query})=>{const q=String(query||'').toLowerCase(); return plans.map(p=>p.data()).filter(x=>!q||[x.file,...(x.items||[]),...(x.dates||[])].some(v=>String(v).toLowerCase().includes(q))).slice(0,20)
        .map(x=>{let out=[]; try{out=JSON.parse(x.data).out.map(o=>({납품일:o.date,파렛트:o.pallets.length,혼적:o.pallets.filter(p=>p.type==='혼적').length}))}catch(e){} return {파일:x.file,구분:x.dest,작성:new Date(x.createdAt).toLocaleString('ko-KR'),날짜별:out}})}},

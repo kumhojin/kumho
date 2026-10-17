@@ -1,7 +1,7 @@
 /* 금호정공 사내 업무 시스템 · 대시보드 달력 · 일정 등록 · 고객 클레임 등록
    일반 <script>로 순서대로 불러옴 (모든 파일이 같은 전역 범위를 씀). 순서는 index.html 참고. */
   // 고객 클레임 달력
-  let complaints=[], events=[], calY=d.getFullYear(), calM=d.getMonth(), calSel=null;
+  let events=[], calY=d.getFullYear(), calM=d.getMonth(), calSel=null;
   const todayISO=iso(d);
   try{if(!tg('t-date').value) tg('t-date').value=todayISO}catch(e){}
   // 한국 공휴일 (보라색 표시). 새 해가 오면 여기에 추가
@@ -30,10 +30,9 @@
       b.setAttribute('aria-label',`${calM+1}월 ${dd}일, ${hol?hol+', ':''}${evs.length?'일정 '+evs.length+'건, ':''}${k>todayISO?'예정':list.length?'클레임 '+list.length+'건':'클레임 없음'}`);
       b.onclick=()=>{calSel=calSel===k?null:k; renderCal()}; box.append(b)}  // 다시 누르면 선택 해제
     renderCalSide(by); try{renderEvAdmin()}catch(e){} try{renderCpAdmin()}catch(e){}}
-  // 달력의 고객 클레임 = 직접 등록한 클레임 + 클레임 현황(신속 대응 추적표, 볼 수 있는 사람만)
-  function calComplaints(){const ok=!!me&&me.role!=='worker';
-    if(!ok) return complaints;
-    return complaints.concat(claims.filter(c=>c.data().opened).map(c=>{const x=c.data(); return {id:'frb-'+c.id,data:()=>({date:x.opened,partner:x.where||'',item:x.partNo||x.part||'',body:`${x.issue||''}${x.action?'\n조치: '+x.action:''}\n(클레임 현황 ${x.no||''})`,frb:true})}}))}
+  // 달력의 고객 클레임 = 클레임 현황(고객 클레임 등록으로 넣은 것 포함) · 모든 직원이 봄
+  function calComplaints(){if(!me||me.role==='worker') return [];
+    return claims.filter(c=>c.data().opened).map(c=>{const x=c.data(); return {id:'frb-'+c.id,data:()=>({date:x.opened,partner:x.partner||x.where||'',item:x.partNo||x.part||'',lot:x.lot||'',qty:x.qty,body:`${x.issue||''}${x.action?'\n조치: '+x.action:''}\n(클레임 현황 ${x.no||''})`,frb:true})}})}
   function canEvent(){try{return !!me&&(me.team==='총무팀'||canEditTeam('총무팀'))}catch(e){return false}}
   async function renderEvSide(k){
     const ok=false, list=events.filter(e=>e.data().date===k).sort((a,c)=>(a.data().time||'99').localeCompare(c.data().time||'99'));
@@ -70,10 +69,6 @@
       const t=document.createElement('b'); t.textContent=[x.partner,x.item,x.lot?lotLabel(x.lot):'',x.qty?Number(x.qty).toLocaleString('ko-KR')+' EA':''].filter(Boolean).join(' · ');
       const who=document.createElement('span'); who.textContent=x.frb?'클레임 현황':((ps[x.author]&&ps[x.author].name)||'직원'); top.append(t,who);
       const p=document.createElement('p'); p.textContent=x.body||''; li.append(top,p);
-      if(false){const bw=document.createElement('span'); bw.style.cssText='justify-self:end;white-space:nowrap';
-        bw.append(editBtn(()=>editDoc({col:'complaints',id:c.id,data:x,title:'고객 클레임 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'partner',label:'거래처',req:true},{k:'item',label:'품번',upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'body',label:'클레임 내용',type:'textarea',req:true}]})));
-        const del=document.createElement('button'); del.type='button'; del.className='ghost'; del.textContent='삭제'; bw.append(del);
-        del.onclick=async()=>{if(del.dataset.c!=='1'){del.dataset.c='1';del.textContent='삭제 확인';return} try{await db.collection('complaints').doc(c.id).delete()}catch(e){document.getElementById('cp-status').textContent='지우지 못했습니다.'}}; li.append(bw)}
       ul.append(li)});
     if(!list.length){const li=document.createElement('li'); li.className='none'; li.textContent=k>todayISO?'아직 오지 않은 날입니다.':'이 날은 고객 클레임이 없습니다.'; ul.append(li)}
   }
@@ -92,14 +87,18 @@
       if(ok){a.append(editBtn(()=>editDoc({col:'events',id:e.id,data:x,title:'일정 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'time',label:'시간',type:'time'},{k:'title',label:'일정',req:true,wide:true},{k:'body',label:'메모',wide:true}]})),' ',delBtn(()=>db.collection('events').doc(e.id).delete(),'ev-status'))}
       tb.append(tr)})}
   async function renderCpAdmin(){const tb=document.getElementById('cp-admin'); if(!tb) return; tb.replaceChildren();
-    const list=[...complaints].sort((a,b)=>String(b.data().date||'').localeCompare(String(a.data().date||''))).slice(0,100);
+    const list=[...claims].sort((a,b)=>String(b.data().opened||'').localeCompare(String(a.data().opened||''))).slice(0,100);
     document.getElementById('cp-aempty').hidden=list.length>0;
-    let ps={}; const ids=[...new Set(list.map(c=>c.data().author).filter(Boolean))]; if(user&&ids.length){try{ps=await user.profiles(ids)}catch(e){}}
     list.forEach(cd=>{const x=cd.data(), tr=document.createElement('tr'); const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t??''; if(cl) td.className=cl; tr.append(td); return td};
-      c(x.date,'num'); c(x.partner); c(x.item||''); c(x.lot?lotLabel(x.lot):''); c(x.qty!=null&&x.qty!==''?Number(x.qty).toLocaleString('ko-KR'):'','num'); c(x.body||''); c((ps[x.author]&&ps[x.author].name)||'직원');
+      const ov=typeof frbOverall==='function'?frbOverall(x):'';
+      c(x.opened||'','num'); c(x.no||''); c(x.partner||x.where||''); c(x.partNo||x.part||''); c(x.lot?lotLabel(x.lot):''); c(x.qty!=null&&x.qty!==''?Number(x.qty).toLocaleString('ko-KR'):'','num'); c(x.issue||''); c(ov==='G'?'완료':ov==='Y'?'진행 중':'미착수');
       const a=c(''); a.style.whiteSpace='nowrap';
-      if(x.author&&(x.author===myId||isAdm())){a.append(editBtn(()=>editDoc({col:'complaints',id:cd.id,data:x,title:'고객 클레임 수정',fields:[{k:'date',label:'날짜',type:'date',req:true},{k:'partner',label:'거래처',req:true},{k:'item',label:'품번',upper:true},{k:'lot',label:'LOT',upper:true},{k:'qty',label:'수량',type:'number'},{k:'body',label:'클레임 내용',type:'textarea',req:true}]})),' ',delBtn(()=>db.collection('complaints').doc(cd.id).delete(),'cp-status'))}
+      const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent='클레임 현황에서 열기'; b.onclick=()=>{go('claim',true); try{frbEdit(cd.id,x)}catch(e){}}; a.append(b);
       tb.append(tr)})}
+  // 새 순번: K + 연도 두 자리 + '-' + 그 해 번호 (예: K26-06)
+  function nextClaimNo(date){const yy=String(date||todayISO).slice(2,4), pre='K'+yy+'-';
+    const n=claims.map(c=>String(c.data().no||'')).filter(s=>s.startsWith(pre)).map(s=>parseInt(s.slice(pre.length),10)||0).reduce((a,b)=>Math.max(a,b),0);
+    return pre+String(n+1).padStart(2,'0')}
   document.getElementById('cal-prev').onclick=()=>{calM--; if(calM<0){calM=11;calY--} renderCal()};
   document.getElementById('cal-next').onclick=()=>{calM++; if(calM>11){calM=0;calY++} renderCal()};
   document.getElementById('evform').addEventListener('submit',async e=>{e.preventDefault(); const st=document.getElementById('ev-status');
@@ -115,7 +114,10 @@
     if(!db){st.textContent='등록은 로그인한 직원만 할 수 있습니다.';return}
     const k=document.getElementById('cp-date').value; if(!k) return; if(k>todayISO){st.textContent='오늘 이후 날짜에는 등록할 수 없습니다.';return}
     const g=id=>document.getElementById(id).value.trim();
-    const rec={date:k,partner:g('cp-partner'),item:g('cp-item'),lot:g('cp-lot').toUpperCase(),qty:g('cp-qty')===''?null:Number(g('cp-qty')),body:g('cp-body'),author:myId,createdAt:Date.now()};
-    if(!rec.partner||!rec.body) return;
-    try{await db.collection('complaints').add(rec); ['cp-partner','cp-item','cp-lot','cp-qty','cp-body'].forEach(id=>document.getElementById(id).value=''); st.textContent='클레임을 등록했습니다.'}
+    if(!claimOK()){st.textContent='고객대응 보기+수정 권한이 있는 사람만 등록할 수 있습니다.';return}
+    const item=g('cp-item'); let pr={}; try{pr=(resolveProd(item).p)||{}}catch(x){}
+    const rec={no:nextClaimNo(k),opened:k,partner:g('cp-partner'),where:g('cp-partner'),part:pr.name||'',partNo:pr.code||item.toUpperCase(),lot:g('cp-lot').toUpperCase(),qty:g('cp-qty')===''?null:Number(g('cp-qty')),
+      issue:g('cp-body'),dept:'품질',owner:'',next:'',recur:false,action:'',steps:{},author:myId,createdAt:Date.now(),updatedBy:myId,updatedAt:Date.now()};
+    if(!rec.partner||!rec.issue) return;
+    try{await db.collection('claims').add(rec); ['cp-partner','cp-item','cp-lot','cp-qty','cp-body'].forEach(id=>document.getElementById(id).value=''); st.textContent=`클레임 ${rec.no}(으)로 등록했습니다. 클레임 현황에서 이어서 적을 수 있습니다.`}
     catch(err){st.textContent='등록하지 못했습니다. 권한을 확인해 주세요.'}});

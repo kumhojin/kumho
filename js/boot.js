@@ -17,7 +17,6 @@
     db.collection('transfers').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{xfers=sn.docs;renderXfers();renderRecon();try{renderBoard()}catch(e){}},()=>{xStatus.textContent='보낸 내역을 불러오지 못했습니다.'});
     db.collection('accounts').onSnapshot(sn=>{accounts=sn.docs;renderAccts()},()=>{});
     db.collection('plans').orderBy('createdAt','desc').limit(300).onSnapshot(sn=>{plans=sn.docs;renderPlans();try{renderBoard()}catch(e){}},()=>{});
-    db.collection('complaints').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{complaints=sn.docs;renderCal()},()=>{});
     db.collection('events').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{events=sn.docs;renderCal()},()=>{});
     db.collection('trials').orderBy('createdAt','desc').limit(2000).onSnapshot(sn=>{trials=sn.docs;renderTrials()},()=>{});
     db.collection('claims').orderBy('createdAt','desc').limit(1000).onSnapshot(sn=>{claims=sn.docs;renderClaims();renderCal()},()=>{});
