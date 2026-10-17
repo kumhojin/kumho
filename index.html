@@ -1348,11 +1348,15 @@ button.editbtn{margin-right:4px}
     where(field,op,value){if(op!=='=='&&op!=='eq') throw new Error('지원하지 않는 조건: '+op); return query(col,{...o,where:[...(o.where||[]),[field,value]]})},
     doc(id){return docRef(col,id==null?rid():String(id))},
     async add(data){const id=rid(); chk(await sb.from(TABLE).insert({col,id,data})); return docRef(col,id)},
-    async get(){let q=sb.from(TABLE).select('id,data').eq('col',col);
-      (o.where||[]).forEach(([f,v])=>{q=q.eq('data->>'+f,String(v))});
-      if(o.order) q=q.order('data->'+o.order.field,{ascending:o.order.dir!=='desc',nullsFirst:false});
-      q=q.limit(o.limit||5000);
-      const rows=chk(await q); const docs=rows.map(r=>snapDoc(r.id,r.data));
+    // Supabase는 한 번에 최대 1000줄만 돌려줌 → 1000줄씩 나눠서 끝까지 받음
+    async get(){const lim=o.limit||5000, rows=[];
+      for(let from=0; from<lim; from+=1000){const to=Math.min(from+1000,lim)-1;
+        let q=sb.from(TABLE).select('id,data').eq('col',col);
+        (o.where||[]).forEach(([f,v])=>{q=q.eq('data->>'+f,String(v))});
+        if(o.order) q=q.order('data->'+o.order.field,{ascending:o.order.dir!=='desc',nullsFirst:false});
+        q=q.order('id').range(from,to);
+        const part=chk(await q); rows.push(...part); if(part.length<to-from+1) break}
+      const docs=rows.map(r=>snapDoc(r.id,r.data));
       return {docs,size:docs.length,empty:!docs.length,forEach:f=>docs.forEach(f)}},
     onSnapshot(cb,err){let alive=true, rows=null, busy=null, again=false; const lim=o.limit||5000;
       const out=()=>{const docs=rows.map(r=>snapDoc(r.id,r.data)); cb({docs,size:docs.length,empty:!docs.length,forEach:f=>docs.forEach(f)})};
@@ -1720,7 +1724,7 @@ button.editbtn{margin-right:4px}
     db.doc('products/master').onSnapshot(sn=>{setMaster(sn.exists?sn.data():null)},()=>{});
     db.collection('itemoff').onSnapshot(sn=>{offMap=new Map(sn.docs.map(d=>[d.id,d.data()])); onItemsOff()},()=>{});
     db.collection('prices').onSnapshot(sn=>{priceMap=new Map(sn.docs.map(d=>[d.id,d.data()]));mergePrices()},()=>{});
-    db.collection('stock').orderBy('createdAt','desc').limit(1000).onSnapshot(s=>{moves=s.docs;renderStock();try{renderRecv();renderRecon()}catch(e){}},
+    db.collection('stock').orderBy('createdAt','desc').limit(20000).onSnapshot(s=>{moves=s.docs;renderStock();try{renderRecv();renderRecon()}catch(e){}},
       ()=>{sstatus.textContent='재고를 불러오지 못했습니다. 새로고침해 보세요.'});
     db.collection('records').orderBy('createdAt','desc').limit(500).onSnapshot(s=>{recs=s.docs;renderRecs()},
       ()=>{lstatus.textContent='기록을 불러오지 못했습니다. 새로고침해 보세요.'});
@@ -2877,7 +2881,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     renderClaims(); if(id) fv('frbform').scrollIntoView({behavior:'smooth',block:'start'})}
   fv('frb-new').onclick=()=>frbEdit(null);
   fv('frbform').addEventListener('submit',async e=>{e.preventDefault(); const st=fv('frb-status');
-    if(!db||!claimOK()){st.textContent='품질 · 자재 담당자만 저장할 수 있습니다.';return}
+    if(!db||!claimOK()){st.textContent='본사 · 품질 · 자재 담당자만 저장할 수 있습니다.';return}
     const steps={}; FRB_STEPS.forEach(([k])=>{const s=fv('fs-'+k).value, d=fv('fd-'+k).value; if(s||d) steps[k]={s,date:d}});
     const rec={no:fv('f-no').value.trim().toUpperCase(),opened:fv('f-opened').value,model:fv('f-model').value.trim(),where:fv('f-where').value.trim(),part:fv('f-part').value.trim(),partNo:fv('f-partno').value.trim(),
       dept:fv('f-dept').value.trim(),owner:fv('f-owner').value.trim(),issue:fv('f-issue').value.trim(),next:fv('f-next').value,recur:fv('f-recur').value==='1',action:fv('f-action').value.trim(),steps,updatedBy:myId,updatedAt:Date.now()};
