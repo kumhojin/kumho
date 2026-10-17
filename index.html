@@ -541,6 +541,12 @@ button.ghost:hover{color:var(--ink);border-color:var(--muted)}
 :root[data-theme="dark"]{--cl:#a78bfa;--cl-soft:#2a1d45}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--cl:#a78bfa;--cl-soft:#2a1d45}}
 .calside{gap:18px}
+.calwrap.solo{grid-template-columns:minmax(0,1fr)}
+.calwrap.solo .calside{display:none}
+.calwrap.solo #cal-days .cday{min-height:92px}
+.calsec[hidden]{display:none}
+#lg-status.ok{color:var(--ok);font-weight:600}
+#lg-status.bad{color:var(--bad);font-weight:600}
 .calsec{display:grid;gap:10px;min-width:0}
 .calsec+.calsec{border-top:1px solid var(--line);padding-top:16px}
 .calside h3{font-size:15px;display:flex;align-items:center;gap:8px}
@@ -753,11 +759,11 @@ button.editbtn{margin-right:4px}
         <div class="callegend"><span><i class="c-ev"></i>일정</span><span><i class="c-bad"></i>고객 클레임</span><span><i class="c-ok"></i>클레임 없음</span><span><i class="c-hol"></i>공휴일</span></div>
       </div>
       <div class="calside">
-        <div class="calsec">
+        <div class="calsec" id="ev-sec">
         <h3 id="ev-sel">일정</h3>
         <ul class="dlist" id="ev-list"></ul>
         </div>
-        <div class="calsec">
+        <div class="calsec" id="cl-sec">
         <h3 id="cal-sel">고객 클레임</h3>
         <ul class="dlist" id="cal-list"></ul>
         </div>
@@ -1206,7 +1212,7 @@ button.editbtn{margin-right:4px}
   </section>
 
   <section class="panel" id="cpbox" aria-labelledby="h-cpreg">
-    <h2 id="h-cpreg">고객 클레임 등록 <span class="tag">품질 · 대시보드 달력에 표시</span></h2>
+    <h2 id="h-cpreg">고객 클레임 등록 <span class="tag">고객대응 · 대시보드 달력에 표시</span></h2>
     <form id="cform2" data-write class="frbform">
       <div class="g4">
         <label>날짜<input id="cp-date" type="date" required></label>
@@ -1481,8 +1487,8 @@ button.editbtn{margin-right:4px}
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
       ['ec','이카운트 업로드','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
     {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
-    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['cpreg','고객 클레임 등록','품질',['cpbox']],['nqc','부서 공지','품질',['notice']]]},
-    {g:'고객대응',items:[['claim','클레임 현황','고객대응',['claimbox']]]},
+    {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
+    {g:'고객대응',items:[['claim','클레임 현황','고객대응',['claimbox']],['cpreg','고객 클레임 등록','고객대응',['cpbox']]]},
     {g:'계발',items:[['trial','시험사출','계발',['trialbox']],['ndev','부서 공지','계발',['notice','soon']]]},
     {g:'총무팀',items:[['evreg','일정 등록','총무팀',['evbox']],['nga','부서 공지','총무팀',['notice','soon']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
@@ -2961,7 +2967,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       evs.slice(0,2).forEach(x=>{const e=document.createElement('span'); e.className='ev'; e.textContent=x.title; e.title=(x.time?x.time+' ':'')+x.title; b.append(e)});
       if(evs.length>2){const e=document.createElement('span'); e.className='evmore'; e.textContent='+'+(evs.length-2); b.append(e)}
       b.setAttribute('aria-label',`${calM+1}월 ${dd}일, ${hol?hol+', ':''}${evs.length?'일정 '+evs.length+'건, ':''}${k>todayISO?'예정':list.length?'클레임 '+list.length+'건':'클레임 없음'}`);
-      b.onclick=()=>{calSel=k; renderCal()}; box.append(b)}
+      b.onclick=()=>{calSel=calSel===k?null:k; renderCal()}; box.append(b)}  // 다시 누르면 선택 해제
     renderCalSide(by); try{renderEvAdmin()}catch(e){} try{renderCpAdmin()}catch(e){}}
   // 달력의 고객 클레임 = 직접 등록한 클레임 + 클레임 현황(신속 대응 추적표, 볼 수 있는 사람만)
   function calComplaints(){const ok=!!me&&me.role!=='worker';
@@ -2988,7 +2994,13 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     if(!list.length){const li=document.createElement('li'); li.className='none'; li.textContent='등록된 일정이 없습니다.'; ul.append(li)}
   }
   async function renderCalSide(by){
-    const k=calSel||todayISO, list=(by||new Map()).get(k)||calComplaints().filter(c=>c.data().date===k);
+    // 날짜를 눌렀을 때만, 그날 일정·클레임이 있을 때만 옆에 보여 줌 (없으면 달력을 넓게)
+    const k=calSel, wrap=document.querySelector('.calwrap');
+    const list=k?((by||new Map()).get(k)||calComplaints().filter(c=>c.data().date===k)):[];
+    const evN=k?events.filter(e=>e.data().date===k).length:0;
+    wrap.classList.toggle('solo',!k||(!list.length&&!evN));
+    document.getElementById('ev-sec').hidden=!evN; document.getElementById('cl-sec').hidden=!list.length;
+    if(!k||(!list.length&&!evN)) return;
     try{renderEvSide(k)}catch(e){}
     {const h=document.getElementById('cal-sel'); h.textContent=`${HOL[k]?HOL[k]+' · ':''}고객 클레임`; const cn=document.createElement('span'); cn.className='cnt'; cn.textContent=list.length+'건'; h.append(cn)}
     const ul=document.getElementById('cal-list'); ul.replaceChildren();
@@ -3121,13 +3133,13 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     else{L.hidden=false; document.body.classList.add('locked'); setTimeout(()=>document.getElementById('lg-user').focus(),0)}}
   const profToMe=pr=>({user:pr.username,name:pr.name,team:pr.team,role:pr.role,station:pr.station||'',perm:permOf({role:pr.role,station:pr.station,perm:pr.perm})});
   document.getElementById('lgform').addEventListener('submit',async e=>{e.preventDefault();
-    const st=document.getElementById('lg-status'), btn=document.getElementById('lg-btn'); st.textContent='';
+    const st=document.getElementById('lg-status'), btn=document.getElementById('lg-btn'); st.textContent=''; st.className='status';
     const u=document.getElementById('lg-user').value.trim().toLowerCase(), p=document.getElementById('lg-pass').value;
     btn.disabled=true; btn.textContent='확인 중…';
     try{const pr=await kumhoAuth.signIn(u,p);
-      if(!pr||pr.role==='none'){await kumhoAuth.signOut(); st.textContent='아직 권한이 없는 계정입니다. 관리자에게 권한을 요청하세요.'}
-      else{me=profToMe(pr); saveLogin(me); document.getElementById('lg-pass').value=''; st.textContent='로그인했습니다. 불러오는 중…'; location.reload(); return}}
-    catch(x){const m=String(x&&x.message||''); st.textContent=/invalid login|credentials/i.test(m)?'아이디 또는 비밀번호가 맞지 않습니다.':/rate|too many/i.test(m)?'시도가 너무 많습니다. 잠시 후 다시 해 주세요.':'로그인하지 못했습니다. 인터넷 연결을 확인해 주세요.'}
+      if(!pr||pr.role==='none'){await kumhoAuth.signOut(); st.className='status bad'; st.textContent='아직 권한이 없는 계정입니다. 관리자에게 권한을 요청하세요.'}
+      else{me=profToMe(pr); saveLogin(me); document.getElementById('lg-pass').value=''; st.className='status ok'; st.textContent='로그인했습니다. 불러오는 중…'; location.reload(); return}}
+    catch(x){const m=String(x&&x.message||''); st.className='status bad'; st.textContent=/invalid login|credentials/i.test(m)?'아이디 또는 비밀번호가 맞지 않습니다.':/rate|too many/i.test(m)?'시도가 너무 많습니다. 잠시 후 다시 해 주세요.':'로그인하지 못했습니다. 인터넷 연결을 확인해 주세요.'}
     btn.disabled=false; btn.textContent='로그인'});
   // 처음 관리자 계정 만들기 (관리자가 아무도 없을 때만 보임)
   (async()=>{try{if(await kumhoAuth.hasAdmin()) return}catch(e){return} document.getElementById('bootform').hidden=false})();
