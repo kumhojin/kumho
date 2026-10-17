@@ -12,8 +12,8 @@
   const CLS={'부족':'short','과다':'over','판매 없음':'dead','적정':'','재고 모름':'','재료':''};
   // 재료·부재료·포장품은 팔지 않으므로 '판매 없음'으로 알리지 않음 · 미사용 품목은 안전재고에서 아예 뺌
   const SELL=['제품','반제품','상품',''];
-  // 최근 판매일: 전체 품목 엑셀(이카운트 2년 판매여부)의 최근 판매일
-  const lastSold=c=>{try{const m=master.get(normItem(c)); return (m&&m.last)||''}catch(e){return ''}};
+  // 최근 판매일: 제품만 (전체 품목 엑셀 · 이카운트 2년 판매여부의 최근 판매일)
+  const lastSold=c=>{try{if(((prodOf(c)||{}).cat||'')!=='제품') return ''; const m=master.get(normItem(c)); return (m&&m.last)||''}catch(e){return ''}};
   const ago=d=>{if(!d) return ''; const n=Math.floor((Date.now()-Date.parse(d+'T00:00:00'))/864e5); return n<=0?'오늘':n<31?n+'일 전':n<365?Math.floor(n/30)+'개월 전':(n/365).toFixed(1).replace('.0','')+'년 전'};
   function adjust(list){const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
     const cat=c=>{try{return (prodOf(c)||{}).cat||''}catch(e){return ''}};
