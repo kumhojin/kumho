@@ -18,9 +18,9 @@
     if(!a) return p; if(a.role==='admin'){p.lead=false; p.title=''; p.complaint=false;
       // 관리자도 자동으로 주는 권한 없음: 계정 관리에서 체크한 것만
       ALLTEAMS.forEach(t=>p.teams[t]=(a.perm&&a.perm.teams&&a.perm.teams[t])||'none'); const k=a.perm||{};
-      p.notice=!!k.notice; p.complaint=!!k.complaint; p.item=!!k.item; p.priceEdit=!!k.priceEdit; p.itemToggle=!!k.itemToggle; p.history=!!k.history; p.import=!!k.import; p.hr=!!k.hr; p.price=p.priceEdit;
+      p.notice=!!k.notice; p.complaint=!!k.complaint; p.item=!!k.item; p.priceEdit=!!k.priceEdit; p.itemToggle=!!k.itemToggle; p.history=!!k.history; p.import=!!k.import; p.hr=!!k.hr; p.safety=!!k.safety; p.price=p.priceEdit;
       return p}
-    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.manager=!!a.perm.manager; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.itemToggle=!!a.perm.itemToggle; p.history=!!a.perm.history; p.import=!!a.perm.import; p.hr=!!a.perm.hr; p.price=p.lead||!!p.title||p.priceEdit; return p}
+    if(a.perm&&a.perm.teams){ALLTEAMS.forEach(t=>p.teams[t]=a.perm.teams[t]||'none'); p.notice=!!a.perm.notice; p.complaint=a.perm.complaint!==false; p.lead=!!a.perm.lead; p.manager=!!a.perm.manager; p.title=EXECS.includes(a.perm.title)?a.perm.title:''; p.item=!!a.perm.item; p.priceEdit=!!a.perm.priceEdit; p.itemToggle=!!a.perm.itemToggle; p.history=!!a.perm.history; p.import=!!a.perm.import; p.hr=!!a.perm.hr; p.safety=!!a.perm.safety; p.price=p.lead||!!p.title||p.priceEdit; return p}
     const acc=Array.isArray(a.access)?a.access:ALLTEAMS; ALLTEAMS.forEach(t=>p.teams[t]=acc.includes(t)?'edit':'none'); return p}
   // 팀장: DB에는 role 'user' + perm.lead=true 로 저장 (기존 부서 권한 규칙을 그대로 씀)
   const EXEC=['사장','전무','상무'];
@@ -41,7 +41,7 @@
   function canEditTeam(t){if(!me) return false; if(t==='홈') return true; return permOf(me).teams[t]==='edit'}
   function can(k){return !!me&&permOf(me)[k]}
   // 공통 메뉴 중 권한이 필요한 것: 계정 관리 · 변경 기록 = 시스템 관리자, 거래 내역 · 자료 가져오기 = 계정 관리에서 체크한 사람
-  function menuOK(id){if(!me) return true; if(id==='acct'||id==='audit') return me.role==='admin'; if(id==='hist') return !!(can('history')||can('import')); if(id==='imp') return !!can('import'); if(id==='bot') return !!window.kumhoAIOK; return true}
+  function menuOK(id){if(!me) return true; if(id==='acct'||id==='audit') return me.role==='admin'; if(id==='hist') return !!(can('history')||can('import')); if(id==='imp') return !!can('import'); if(id==='bot') return !!window.kumhoAIOK; if(id==='safety') return !!can('safety'); return true}
   const LBL={edit:'수정',view:'보기',none:'숨김'};
   function findAcct(u){u=String(u||'').trim().toLowerCase(); const a=accounts.find(x=>x.data().user===u); return a?a.data():null}
   // 로그인은 하루 한 번: 같은 날(이 기기) 동안 유지, 날짜가 바뀌면 다시 로그인
@@ -113,7 +113,7 @@
       if((x.team||'')!==lastTeam){lastTeam=x.team||''; const n=rows.filter(r=>(r.data().team||'')===lastTeam).length;
         const h=document.createElement('tr'); h.className='acgrp'; const td=document.createElement('td'); td.colSpan=7; td.textContent=`${TLBL[lastTeam]||lastTeam||'부서 없음'} · ${n}명`; h.append(td); tb.append(h)} const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
       c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
-      {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.item&&'품목 수정',p.itemToggle&&'사용·미사용',p.history&&'거래 내역',p.import&&'가져오기'].filter(Boolean).join(', ')||'없음')}
+      {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.item&&'품목 수정',p.itemToggle&&'사용·미사용',p.history&&'거래 내역',p.import&&'가져오기',p.safety&&'안전재고'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; const self=!!(me&&me.user===x.user); if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';
           setRoleOptions(x.team||'생산',x.role==='admin'); document.getElementById('ac-role').value=roleVal(x); document.getElementById('ac-station').value=x.station||'사상반'; acRoleUI(); document.getElementById('ac-pass').value='';

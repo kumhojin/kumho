@@ -1,0 +1,90 @@
+/* 금호정공 사내 업무 시스템 · 안전재고 (이카운트 2년 판매로 계산) · 현재 재고 · 대시보드 알림
+   계정 관리의 '안전재고 · 재고 수량 보기' 권한이 있는 사람만 보고, 그 사람 대시보드에 재고가 너무 적거나 많은 품목 알림이 뜸.
+   일반 <script>로 순서대로 불러옴 (모든 파일이 같은 전역 범위를 씀). 순서는 index.html 참고. */
+(function(){
+  const $=id=>document.getElementById(id);
+  const SB=()=>window.kumhoSB&&window.kumhoSB();
+  const N=v=>v==null||v===''?'':Number(v).toLocaleString('ko-KR',{maximumFractionDigits:1});
+  const errMsg=e=>{const m=String(e&&e.message||e||''); return /권한|permission|policy/i.test(m)?'권한이 없습니다.':/fetch|network/i.test(m)?'인터넷 연결을 확인해 주세요.':m};
+  const td=(tr,t,cls)=>{const c=document.createElement('td'); if(t instanceof Node) c.append(t); else c.textContent=t==null?'':String(t); if(cls) c.className=cls; tr.append(c); return c};
+  const ok=()=>typeof can==='function'&&!!can('safety');
+  let rows=[], ssF='out', ssInit=false;
+  const CLS={'부족':'short','과다':'over','판매 없음':'dead','적정':'','재고 모름':''};
+
+  async function loadAll(){const sb=SB(), out=[]; for(let from=0;from<50000;from+=1000){const r=await sb.rpc('safety_status').range(from,from+999); if(r.error) throw r.error; out.push(...r.data); if(r.data.length<1000) break} return out}
+  async function ssLoad(){const st=$('ss-status'); st.textContent='불러오는 중…';
+    try{const sb=SB(); const [s,list]=await Promise.all([sb.from('safety_settings').select('*').eq('id',1).maybeSingle(),loadAll()]);
+      if(s.data){$('ss-service').value=String(Number(s.data.service)); $('ss-lead').value=Number(s.data.lead_days); $('ss-max').value=Number(s.data.max_months);
+        $('ss-calcinfo').textContent=s.data.updated_by?`마지막 계산: ${new Date(s.data.updated_at).toLocaleString('ko-KR',{hour12:false})} · ${s.data.updated_by}`:'아직 계산하지 않았습니다.'}
+      rows=list; const asof=list.find(x=>x.as_of); $('ss-asof').textContent=asof?`현재 재고 기준: ${asof.as_of}`:'현재 재고를 아직 올리지 않았습니다.';
+      ssRender()}
+    catch(e){st.textContent='불러오지 못했습니다: '+errMsg(e)}}
+  function ssRender(){const tb=$('ss-body'), q=$('ss-q').value.trim().toLowerCase(); tb.replaceChildren();
+    const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
+    let list=rows.filter(x=>!(off(x.item_code)&&x.status!=='판매 없음'));
+    if(ssF==='out') list=list.filter(x=>['부족','과다','판매 없음'].includes(x.status)); else if(ssF!=='all') list=list.filter(x=>x.status===ssF);
+    if(q) list=list.filter(x=>[x.item_code,x.item_name,x.spec].some(v=>String(v||'').toLowerCase().includes(q)));
+    const ord={'부족':0,'과다':1,'판매 없음':2,'적정':3,'재고 모름':4};
+    list.sort((a,b)=>(ord[a.status]-ord[b.status])||(a.status==='부족'?(a.gap-b.gap):(b.gap||0)-(a.gap||0)));
+    list.slice(0,500).forEach(x=>{const tr=document.createElement('tr'); tr.className=CLS[x.status]||'';
+      td(tr,x.item_code,'nowrap'); td(tr,x.item_name||''); td(tr,x.spec||''); td(tr,N(x.qty),'num'); td(tr,N(x.safety),'num'); td(tr,N(x.max_qty),'num'); td(tr,N(x.avg_month),'num');
+      const s=document.createElement('b'); s.className='ssst '+(CLS[x.status]||''); s.textContent=x.status; td(tr,s);
+      td(tr,x.status==='부족'?N(-x.gap)+' 모자람':x.status==='과다'?N(x.gap)+' 많음':x.status==='판매 없음'?'2년 동안 안 팔림':'','nowrap');
+      const a=td(tr,''); a.className='nowrap';
+      if(x.safety!=null){const b=document.createElement('button'); b.type='button'; b.className='ghost'; b.textContent=x.manual?'직접 정함 · 고치기':'직접 정하기';
+        b.onclick=()=>editRow(x,tr); a.append(b)}
+      tb.append(tr)});
+    $('ss-empty').hidden=!!list.length;
+    const c=k=>rows.filter(x=>x.status===k).length;
+    $('ss-status').textContent=rows.length?(c('재고 모름')?`안전재고 ${c('재고 모름')}개 계산됨 · 현재 재고 엑셀을 올리면 부족·과다를 알려 줍니다`:`부족 ${c('부족')} · 과다 ${c('과다')} · 판매 없는 재고 ${c('판매 없음')} · 적정 ${c('적정')}`)+(list.length>500?' · 500개까지만 보여 줍니다':''):'아직 자료가 없습니다. 1) 자료 가져오기에서 이카운트 판매현황(2년)을 넣고 2) ‘다시 계산’ 3) 현재 재고 엑셀을 올리세요.'}
+  function editRow(x,tr){const f=document.createElement('tr'), c=document.createElement('td'); c.colSpan=10; f.append(c);
+    const mk=(lbl,v)=>{const l=document.createElement('label'); l.className='nowrap'; l.textContent=lbl+' '; const i=document.createElement('input'); i.type='number'; i.min='0'; i.style.width='110px'; i.value=v??''; i.placeholder='계산값'; l.append(i); return [l,i]};
+    const [l1,i1]=mk('안전재고',x.manual?x.safety:''), [l2,i2]=mk('최대',x.manual?x.max_qty:'');
+    const sv=document.createElement('button'); sv.type='button'; sv.textContent='저장'; const cl=document.createElement('button'); cl.type='button'; cl.className='ghost'; cl.textContent='닫기';
+    const msg=document.createElement('span'); msg.className='status'; const h=document.createElement('span'); h.className='hint'; h.textContent=' 비우면 계산값을 씁니다.';
+    c.append(l1,' ',l2,' ',sv,' ',cl,h,' ',msg); tr.after(f); cl.onclick=()=>f.remove();
+    sv.onclick=async()=>{const v=i=>i.value===''?null:Number(i.value);
+      let r=await SB().from('safety_stock').update({manual_safety:v(i1),manual_max:v(i2),updated_by:me&&me.user}).eq('item_code',x.item_code);
+      if(r.error){msg.textContent='저장하지 못했습니다: '+errMsg(r.error); return} f.remove(); ssLoad(); ssAlert()}}
+  // 이카운트 재고현황 엑셀 → 현재 재고
+  const norm=v=>String(v==null?'':v).replace(/\s+/g,' ').trim();
+  const num=v=>{if(typeof v==='number') return v; const s=String(v||'').replace(/[,\s]/g,''); return /^-?\d+(\.\d+)?$/.test(s)?Number(s):null};
+  async function readStock(file){const st=$('ss-upst'); st.textContent='엑셀 읽는 중…';
+    try{const wb=XLSX.read(await file.arrayBuffer(),{type:'array'}); let found=null;
+      for(const n of wb.SheetNames){const R=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,raw:true,defval:''});
+        for(let r=0;r<Math.min(R.length,20);r++){const h=(R[r]||[]).map(norm); const ic=h.findIndex(x=>/^(생산)?\s*품목\s*코드$|^품번$/.test(x));
+          if(ic<0) continue; const pick=re=>h.findIndex(x=>re.test(x));
+          let q=pick(/^재고\s*수량$/); if(q<0) q=pick(/^합계$/); if(q<0) q=pick(/^(현)?재고$/); if(q<0) q=pick(/수량/);
+          if(q<0) continue; found={R,r,ic,q,nm:pick(/^(생산)?\s*품목\s*명/),sp:pick(/^규격/),qh:h[q]}; break}
+        if(found) break}
+      if(!found){st.textContent='품목코드와 재고수량 칸을 찾지 못했습니다. 이카운트 재고현황에서 내려받은 엑셀인지 확인해 주세요.'; return}
+      const m=new Map(); for(let i=found.r+1;i<found.R.length;i++){const r=found.R[i]||[]; const ic=norm(r[found.ic]).toUpperCase(); const q=num(r[found.q]); if(!ic||q==null||/합계|소계/.test(ic)) continue;
+        const e=m.get(ic)||{ic,iname:found.nm>=0?norm(r[found.nm]):'',spec:found.sp>=0?norm(r[found.sp]):'',qty:0}; e.qty+=q; m.set(ic,e)}
+      const list=[...m.values()]; if(!list.length){st.textContent='넣을 줄이 없습니다.'; return}
+      const asof=$('ss-asofd').value||new Date().toISOString().slice(0,10);
+      if(!confirm(`현재 재고를 ${list.length}개 품목 (‘${found.qh}’ 칸, ${asof} 기준)으로 바꿀까요? 예전 재고 자료는 지워집니다.`)){st.textContent='';return}
+      const r=await SB().rpc('stock_now_replace',{p_rows:list,p_file:file.name,p_as_of:asof}); if(r.error) throw r.error;
+      st.textContent=`현재 재고 ${r.data}개 품목을 넣었습니다.`; $('ss-file').value=''; ssLoad(); ssAlert()}
+    catch(e){st.textContent='올리지 못했습니다: '+errMsg(e)}}
+  function ssSetup(){if(ssInit) return; ssInit=true; $('ss-asofd').value=new Date().toISOString().slice(0,10);
+    $('ss-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{ssF=b.dataset.f; $('ss-tabs').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x===b)); ssRender()});
+    let tm; $('ss-q').addEventListener('input',()=>{clearTimeout(tm); tm=setTimeout(ssRender,200)});
+    $('ss-file').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0]; if(f) readStock(f)});
+    $('ss-calc').onclick=async()=>{const b=$('ss-calc'), st=$('ss-status'); b.disabled=true; st.textContent='계산하는 중…';
+      const u=await SB().from('safety_settings').update({service:Number($('ss-service').value),lead_days:Number($('ss-lead').value)||7,max_months:Number($('ss-max').value)||1,updated_at:new Date().toISOString()}).eq('id',1);
+      const r=u.error?u:await SB().rpc('safety_recalc'); b.disabled=false;
+      if(r.error){st.textContent='계산하지 못했습니다: '+errMsg(r.error); return} await ssLoad(); st.textContent=`${r.data}개 품목의 안전재고를 계산했습니다. `+st.textContent; ssAlert()}}
+
+  // 대시보드 알림 (권한 있는 사람만)
+  async function ssAlert(){const box=$('ss-alert'); if(!box) return; if(!me||!ok()){box.hidden=true; return}
+    const r=await SB().rpc('safety_summary'); if(r.error||!r.data){box.hidden=true; return}
+    const s=r.data, t=$('ss-atext'), ul=$('ss-alist'); ul.replaceChildren();
+    if(!s.items&&!s.as_of){box.hidden=true; return}
+    if(!s.as_of){t.textContent='안전재고는 계산했지만 현재 재고를 아직 올리지 않았습니다. 이카운트 재고현황 엑셀을 올려 주세요.'; box.className='rcalert ssalert'; box.hidden=false; return}
+    if(!s.short&&!s.over&&!s.dead){t.textContent=`재고가 모두 적정 범위 안입니다 (${s.as_of} 기준).`; box.className='rcalert ssalert good'; box.hidden=false; return}
+    t.textContent=`재고 확인 필요 (${s.as_of} 기준): 너무 적음 ${s.short}개 · 너무 많음 ${s.over}개 · 2년 동안 안 팔린 재고 ${s.dead}개`;
+    (s.top||[]).forEach(x=>{const li=document.createElement('li'); li.textContent=`${x.item_name||x.item_code} — 재고 ${N(x.qty)} / 안전재고 ${N(x.safety)} (${N(-x.gap)} 모자람)`; ul.append(li)});
+    box.className='rcalert ssalert'; box.hidden=false}
+
+  window.safetyOpen=function(id){if(!me) return; if(id==='safety'){ssSetup(); ssLoad()} else if(id==='dash') ssAlert()};
+})();
