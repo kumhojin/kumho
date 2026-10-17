@@ -19,12 +19,12 @@
       data=out; loading=null; return out})(); return loading}
   function tabsOf(id){return DEPT[id].tabs.map(([wh,filt,label])=>({wh,filt,label:label||wh}))}
   function rowsFor(t){return data.filter(x=>x.wh===t.wh&&(!t.filt||t.filt(x.item_code)))}
-  function render(){const d=DEPT[cur], T=tabsOf(cur), tb=$('wh-body'), hd=$('wh-head'), q=$('wh-q').value.trim().toLowerCase(), showOff=$('wh-off').checked;
+  function render(){const d=DEPT[cur], T=tabsOf(cur), tb=$('wh-body'), hd=$('wh-head'), q=$('wh-q').value.trim().toLowerCase(), showOff=!$('wh-off').checked;
+    const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
     const tabsBox=$('wh-tabs'); tabsBox.replaceChildren();
     [{key:'all',label:'전체'},...T.map((t,i)=>({key:String(i),label:t.label}))].forEach(t=>{const b=document.createElement('button'); b.type='button'; b.setAttribute('role','tab'); b.textContent=t.label;
-      if(t.key!=='all'){const n=rowsFor(T[+t.key]).filter(x=>x.qty!==0).length; const s=document.createElement('small'); s.textContent=' '+n; b.append(s)}
+      if(t.key!=='all'){const n=rowsFor(T[+t.key]).filter(x=>x.qty!==0&&(showOff||!off(x.item_code))).length; const s=document.createElement('small'); s.textContent=' '+n; b.append(s)}
       b.setAttribute('aria-selected',tab===t.key); b.onclick=()=>{tab=t.key; render()}; tabsBox.append(b)});
-    const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
     const hit=x=>(!q||[x.item_code,x.item_name,x.spec,kindOf(x.item_code)].some(v=>String(v||'').toLowerCase().includes(q)))&&(showOff||!off(x.item_code));
     hd.replaceChildren(); tb.replaceChildren(); const hr=document.createElement('tr'); hd.append(hr);
     const th=(t,c)=>{const e=document.createElement('th'); e.textContent=t; if(c) e.className=c; hr.append(e)};
