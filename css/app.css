@@ -673,3 +673,5 @@ button.editbtn{margin-right:4px}
 .ssst{font-weight:700}.ssst.short{color:#c0392b}.ssst.over{color:#d35400}.ssst.dead{color:var(--muted)}
 .ssalert.good{color:#1e8449}
 .nostock .stockcell{display:none}
+.whtable td.neg{color:var(--bad)}
+#wh-tabs small{opacity:.6;font-size:11px}
