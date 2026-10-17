@@ -256,6 +256,10 @@ header.top{background:var(--steel);color:#eef1f4;position:sticky;top:env(safe-ar
 .itemtable tr.off td.st b{color:var(--bad)}
 .itemtable tr.on td.st b{color:var(--ok)}
 .itemtable .dup{margin-left:6px}
+.matchip{display:inline-block;margin:1px 4px 1px 0;padding:1px 8px;border-radius:999px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font-size:12px;font-weight:500;cursor:pointer;line-height:1.6}
+.matchip:hover{border-color:var(--accent)}
+.matchip .x{margin-left:4px;color:var(--muted)}
+.matedit{display:flex;flex-wrap:wrap;gap:6px;align-items:center;grid-column:1/-1}
 #ac-list tr.acgrp td{background:var(--accent-soft);color:var(--ink);font-weight:700;font-size:13px;padding-top:8px;padding-bottom:6px}
 .pinfo{display:block;font-size:12px;color:var(--muted);margin-top:2px;font-weight:400}
 .pinfo.warn{color:var(--bad)}
@@ -1011,7 +1015,7 @@ button.editbtn{margin-right:4px}
         <label for="s-memo">메모<input id="s-memo" maxlength="80" placeholder="사상반 검사분, 출하처 등"></label>
         <div class="sbtns"><button type="submit" data-op="in" id="s-in">재고 추가</button><button type="submit" data-op="out" class="outbtn" id="s-out">재고 빼기</button></div>
       </form>
-      <datalist id="s-items"></datalist>
+      <datalist id="s-items"></datalist><datalist id="mat-items"></datalist>
       <div class="row"><input id="s-search" class="grow" placeholder="품번이나 LOT로 찾기"><span class="status" id="s-status"></span></div>
       <div class="scroll"><table class="rules stable">
         <thead><tr><th>품번</th><th>LOT</th><th>호기</th><th style="text-align:right">현재 재고 (EA)</th><th>최근 변동</th></tr></thead>
@@ -1231,13 +1235,13 @@ button.editbtn{margin-right:4px}
 
   <section class="panel" id="itembox" aria-labelledby="h-items">
     <h2 id="h-items">품목 관리 <span class="tag">사용 · 미사용</span></h2>
-    <p class="hint" id="it-hint">안 쓰는 품목을 ‘미사용’으로 바꾸면 판매(납품) 전표에 넣을 수 없고 품번 추천 목록에서도 빠집니다. 이름이 같은 품목이 여러 개일 때 쓰는 것만 남겨 두면 찾기 쉽습니다. 바꾸기는 자재·품질·생산 팀장과 관리자만 할 수 있습니다.</p>
+    <p class="hint" id="it-hint">안 쓰는 품목을 ‘미사용’으로 바꾸면 판매(납품) 전표에 넣을 수 없고 품번 추천 목록에서도 빠집니다. 이름이 같은 품목이 여러 개일 때 쓰는 것만 남겨 두면 찾기 쉽습니다. 사용·미사용 바꾸기와 정보 수정은 계정 관리에서 허락받은 사람만 할 수 있습니다. ‘정보 수정’에서 제품에 쓰는 재료를 연결하면, 재료 칸을 눌러 그 재료를 쓰는 제품을 볼 수 있습니다.</p>
     <label class="drop small" id="it-drop" for="it-file" hidden><input type="file" id="it-file" accept=".xlsx,.xls"><b>전체 품목 엑셀 놓기</b><span>생산품목코드 · 생산품목명 · 규격 · 최근 2년 판매(O/X) — O는 사용, X는 미사용으로 들어갑니다</span></label>
     <div class="row"><input id="it-search" class="grow" placeholder="품목코드, 품목명, 규격, 구분으로 찾기">
       <select id="it-cat" style="width:auto" aria-label="종류"><option value="">종류: 전체</option><option>제품</option><option>반제품</option><option>재료</option><option>포장품</option><option>부재료</option><option>상품</option><option>금형</option></select>
       <div class="tabs" role="tablist" id="it-tabs"><button type="button" role="tab" data-f="all" aria-selected="true">전체</button><button type="button" role="tab" data-f="on" aria-selected="false">사용 중</button><button type="button" role="tab" data-f="off" aria-selected="false">미사용</button><button type="button" role="tab" data-f="dup" aria-selected="false">같은 이름 여러 개 사용 중</button></div></div>
     <div class="status" id="it-status"></div>
-    <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>종류</th><th>구분</th><th>최근 판매일</th><th class="num pricecell">단가</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
+    <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>종류</th><th>재료 · 쓰는 제품</th><th>구분</th><th>최근 판매일</th><th class="num pricecell">단가</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
   </section>
 
@@ -2288,7 +2292,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     try{for(const e of stockMap().values()) add(e.item)}catch(e){}
     try{for(const d of slipsRaw){const x=d.data(); if(x.type!=='구매') (x.rows||[]).forEach(o=>add(o.item,o.name,o.spec))}}catch(e){}
     for(const [k,d] of offMap) add(k,d.name,d.spec);
-    for(const [k,d] of infoMap){const e=m.get(k)||{code:k,name:'',spec:''}; ['name','spec','kind','group'].forEach(f=>{if(d[f]!=null) e[f]=d[f]}); if(d.cat) e.cat=d.cat; m.set(k,e)}
+    for(const [k,d] of infoMap){const e=m.get(k)||{code:k,name:'',spec:''}; ['name','spec','kind','group'].forEach(f=>{if(d[f]!=null) e[f]=d[f]}); if(d.cat) e.cat=d.cat; if(Array.isArray(d.mats)) e.mats=d.mats; m.set(k,e)}
     for(const e of m.values()){e.name=e.name||''; e.spec=e.spec||''; if(!e.cat) e.cat=autoCat(e)}
     return [...m.values()]}
   function renderItems(){const tb=document.getElementById('it-body'); if(!tb) return; tb.replaceChildren();
@@ -2298,14 +2302,21 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const dupN=e=>{if(isOff(e.code)) return 1; const k=e.name.replace(/\s+/g,'').toLowerCase(); return k?byName.get(k)||1:1};
     const q=document.getElementById('it-search').value.trim().toLowerCase();
     const cat=document.getElementById('it-cat').value;
-    let rows=items.filter(e=>(!cat||e.cat===cat)&&(!q||[e.code,e.name,e.spec,e.kind||'',e.group||'',e.cat||''].some(v=>String(v).toLowerCase().includes(q)))
+    // 재료가 어떤 제품에 쓰이는지 (uses:재료코드 로 검색)
+    const usedBy=new Map(); items.forEach(e=>(e.mats||[]).forEach(m=>usedBy.set(m,(usedBy.get(m)||0)+1)));
+    const usesQ=q.startsWith('uses:')?q.slice(5).trim():null;
+    let rows=items.filter(e=>(!cat||e.cat===cat)&&(usesQ!=null?(e.mats||[]).some(m=>m.toLowerCase()===usesQ):(!q||[e.code,e.name,e.spec,e.kind||'',e.group||'',e.cat||''].some(v=>String(v).toLowerCase().includes(q))))
       &&(itF==='all'||(itF==='on'&&!isOff(e.code))||(itF==='off'&&isOff(e.code))||(itF==='dup'&&dupN(e)>1)))
       .sort((a,b)=>(a.name||'￿').localeCompare(b.name||'￿')||a.code.localeCompare(b.code));
     const total=rows.length; rows=rows.slice(0,500); const edit=canToggleItems(); document.getElementById('it-drop').hidden=!edit;
     for(const e of rows){const off=isOff(e.code), d=offMap.get(e.code), tr=document.createElement('tr'); tr.className=off?'off':'on';
       const c=(t,cl)=>{const td=document.createElement('td'); td.textContent=t; if(cl) td.className=cl; tr.append(td); return td};
       c(e.code,'code'); const nt=c(e.name||'—'); if(dupN(e)>1){const sp=document.createElement('span'); sp.className='pill dup'; sp.textContent=`같은 이름 ${dupN(e)}개 사용 중`; nt.append(sp)}
-      c(e.spec||''); c(e.cat||''); c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); {const pv=itemPrice(e.code); c(pv==null?'':Number(pv).toLocaleString('ko-KR'),'num pricecell')} const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
+      c(e.spec||''); c(e.cat||'');
+      {const td=c(''); const goUses=code=>{const s=document.getElementById('it-search'); s.value='uses:'+code; document.getElementById('it-cat').value=''; renderItems(); s.focus()};
+        if(e.mats&&e.mats.length) e.mats.forEach(m=>{const p=prodOf(m), b=document.createElement('button'); b.type='button'; b.className='matchip'; b.textContent=p.name||m; b.title=`${m}${p.spec?' · '+p.spec:''} — 이 재료를 쓰는 제품 보기`; b.onclick=()=>goUses(m); td.append(b)});
+        else if(usedBy.get(e.code)){const b=document.createElement('button'); b.type='button'; b.className='matchip'; b.textContent=`제품 ${usedBy.get(e.code)}개`; b.title='이 재료를 쓰는 제품 보기'; b.onclick=()=>goUses(e.code); td.append(b)}}
+      c([e.kind,e.group].filter(Boolean).join(' · ')); c(e.last||''); {const pv=itemPrice(e.code); c(pv==null?'':Number(pv).toLocaleString('ko-KR'),'num pricecell')} const st=c('','st'); const b=document.createElement('b'); b.textContent=off?'미사용':'사용'; st.append(b);
       c(d&&d.by?`${d.by} · ${fmt(d.createdAt)}`:master.has(e.code)?(master.get(e.code).sold?'2년 내 판매':'2년간 판매 없음'):'');
       const a=c(''); a.style.whiteSpace='nowrap';
       if(canEditInfo()||canEditPrice()){const eb=document.createElement('button'); eb.type='button'; eb.className='ghost'; eb.textContent='정보 수정'; eb.onclick=()=>editItemRow(tr,e); a.append(eb,' ')}
@@ -2319,6 +2330,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
       tb.append(tr)}
     document.getElementById('it-empty').hidden=total>0;
     const offN=items.filter(e=>isOff(e.code)).length;
+    if(usesQ!=null){const p=prodOf(usesQ.toUpperCase())||{}; const mm=items.find(x=>x.code.toLowerCase()===usesQ); document.getElementById('it-status').textContent=`‘${(mm&&mm.name)||usesQ}’ 재료를 쓰는 제품 ${total}개 · 검색칸을 비우면 전체 목록`; return}
     document.getElementById('it-status').textContent=`${masterInfo?`${masterInfo.file} (${fmt(masterInfo.uploadedAt)}) · `:''}품목 ${items.length}개 · 미사용 ${offN}개${total>500?` · 앞 500개만 표시 (검색으로 좁혀 주세요)`:''}${edit?'':' · 보기 전용'}`}
   // ---------- 품목 자동 채우기: 품번이나 품목명을 넣으면 나머지(품목코드·품목명·규격·단가)를 채움 ----------
   let prodCache=null;
@@ -2331,7 +2343,11 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const c=I.code.get(v)||I.codeL.get(v.toLowerCase()); if(c) return {p:c};
     const all=I.name.get(nName(v))||[], on=all.filter(e=>!isOff(e.code));
     if(on.length===1) return {p:on[0]}; if(on.length>1) return {many:on}; return {}}
-  function buildItemList(){const dl=document.getElementById('s-items'); if(!dl) return; dl.replaceChildren();
+  // 재료 고르기 목록 (원재료·부재료·포장품, 미사용이어도 포함)
+  const MAT_CATS=['재료','부재료','포장품'];
+  function buildMatList(){const dl=document.getElementById('mat-items'); if(!dl) return; dl.replaceChildren();
+    prodIdx().items.filter(e=>MAT_CATS.includes(e.cat)).slice(0,4000).forEach(e=>{const o=document.createElement('option'); o.value=e.code; const l=[e.name,e.spec].filter(Boolean).join(' · '); if(l) o.label=l; dl.append(o)})}
+  function buildItemList(){try{buildMatList()}catch(e){} const dl=document.getElementById('s-items'); if(!dl) return; dl.replaceChildren();
     prodIdx().items.filter(e=>!isOff(e.code)).slice(0,4000).forEach(e=>{const o=document.createElement('option'); o.value=e.code;
       const l=[e.name,e.spec].filter(Boolean).join(' · '); if(l) o.label=l; dl.append(o)})}
   // 단가: 같은 거래처의 최근 전표 → 아무 거래처 최근 전표 → 이카운트 재고현황 단가 칸
@@ -2382,7 +2398,7 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     [...slBody.querySelectorAll('input[data-k=price]')].forEach(pr=>{if(pr.dataset.auto==='1'){pr.value=''; const it=pr.closest('tr').querySelector('input[data-k=item]'); const p=it&&prodOf(it.value); if(p&&p.code) setAuto(pr,lastPrice(p.code,slipType,document.getElementById('sl-partner').value.trim()))}})});
   // 품목 정보·단가 수정 (계정 관리에서 허락한 사람만)
   function editItemRow(tr,e){const info=canEditInfo(), price=canEditPrice(); tr.replaceChildren();
-    const td=document.createElement('td'); td.colSpan=10; tr.append(td);
+    const td=document.createElement('td'); td.colSpan=11; tr.append(td);
     const f=document.createElement('form'); f.className='sform'; f.style.margin='4px 0';
     const field=(label,val,opt={})=>{const l=document.createElement('label'); l.textContent=label; let i;
       if(opt.options){i=document.createElement('select'); opt.options.forEach(o=>{const op=document.createElement('option'); op.value=o; op.textContent=o||'자동'; i.append(op)})}
@@ -2391,12 +2407,26 @@ JSON 하나로만 답하라: {"rows":[{"열이름":"값",...}],"notes":["확인�
     const code=document.createElement('b'); code.textContent=e.code; f.append(code);
     const iName=field('품목명',e.name,{dis:!info}), iSpec=field('규격',e.spec,{dis:!info}), iCat=field('종류',(infoMap.get(e.code)||{}).cat||'',{dis:!info,options:['',...CATS]});
     const iPrice=price?field('단가',itemPrice(e.code),{num:true}):null;
+    // 이 품목에 쓰는 재료 (원재료·부재료·포장품)
+    const oldMats=[...(e.mats||[])]; let mats=[...oldMats]; let matBox=null;
+    if(info){matBox=document.createElement('div'); matBox.className='matedit'; f.append(matBox);
+      const drawMats=()=>{matBox.replaceChildren(); const lb=document.createElement('span'); lb.className='hint'; lb.textContent='사용 재료:'; matBox.append(lb);
+        mats.forEach(m=>{const p=prodOf(m), b=document.createElement('button'); b.type='button'; b.className='matchip'; b.textContent=`${p.name||m}${p.spec?' ('+p.spec+')':''}`; const x=document.createElement('span'); x.className='x'; x.textContent='×'; b.append(x); b.title=m+' 빼기'; b.onclick=()=>{mats=mats.filter(z=>z!==m); drawMats()}; matBox.append(b)});
+        const inp=document.createElement('input'); inp.setAttribute('list','mat-items'); inp.placeholder='재료 품목코드 또는 이름'; inp.style.maxWidth='240px';
+        const add=document.createElement('button'); add.type='button'; add.className='ghost'; add.textContent='재료 추가';
+        const msg=document.createElement('span'); msg.className='status';
+        add.onclick=()=>{const v=inp.value.trim(); if(!v) return; const r=resolveProd(v); let code=r.p&&r.p.code;
+          if(!code){const all=prodIdx().items.filter(x=>MAT_CATS.includes(x.cat)&&nName(x.name)===nName(v)); if(all.length===1) code=all[0].code; else{msg.textContent=all.length>1?`같은 이름 ${all.length}개 — 품목코드로 골라 주세요`:'그런 품목이 없습니다'; return}}
+          if(code===e.code){msg.textContent='자기 자신은 넣을 수 없습니다'; return} if(!mats.includes(code)) mats.push(code); drawMats()};
+        inp.addEventListener('keydown',ev=>{if(ev.key==='Enter'){ev.preventDefault(); add.click()}});
+        matBox.append(inp,add,msg)};
+      drawMats()}
     const sb=document.createElement('div'); sb.className='sbtns';
     const cancel=document.createElement('button'); cancel.type='button'; cancel.className='ghost'; cancel.textContent='취소'; cancel.onclick=()=>renderItems();
     const save=document.createElement('button'); save.type='submit'; save.textContent='저장'; sb.append(cancel,save); f.append(sb); td.append(f);
     f.onsubmit=async ev=>{ev.preventDefault(); const st=document.getElementById('it-status'); save.disabled=true;
-      try{if(info&&(iName.value.trim()!==e.name||iSpec.value.trim()!==e.spec||iCat.value!==((infoMap.get(e.code)||{}).cat||'')))
-          await db.collection('iteminfo').doc(e.code).set({...(infoMap.get(e.code)||{}),item:e.code,name:iName.value.trim(),spec:iSpec.value.trim(),cat:iCat.value,by:me.name||me.user,author:myId,createdAt:Date.now()});
+      try{if(info&&(iName.value.trim()!==e.name||iSpec.value.trim()!==e.spec||iCat.value!==((infoMap.get(e.code)||{}).cat||'')||mats.join('|')!==oldMats.join('|')))
+          await db.collection('iteminfo').doc(e.code).set({...(infoMap.get(e.code)||{}),item:e.code,...(()=>{const b=master.get(e.code)||{}, n=iName.value.trim(), sp=iSpec.value.trim(); return {name:b.name===n?null:n, spec:b.spec===sp?null:sp}})(),cat:iCat.value,mats,by:me.name||me.user,author:myId,createdAt:Date.now()});
         if(iPrice){const nv=iPrice.value===''?null:Number(iPrice.value), ov=itemPrice(e.code);
           if(nv!==ov&&!(nv==null&&ov==null)){const cur=priceMap.get('products'); const map={...((cur&&cur.map)||{})}; if(nv==null) delete map[e.code]; else map[e.code]=nv;
             await db.doc('prices/products').set({...(cur||{}),map,author:(cur&&cur.author)||myId,editedBy:me.name||me.user,updatedAt:Date.now(),createdAt:(cur&&cur.createdAt)||Date.now()})}}
