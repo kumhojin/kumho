@@ -12,6 +12,9 @@
   const CLS={'부족':'short','과다':'over','판매 없음':'dead','적정':'','재고 모름':'','재료':''};
   // 재료·부재료·포장품은 팔지 않으므로 '판매 없음'으로 알리지 않음 · 미사용 품목은 안전재고에서 아예 뺌
   const SELL=['제품','반제품','상품',''];
+  // 최근 판매일: 전체 품목 엑셀(이카운트 2년 판매여부)의 최근 판매일
+  const lastSold=c=>{try{const m=master.get(normItem(c)); return (m&&m.last)||''}catch(e){return ''}};
+  const ago=d=>{if(!d) return ''; const n=Math.floor((Date.now()-Date.parse(d+'T00:00:00'))/864e5); return n<=0?'오늘':n<31?n+'일 전':n<365?Math.floor(n/30)+'개월 전':(n/365).toFixed(1).replace('.0','')+'년 전'};
   function adjust(list){const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
     const cat=c=>{try{return (prodOf(c)||{}).cat||''}catch(e){return ''}};
     return list.filter(x=>!off(x.item_code)).map(x=>x.status==='판매 없음'&&!SELL.includes(cat(x.item_code))?{...x,status:'재료',gap:0}:x)}
@@ -31,7 +34,7 @@
     const ord={'부족':0,'과다':1,'판매 없음':2,'적정':3,'재료':4,'재고 모름':5};
     list.sort((a,b)=>(ord[a.status]-ord[b.status])||(a.status==='부족'?(a.gap-b.gap):(b.gap||0)-(a.gap||0)));
     list.slice(0,500).forEach(x=>{const tr=document.createElement('tr'); tr.className=CLS[x.status]||'';
-      td(tr,x.item_code,'nowrap'); td(tr,x.item_name||''); td(tr,x.spec||''); td(tr,N(x.qty),'num'); td(tr,N(x.safety),'num'); td(tr,N(x.max_qty),'num'); td(tr,N(x.avg_month),'num');
+      td(tr,x.item_code,'nowrap'); td(tr,x.item_name||''); td(tr,x.spec||''); td(tr,N(x.qty),'num'); td(tr,N(x.safety),'num'); td(tr,N(x.max_qty),'num'); td(tr,N(x.avg_month),'num'); {const ls=lastSold(x.item_code); const c=td(tr,ls?`${ls} (${ago(ls)})`:'—','nowrap'); if(ls) c.title='최근 판매일'}
       const s=document.createElement('b'); s.className='ssst '+(CLS[x.status]||''); s.textContent=x.status; td(tr,s);
       td(tr,x.status==='부족'?N(-x.gap)+' 모자람':x.status==='과다'?N(x.gap)+' 많음':x.status==='판매 없음'?'2년 동안 안 팔림':'','nowrap');
       const a=td(tr,''); a.className='nowrap';
@@ -41,7 +44,7 @@
     $('ss-empty').hidden=!!list.length;
     const adj=adjust(rows), c=k=>adj.filter(x=>x.status===k).length;
     $('ss-status').textContent=rows.length?(c('재고 모름')?`안전재고 ${c('재고 모름')}개 계산됨 · 현재 재고 엑셀을 올리면 부족·과다를 알려 줍니다`:`부족 ${c('부족')} · 과다 ${c('과다')} · 판매 없는 재고 ${c('판매 없음')} · 적정 ${c('적정')}`)+(list.length>500?' · 500개까지만 보여 줍니다':''):'아직 자료가 없습니다. 1) 자료 가져오기에서 이카운트 판매현황(2년)을 넣고 2) ‘다시 계산’ 3) 현재 재고 엑셀을 올리세요.'}
-  function editRow(x,tr){const f=document.createElement('tr'), c=document.createElement('td'); c.colSpan=10; f.append(c);
+  function editRow(x,tr){const f=document.createElement('tr'), c=document.createElement('td'); c.colSpan=11; f.append(c);
     const mk=(lbl,v)=>{const l=document.createElement('label'); l.className='nowrap'; l.textContent=lbl+' '; const i=document.createElement('input'); i.type='number'; i.min='0'; i.style.width='110px'; i.value=v??''; i.placeholder='계산값'; l.append(i); return [l,i]};
     const [l1,i1]=mk('안전재고',x.manual?x.safety:''), [l2,i2]=mk('최대',x.manual?x.max_qty:'');
     const sv=document.createElement('button'); sv.type='button'; sv.textContent='저장'; const cl=document.createElement('button'); cl.type='button'; cl.className='ghost'; cl.textContent='닫기';
@@ -87,8 +90,8 @@
     if(!asof){t.textContent='안전재고는 계산했지만 현재 재고가 없습니다. 안전재고 화면에서 현재 재고를 올려 주세요.'; box.className='rcalert ssalert'; box.hidden=false; return}
     if(!n('부족')&&!n('과다')&&!n('판매 없음')){t.textContent=`재고가 모두 적정 범위 안입니다 (${asof} 기준).`; box.className='rcalert ssalert good'; box.hidden=false; return}
     t.textContent=`재고 확인 필요 (${asof} 기준): 너무 적음 ${n('부족')}개 · 너무 많음 ${n('과다')}개 · 2년 동안 안 팔린 제품 재고 ${n('판매 없음')}개`;
-    const top=[...list.filter(x=>x.status==='부족').sort((a,b)=>(a.gap/(a.safety||1))-(b.gap/(b.safety||1))).slice(0,3).map(x=>`너무 적음: ${x.item_name||x.item_code} — 재고 ${N(x.qty)} / 안전재고 ${N(x.safety)}`),
-      ...list.filter(x=>x.status==='과다').sort((a,b)=>(b.gap/(b.max_qty||1))-(a.gap/(a.max_qty||1))).slice(0,2).map(x=>`너무 많음: ${x.item_name||x.item_code} — 재고 ${N(x.qty)} / 최대 ${N(x.max_qty)}`)];
+    const top=[...list.filter(x=>x.status==='부족').sort((a,b)=>(a.gap/(a.safety||1))-(b.gap/(b.safety||1))).slice(0,3).map(x=>`너무 적음: ${x.item_name||x.item_code} — 재고 ${N(x.qty)} / 안전재고 ${N(x.safety)}${lastSold(x.item_code)?' · 최근 판매 '+lastSold(x.item_code):''}`),
+      ...list.filter(x=>x.status==='과다').sort((a,b)=>(b.gap/(b.max_qty||1))-(a.gap/(a.max_qty||1))).slice(0,2).map(x=>`너무 많음: ${x.item_name||x.item_code} — 재고 ${N(x.qty)} / 최대 ${N(x.max_qty)}${lastSold(x.item_code)?' · 최근 판매 '+lastSold(x.item_code):''}`)];
     top.forEach(s=>{const li=document.createElement('li'); li.textContent=s; ul.append(li)});
     box.className='rcalert ssalert'; box.hidden=false}
 
