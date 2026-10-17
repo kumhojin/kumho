@@ -651,3 +651,15 @@ button.editbtn{margin-right:4px}
 .wtoday td{padding:6px 4px;border-top:1px solid var(--line)}
 .wtoday td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
 .wtoday .none{color:var(--muted);font-size:14px}
+/* 대시보드 요약 · 수주 */
+.dsum{display:grid;gap:10px}
+.dsum .kpi.warn b{color:var(--bad,#c0392b)}
+.dsumtop{font-size:13px;color:var(--muted)}
+.dsumtop b{color:var(--ink);font-size:13px}
+.dsumtop ol{margin:4px 0 0;padding-left:20px;display:flex;flex-wrap:wrap;gap:4px 22px}
+.ordtable tr.late td{background:color-mix(in srgb,#e74c3c 12%,transparent)}
+.ordtable tr.soon td{background:color-mix(in srgb,#f1c40f 14%,transparent)}
+.ordtable input{padding:4px 6px}
+#pt-list tr.off td{opacity:.55}
+#pt-stats table{margin-top:6px;max-width:520px}
+.dsum .kpis{grid-template-columns:repeat(auto-fit,minmax(170px,1fr))}
