@@ -14,6 +14,7 @@
   async function myProfile(){const {data:{session}}=await sb.auth.getSession(); if(!session) return null;
     const {data,error}=await sb.from('profiles').select('*').eq('id',session.user.id).maybeSingle(); if(error) throw error; return data}
   function tmpClient(){return window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY,{auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false,storageKey:'kumho-tmp'}})}
+  window.kumhoSB=()=>sb;
   window.kumhoAuth={
     async signIn(u,pw){const {error}=await sb.auth.signInWithPassword({email:EMAIL(u),password:pw}); if(error) throw error; return await myProfile()},
     async signOut(){try{await sb.auth.signOut()}catch(e){}},
