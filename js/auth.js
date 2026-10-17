@@ -41,7 +41,7 @@
   function canEditTeam(t){if(!me) return false; if(t==='홈') return true; return permOf(me).teams[t]==='edit'}
   function can(k){return !!me&&permOf(me)[k]}
   // 공통 메뉴 중 권한이 필요한 것: 계정 관리 · 변경 기록 = 시스템 관리자, 거래 내역 · 자료 가져오기 = 계정 관리에서 체크한 사람
-  function menuOK(id){if(!me) return true; if(id==='acct'||id==='audit') return me.role==='admin'; if(id==='hist') return !!(can('history')||can('import')); if(id==='imp') return !!can('import'); if(id==='bot') return !!window.kumhoAIOK; if(id==='safety') return !!can('safety'); return true}
+  function menuOK(id){if(!me) return true; if(id==='acct'||id==='audit') return me.role==='admin'; if(id==='hist') return !!(can('history')||can('import')); if(id==='imp') return !!can('import'); if(id==='bot') return !!window.kumhoAIOK; if(id==='safety') return !!can('safety'); if(/^wh_/.test(id)) return !!(can('safety')||can('stockEdit')); return true}
   const LBL={edit:'수정',view:'보기',none:'숨김'};
   function findAcct(u){u=String(u||'').trim().toLowerCase(); const a=accounts.find(x=>x.data().user===u); return a?a.data():null}
   // 로그인은 하루 한 번: 같은 날(이 기기) 동안 유지, 날짜가 바뀌면 다시 로그인
