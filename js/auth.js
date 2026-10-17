@@ -7,7 +7,7 @@
   const unhex=h=>new Uint8Array(h.match(/../g).map(x=>parseInt(x,16)));
   async function pbk(pw,saltHex){const k=await crypto.subtle.importKey('raw',new TextEncoder().encode(pw),'PBKDF2',false,['deriveBits']);
     return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:unhex(saltHex),iterations:ITER},k,256))}
-  const ALLTEAMS=['생산관리팀','생산','품질','계발','총무팀'];
+  const ALLTEAMS=['생산관리팀','생산','품질','계발','총무팀','고객대응'];
   // 작업자: 작업장별로 쓸 수 있는 화면
   const WORK={'생산':{team:'생산',items:['reqnew']},'사상반':{team:'생산',items:['xfer']},'자재':{team:'생산관리팀',items:['recv']}};
   function isWorker(){return !!me&&me.role==='worker'}
@@ -34,11 +34,11 @@
   const ITEM_TEAMS=['생산관리팀','자재','품질','생산'];
   function canToggleItems(){return !!me&&can('itemToggle')}
   function accessOf(a){const p=permOf(a); return ALLTEAMS.filter(t=>p.teams[t]!=='none')}
-  // 고객대응(클레임 현황): 품질 · 자재(생산관리팀) · 관리자만
-  function claimOK(){return !!me&&me.role!=='worker'&&['본사','품질','생산관리팀','자재'].includes(me.team)}
-  // 고객대응(클레임 현황): 보기는 모든 직원(작업자 제외), 등록·수정은 본사 · 품질 · 자재
-  function canSee(t){if(t==='고객대응') return !!me&&me.role!=='worker'; return t==='홈'||!me||accessOf(me).includes(t)}
-  function canEditTeam(t){if(!me) return false; if(t==='홈') return true; if(t==='고객대응') return claimOK(); return permOf(me).teams[t]==='edit'}
+  // 고객대응(클레임): 계정 관리의 '고객대응' 권한 (보기+수정 / 보기만 / 숨김)
+  function claimOK(){return !!me&&me.role!=='worker'&&permOf(me).teams['고객대응']==='edit'}
+  // 메뉴 보이기: 부서 권한이 '숨김'이 아닌 것
+  function canSee(t){return t==='홈'||!me||accessOf(me).includes(t)}
+  function canEditTeam(t){if(!me) return false; if(t==='홈') return true; return permOf(me).teams[t]==='edit'}
   function can(k){return !!me&&permOf(me)[k]}
   // 공통 메뉴 중 권한이 필요한 것: 계정 관리 · 변경 기록 = 시스템 관리자, 거래 내역 · 자료 가져오기 = 계정 관리에서 체크한 사람
   function menuOK(id){if(!me) return true; if(id==='acct'||id==='audit') return me.role==='admin'; if(id==='hist') return !!(can('history')||can('import')); if(id==='imp') return !!can('import'); return true}

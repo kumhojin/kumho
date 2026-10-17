@@ -38,7 +38,7 @@
     renderClaims(); if(id) fv('frbform').scrollIntoView({behavior:'smooth',block:'start'})}
   fv('frb-new').onclick=()=>frbEdit(null);
   fv('frbform').addEventListener('submit',async e=>{e.preventDefault(); const st=fv('frb-status');
-    if(!db||!claimOK()){st.textContent='본사 · 품질 · 자재 담당자만 저장할 수 있습니다.';return}
+    if(!db||!claimOK()){st.textContent='고객대응 수정 권한이 있는 사람만 저장할 수 있습니다.';return}
     const steps={}; FRB_STEPS.forEach(([k])=>{const s=fv('fs-'+k).value, d=fv('fd-'+k).value; if(s||d) steps[k]={s,date:d}});
     const rec={no:fv('f-no').value.trim().toUpperCase(),opened:fv('f-opened').value,model:fv('f-model').value.trim(),where:fv('f-where').value.trim(),part:fv('f-part').value.trim(),partNo:fv('f-partno').value.trim(),
       dept:fv('f-dept').value.trim(),owner:fv('f-owner').value.trim(),issue:fv('f-issue').value.trim(),next:fv('f-next').value,recur:fv('f-recur').value==='1',action:fv('f-action').value.trim(),steps,updatedBy:myId,updatedAt:Date.now()};
