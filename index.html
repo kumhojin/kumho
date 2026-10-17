@@ -5,7 +5,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=20261017c">
+<link rel="stylesheet" href="css/app.css?v=20261017d">
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
@@ -92,7 +92,7 @@
     </form>
     <div class="status" id="ac-status"></div>
     <div class="scroll"><table class="rules sliplist"><thead><tr><th>아이디</th><th>이름</th><th>부서</th><th>권한</th><th>부서 권한</th><th>주요 정보</th><th></th></tr></thead><tbody id="ac-list"></tbody></table></div>
-    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라집니다. ‘작업자’는 작업장에 맞는 화면 하나만 씁니다 — 생산 작업자: 재료 요청 / 생산 사상반: 자재로 보낸 수량·불량 / 자재 작업자: 생산에서 받은 수량 (메뉴·공지·대시보드 없음). 관리자는 모든 권한을 가집니다. 계정과 권한은 서버(Supabase)에서 검사하므로, 화면을 우회해도 권한 밖의 자료는 읽거나 바꿀 수 없습니다. 본인 계정은 지울 수 없습니다.</p>
+    <p class="hint">목록에서 ‘수정’을 누르면 권한을 바꿀 수 있고, 바꾼 권한은 그 직원 화면에 바로 반영됩니다. 어떤 역할도 권한이 자동으로 생기지 않습니다 — 부서 권한과 주요 정보 권한에서 체크한 것만 쓸 수 있습니다. ‘보기만’인 부서에서는 입력·저장·삭제 버튼이 사라지고, ‘숨김’이면 메뉴가 보이지 않습니다. 팀장 · 관리자는 ‘보기+수정’ 부서에서 다른 사람이 쓴 자료도 고치고 지울 수 있습니다. ‘작업자’는 작업장에 맞는 화면 하나만 씁니다 — 생산 작업자: 재료 요청 / 생산 사상반: 자재로 보낸 수량·불량 / 자재 작업자: 생산에서 받은 수량. 시스템 관리자는 계정 관리와 변경 기록만 기본으로 봅니다. 권한은 서버(Supabase)에서 검사하므로 화면을 우회해도 권한 밖의 자료는 읽거나 바꿀 수 없습니다. 본인 계정의 역할은 바꿀 수 없습니다.</p>
   </section>
 
   <section class="panel" id="dash" aria-labelledby="h-dash">
@@ -104,6 +104,7 @@
       <button type="button" class="kpi" data-go="lotpm"><span>LOT 기록</span><b id="k-rec">0</b><em>건 (원자재·반제품·완제품·초물)</em></button>
       <button type="button" class="kpi" data-go="notice"><span>공지</span><b id="k-ntc">0</b><em id="k-ntc2">최근 7일</em></button>
     </div>
+    <div class="dsum" id="dsum" hidden><div class="kpis" id="dsum-cards"></div><div class="dsumtop" id="dsum-top"></div></div>
     <div class="calwrap">
       <div class="cal">
         <div class="calhead"><button type="button" class="ghost" id="cal-prev" aria-label="이전 달">‹</button><b id="cal-title"></b><button type="button" class="ghost" id="cal-next" aria-label="다음 달">›</button></div>
@@ -546,7 +547,6 @@
     </table></div>
   </section>
 
-  <div class="empty" id="soon">이 부서 전용 도구는 준비 중입니다. 지금은 부서 공지와 포털 도우미를 쓸 수 있습니다.</div>
 
   <section class="panel" id="evbox" aria-labelledby="h-evreg">
     <h2 id="h-evreg">일정 등록 <span class="tag">총무팀 · 대시보드 달력에 표시</span></h2>
@@ -565,7 +565,8 @@
   </section>
 
   <section class="panel" id="cpbox" aria-labelledby="h-cpreg">
-    <h2 id="h-cpreg">고객 클레임 등록 <span class="tag">고객대응 · 대시보드 달력에 표시</span></h2>
+    <h2 id="h-cpreg">고객 클레임 등록 <span class="tag">고객대응 · 클레임 현황 · 대시보드 달력에 표시</span></h2>
+    <p class="hint">여기서 등록한 클레임은 ‘클레임 현황’ 표에 새 줄(순번 자동)로 들어가고, 대시보드 달력에도 보입니다. 원인분석 · 개선조치 단계는 클레임 현황에서 이어서 적으세요.</p>
     <form id="cform2" data-write class="frbform">
       <div class="g4">
         <label>날짜<input id="cp-date" type="date" required></label>
@@ -578,7 +579,7 @@
       <div class="row" style="justify-content:space-between"><span class="status" id="cp-status"></span><button type="submit" id="cp-save">클레임 등록</button></div>
     </form>
     <h3 class="subh">최근 고객 클레임</h3>
-    <div class="scroll"><table class="rules sliplist"><thead><tr><th>날짜</th><th>거래처</th><th>품번</th><th>LOT</th><th class="num">수량</th><th>내용</th><th>등록</th><th></th></tr></thead><tbody id="cp-admin"></tbody></table></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>날짜</th><th>순번</th><th>거래처</th><th>품번</th><th>LOT</th><th class="num">수량</th><th>내용</th><th>진행</th><th></th></tr></thead><tbody id="cp-admin"></tbody></table></div>
     <div class="empty" id="cp-aempty">등록된 고객 클레임이 없습니다.</div>
   </section>
 
@@ -592,6 +593,56 @@
     <div class="status" id="it-status"></div>
     <div class="scroll"><table class="rules itemtable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th>종류</th><th>재료 · 쓰는 제품</th><th>구분</th><th>최근 판매일</th><th class="num pricecell">단가</th><th>상태</th><th>바꾼 사람</th><th></th></tr></thead><tbody id="it-body"></tbody></table></div>
     <div class="empty" id="it-empty">품목이 없습니다. 이카운트 업로드 화면에서 재고현황 엑셀을 올리거나, 재고·전표에 품번을 넣으면 여기에 나옵니다.</div>
+  </section>
+
+  <section class="panel" id="ordbox" aria-labelledby="h-ord">
+    <h2 id="h-ord">수주 · 납기 관리 <span class="tag">주문 받은 것 · 납기 · 출하</span></h2>
+    <p class="hint">거래처에서 받은 주문을 넣고 납기와 출하 수량을 관리합니다. 납기가 지난 주문은 빨갛게, 3일 안 납기는 노랗게 보입니다. 출하 수량이 주문 수량에 닿으면 자동으로 ‘출하완료’가 됩니다. 넣고 고치기는 자재 · 생산관리팀 보기+수정 권한이 필요합니다.</p>
+    <form id="ordform" data-write class="frbform">
+      <div class="g4">
+        <label>주문 번호<input id="od-no" maxlength="40" placeholder="거래처 발주 번호 (없으면 비움)"></label>
+        <label>주문일<input id="od-date" type="date"></label>
+        <label>거래처<input id="od-partner" maxlength="60" list="pt-dl" required autocomplete="off"></label>
+        <label>납기<input id="od-due" type="date"></label>
+        <label>품목코드<input id="od-item" maxlength="60" list="s-items" autocomplete="off"></label>
+        <label>품목명<input id="od-name" maxlength="80"></label>
+        <label>규격<input id="od-spec" maxlength="80"></label>
+        <label>수량<input id="od-qty" type="number" min="1" inputmode="numeric" required></label>
+      </div>
+      <label>메모<input id="od-memo" maxlength="200"></label>
+      <div class="row" style="justify-content:space-between"><span class="status" id="od-status"></span><span><button type="button" class="ghost" id="od-cancel" hidden>취소</button> <button type="submit" id="od-save">수주 등록</button></span></div>
+    </form>
+    <datalist id="pt-dl"></datalist>
+    <div class="row"><input id="od-q" class="grow" placeholder="거래처 · 품목 · 주문 번호로 찾기" autocomplete="off">
+      <div class="tabs" role="tablist" id="od-tabs"><button type="button" role="tab" data-f="open" aria-selected="true">진행 중</button><button type="button" role="tab" data-f="late" aria-selected="false">납기 지남</button><button type="button" role="tab" data-f="week" aria-selected="false">7일 안 납기</button><button type="button" role="tab" data-f="done" aria-selected="false">끝난 것</button><button type="button" role="tab" data-f="all" aria-selected="false">전체</button></div></div>
+    <div class="status" id="od-lstatus"></div>
+    <div class="scroll"><table class="rules sliplist ordtable"><thead><tr><th>납기</th><th>거래처</th><th>품목코드</th><th>품목명 · 규격</th><th class="num">주문</th><th class="num">출하</th><th class="num">남음</th><th>상태</th><th>메모</th><th></th></tr></thead><tbody id="od-list"></tbody></table></div>
+    <div class="empty" id="od-empty">해당하는 수주가 없습니다.</div>
+  </section>
+
+  <section class="panel" id="ptbox" aria-labelledby="h-pt">
+    <h2 id="h-pt">거래처 관리 <span class="tag">거래처 목록 · 연락처</span></h2>
+    <p class="hint">이카운트 자료를 가져오면 거래처가 자동으로 추가됩니다. 여기서 연락처 · 사업자번호 등을 채우고, 더는 거래하지 않는 곳은 ‘거래 중’ 체크를 빼면 추천 목록에서 빠집니다. 고치기는 자재 · 생산관리팀 보기+수정 권한이 필요합니다.</p>
+    <form id="ptform" data-write class="frbform">
+      <div class="g4">
+        <label>거래처 코드<input id="pt-code" maxlength="40" required></label>
+        <label>거래처 이름<input id="pt-name" maxlength="80" required></label>
+        <label>구분<select id="pt-kind"><option>매출</option><option>매입</option><option>매출·매입</option><option>기타</option></select></label>
+        <label>사업자번호<input id="pt-biz" maxlength="20"></label>
+        <label>담당자<input id="pt-contact" maxlength="40"></label>
+        <label>전화<input id="pt-phone" maxlength="40" inputmode="tel"></label>
+        <label>이메일<input id="pt-email" maxlength="80" type="email"></label>
+        <label class="nowrap" style="align-self:end"><input type="checkbox" id="pt-active" checked style="width:auto"> 거래 중</label>
+      </div>
+      <label>주소<input id="pt-addr" maxlength="200"></label>
+      <label>메모<input id="pt-memo" maxlength="200"></label>
+      <div class="row" style="justify-content:space-between"><span class="status" id="pt-status"></span><span><button type="button" class="ghost" id="pt-cancel" hidden>취소</button> <button type="submit" id="pt-save">거래처 추가</button></span></div>
+      <div id="pt-stats"></div>
+    </form>
+    <div class="row"><input id="pt-q" class="grow" placeholder="코드 · 이름 · 담당자 · 전화로 찾기" autocomplete="off"><label class="nowrap"><input type="checkbox" id="pt-off" style="width:auto"> 거래 끝난 곳도 보기</label></div>
+    <div class="status" id="pt-lstatus"></div>
+    <div class="scroll"><table class="rules sliplist"><thead><tr><th>코드</th><th>이름</th><th>구분</th><th>사업자번호</th><th>담당자</th><th>전화</th><th>메모</th><th></th></tr></thead><tbody id="pt-list"></tbody></table></div>
+    <div class="empty" id="pt-empty">거래처가 없습니다. 이카운트 자료를 가져오거나 위에서 추가하세요.</div>
   </section>
 
   <section class="panel" id="histbox" aria-labelledby="h-hist">
@@ -656,24 +707,25 @@
   </section>
 </div></main></div>
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
-<script src="js/theme.js?v=20261017c"></script>
+<script src="js/theme.js?v=20261017d"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=20261017c"></script>
+<script src="js/supabase-client.js?v=20261017d"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core.js?v=20261017c"></script>
-<script src="js/ui-inventory.js?v=20261017c"></script>
-<script src="js/ui-shipping.js?v=20261017c"></script>
-<script src="js/ui-ecount.js?v=20261017c"></script>
-<script src="js/ui-slips.js?v=20261017c"></script>
-<script src="js/ui-items.js?v=20261017c"></script>
-<script src="js/ui-production.js?v=20261017c"></script>
-<script src="js/ui-claims.js?v=20261017c"></script>
-<script src="js/ui-trials.js?v=20261017c"></script>
-<script src="js/ui-dashboard.js?v=20261017c"></script>
-<script src="js/auth.js?v=20261017c"></script>
-<script src="js/ui-board.js?v=20261017c"></script>
-<script src="js/ui-bot.js?v=20261017c"></script>
-<script src="js/ui-history.js?v=20261017c"></script>
-<script src="js/boot.js?v=20261017c"></script>
+<script src="js/core.js?v=20261017d"></script>
+<script src="js/ui-inventory.js?v=20261017d"></script>
+<script src="js/ui-shipping.js?v=20261017d"></script>
+<script src="js/ui-ecount.js?v=20261017d"></script>
+<script src="js/ui-slips.js?v=20261017d"></script>
+<script src="js/ui-items.js?v=20261017d"></script>
+<script src="js/ui-production.js?v=20261017d"></script>
+<script src="js/ui-claims.js?v=20261017d"></script>
+<script src="js/ui-trials.js?v=20261017d"></script>
+<script src="js/ui-dashboard.js?v=20261017d"></script>
+<script src="js/auth.js?v=20261017d"></script>
+<script src="js/ui-board.js?v=20261017d"></script>
+<script src="js/ui-bot.js?v=20261017d"></script>
+<script src="js/ui-history.js?v=20261017d"></script>
+<script src="js/ui-orders.js?v=20261017d"></script>
+<script src="js/boot.js?v=20261017d"></script>
 
 </body></html>
