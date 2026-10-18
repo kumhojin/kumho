@@ -4,8 +4,8 @@
 (function(){
   const $=id=>document.getElementById(id);
   const N=v=>v==null||v===''?'':Number(v).toLocaleString('ko-KR',{maximumFractionDigits:1});
-  // 품번 앞자리로 구분: 20 반제품 · 21 완제품 · 30 원재료 · 31 부재료 · 40 상품
-  const KIND={'20':'반제품','21':'완제품','30':'원재료','31':'부재료','40':'상품'};
+  // 품번 앞자리로 구분: 20 완제품 · 21 반제품 · 30 원재료 · 31 부재료 · 40 상품
+  const KIND={'20':'완제품','21':'반제품','30':'원재료','31':'부재료','40':'상품'};
   const kindOf=c=>KIND[String(c||'').slice(0,2)]||'';
   // 부서 메뉴 → 창고 탭 (검사반은 품번으로 나눔: 반제품은 생산, 그 밖은 자재)
   const DEPT={

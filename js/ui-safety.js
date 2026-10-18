@@ -1,5 +1,5 @@
-/* 금호정공 사내 업무 시스템 · 안전재고 (이카운트 2년 판매로 계산) · 현재 재고 · 대시보드 알림
-   계정 관리의 '안전재고 · 재고 수량 보기' 권한이 있는 사람만 보고, 그 사람 대시보드에 재고가 너무 적거나 많은 품목 알림이 뜸.
+/* 금호정공 사내 업무 시스템 · 안전재고 (이카운트 2년 판매로 계산) · 현재 재고 · 자재 현황판 알림
+   계정 관리의 '안전재고 · 재고 수량 보기' 권한이 있는 사람만 보고, 그 사람 자재 현황판에 재고가 너무 적거나 많은 품목 알림이 뜸.
    일반 <script>로 순서대로 불러옴 (모든 파일이 같은 전역 범위를 씀). 순서는 index.html 참고. */
 (function(){
   const $=id=>document.getElementById(id);
@@ -82,7 +82,7 @@
       const r=u.error?u:await SB().rpc('safety_recalc'); b.disabled=false;
       if(r.error){st.textContent='계산하지 못했습니다: '+errMsg(r.error); return} await ssLoad(); st.textContent=`${r.data}개 품목의 안전재고를 계산했습니다. `+st.textContent; ssAlert()}}
 
-  // 대시보드 알림 (권한 있는 사람만)
+  // 자재 현황판 알림 (권한 있는 사람만)
   async function ssAlert(){const box=$('ss-alert'); if(!box) return; if(!me||!ok()){box.hidden=true; return}
     let list; try{list=adjust(await loadAll())}catch(e){box.hidden=true; return}
     const t=$('ss-atext'), ul=$('ss-alist'); ul.replaceChildren(); if(!list.length){box.hidden=true; return}
@@ -96,6 +96,6 @@
     box.className='rcalert ssalert'; box.hidden=false}
 
   // 품목 사용·미사용이 바뀌거나 품목 목록을 늦게 불러오면 다시 그림
-  let rfT=null; window.safetyRefresh=function(){clearTimeout(rfT); rfT=setTimeout(()=>{if(!me||!ok()) return; if(typeof curItem!=='undefined'&&curItem==='safety'&&rows.length) ssRender(); if(typeof curItem!=='undefined'&&curItem==='dash') ssAlert()},400)};
-  window.safetyOpen=function(id){if(!me) return; if(id==='safety'){ssSetup(); ssLoad()} else if(id==='dash') ssAlert()};
+  let rfT=null; window.safetyRefresh=function(){clearTimeout(rfT); rfT=setTimeout(()=>{if(!me||!ok()) return; if(typeof curItem!=='undefined'&&curItem==='safety'&&rows.length) ssRender(); if(typeof curItem!=='undefined'&&curItem==='board') ssAlert()},400)};
+  window.safetyOpen=function(id){if(!me) return; if(id==='safety'){ssSetup(); ssLoad()} else if(id==='board') ssAlert()};
 })();

@@ -36,7 +36,8 @@
     try{localStorage.setItem('prodArea',a)}catch(e){}}
   areaSel.addEventListener('change',applyArea);
   const MENU=[
-    {g:'공통',items:[['dash','대시보드','홈',['dash','links','teams']],['acct','계정 관리','홈',['acctbox']],['notice','공지사항','홈',['notice']],['bot','포털 도우미','홈',['bot']],['items','품목 관리','홈',['itembox']],['safety','안전재고','홈',['ssbox']],['hist','거래 내역','홈',['histbox']],['imp','자료 가져오기','홈',['impbox']],['audit','변경 기록','홈',['auditbox']]]},
+    {g:'공통',items:[['dash','대시보드','홈',['dash','links','teams']],['notice','공지사항','홈',['notice']],['bot','포털 도우미','홈',['bot']],['hist','거래 내역','홈',['histbox']],['imp','자료 가져오기','홈',['impbox']],['audit','변경 기록','홈',['auditbox']]]},
+    {g:'주요 정보',items:[['acct','계정 관리','홈',['acctbox']],['safety','안전재고','홈',['ssbox']],['items','품목 관리','홈',['itembox']]]},
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['wh_mat','창고별 재고','생산관리팀',['whbox']],['order','수주 · 납기','생산관리팀',['ordbox']],['partner','거래처 관리','생산관리팀',['ptbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
       ['ec','이카운트 올릴 엑셀 만들기','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
     {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['wh_prod','창고별 재고','생산',['whbox']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
@@ -94,7 +95,7 @@
     if(it.id==='items') try{renderItems()}catch(e){}
     if(it.id==='hist'||it.id==='imp'||it.id==='audit') try{histOpen(it.id)}catch(e){}
     if(it.id==='order'||it.id==='partner'||it.id==='dash') try{ordersOpen(it.id)}catch(e){}
-    if(it.id==='safety'||it.id==='dash') try{safetyOpen(it.id)}catch(e){}
+    if(it.id==='safety'||it.id==='board') try{safetyOpen(it.id)}catch(e){}
     if(/^wh_/.test(it.id)) try{whOpen(it.id)}catch(e){}
     if(it.id==='lotprod') applyArea();
     else if(it.show.includes('lot')){const lb=document.querySelector('#llocs button[data-l="전체"]'); if(lb) lb.click();
