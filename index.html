@@ -5,7 +5,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=20261017l">
+<link rel="stylesheet" href="css/app.css?v=20261018a">
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
@@ -57,6 +57,7 @@
   <section class="panel" id="boardbox" aria-labelledby="h-board">
     <h2 id="h-board">자재 현황판 <span class="tag" id="bd-at"></span></h2>
     <p class="hint">재고·LOT·전표 기록을 자동으로 점검해 틀렸거나 다시 확인해야 할 것을 모았습니다. 기록이 바뀌면 바로 다시 점검합니다.</p>
+    <div class="rcalert ssalert" id="ss-alert" hidden role="status"><div><b id="ss-atext"></b><ul id="ss-alist"></ul></div><button type="button" data-go="safety">안전재고 보기</button></div>
     <div class="bdsum" id="bd-sum"></div>
     <div class="bdgrid" id="bd-cards"></div>
   </section>
@@ -87,7 +88,7 @@
         <label><input type="checkbox" value="itemToggle"> 품목 사용·미사용 바꾸기 (전체 품목 엑셀 올리기 포함)</label>
         <label><input type="checkbox" value="history"> 이카운트 거래 내역 보기</label>
         <label><input type="checkbox" value="import"> 이카운트 자료 가져오기 · 되돌리기</label>
-        <label><input type="checkbox" value="safety"> 안전재고 · 재고 수량 보기 (대시보드에 재고 부족·과다 알림)</label>
+        <label><input type="checkbox" value="safety"> 안전재고 · 재고 수량 보기 (자재 현황판에 재고 부족·과다 알림)</label>
         <label><input type="checkbox" value="stockEdit"> 품목 관리에서 현재 재고 고치기</label>
       </fieldset>
       <div class="sbtns"><button type="button" class="ghost" id="ac-new">새 계정</button><button type="submit" id="ac-save">계정 저장</button></div>
@@ -100,7 +101,6 @@
   <section class="panel" id="dash" aria-labelledby="h-dash">
     <h2 id="h-dash">대시보드 <span class="tag" id="dash-at"></span></h2>
     <div class="rcalert" id="rc-alert" hidden role="status"><span></span><button type="button" onclick="location.hash='recon2';location.reload()">오차 확인</button></div>
-    <div class="rcalert ssalert" id="ss-alert" hidden role="status"><div><b id="ss-atext"></b><ul id="ss-alist"></ul></div><button type="button" data-go="safety">안전재고 보기</button></div>
     <div class="kpis">
       <div class="kpi ksearch"><label for="k-q"><span>재고 찾기</span></label><input id="k-q" placeholder="품번 또는 LOT" autocomplete="off"><em id="k-stock2">찾으면 창고 재고 수량이 나옵니다</em></div>
       <button type="button" class="kpi" data-go="lotqc"><span>이번 달 불량</span><b id="k-bad">0</b><em id="k-bad2">EA · 0개 LOT</em></button>
@@ -610,7 +610,7 @@
 
   <section class="panel" id="ssbox" aria-labelledby="h-ss">
     <h2 id="h-ss">안전재고 <span class="tag">이카운트 2년 판매 기준 · 권한 있는 사람만</span></h2>
-    <p class="hint">이카운트에서 가져온 지난 24개월 판매를 월별로 묶어, 품목마다 안전재고(최소)와 최대 재고를 계산합니다. 안전재고 = 만드는 동안 팔리는 양 + 판매가 들쭉날쭉한 만큼의 여유분, 최대 = 안전재고 + 월평균 판매 × 정한 개월. 현재 재고가 안전재고보다 적으면 ‘부족’, 최대보다 많으면 ‘과다’, 2년 동안 안 팔렸는데 재고가 있으면 ‘판매 없음’으로 보이고, 권한 있는 사람의 대시보드에 알림이 뜹니다. 품목마다 직접 정한 값이 있으면 그 값을 씁니다.</p>
+    <p class="hint">이카운트에서 가져온 지난 24개월 판매를 월별로 묶어, 품목마다 안전재고(최소)와 최대 재고를 계산합니다. 안전재고 = 만드는 동안 팔리는 양 + 판매가 들쭉날쭉한 만큼의 여유분, 최대 = 안전재고 + 월평균 판매 × 정한 개월. 현재 재고가 안전재고보다 적으면 ‘부족’, 최대보다 많으면 ‘과다’, 2년 동안 안 팔렸는데 재고가 있으면 ‘판매 없음’으로 보이고, 권한 있는 사람의 자재 현황판에 알림이 뜹니다. 품목마다 직접 정한 값이 있으면 그 값을 씁니다.</p>
     <div class="row">
       <label class="nowrap">서비스 수준 <select id="ss-service" style="width:auto"><option value="90">90% (여유 적게)</option><option value="95">95% (보통)</option><option value="97.5">97.5%</option><option value="99">99% (여유 많이)</option></select></label>
       <label class="nowrap">리드타임 <input id="ss-lead" type="number" min="1" max="120" style="width:80px"> 일</label>
@@ -739,27 +739,27 @@
   </section>
 </div></main></div>
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
-<script src="js/theme.js?v=20261017l"></script>
+<script src="js/theme.js?v=20261018a"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=20261017l"></script>
+<script src="js/supabase-client.js?v=20261018a"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core.js?v=20261017l"></script>
-<script src="js/ui-inventory.js?v=20261017l"></script>
-<script src="js/ui-shipping.js?v=20261017l"></script>
-<script src="js/ui-ecount.js?v=20261017l"></script>
-<script src="js/ui-slips.js?v=20261017l"></script>
-<script src="js/ui-items.js?v=20261017l"></script>
-<script src="js/ui-production.js?v=20261017l"></script>
-<script src="js/ui-claims.js?v=20261017l"></script>
-<script src="js/ui-trials.js?v=20261017l"></script>
-<script src="js/ui-dashboard.js?v=20261017l"></script>
-<script src="js/auth.js?v=20261017l"></script>
-<script src="js/ui-board.js?v=20261017l"></script>
-<script src="js/ui-bot.js?v=20261017l"></script>
-<script src="js/ui-history.js?v=20261017l"></script>
-<script src="js/ui-orders.js?v=20261017l"></script>
-<script src="js/ui-warehouse.js?v=20261017l"></script>
-<script src="js/ui-safety.js?v=20261017l"></script>
-<script src="js/boot.js?v=20261017l"></script>
+<script src="js/core.js?v=20261018a"></script>
+<script src="js/ui-inventory.js?v=20261018a"></script>
+<script src="js/ui-shipping.js?v=20261018a"></script>
+<script src="js/ui-ecount.js?v=20261018a"></script>
+<script src="js/ui-slips.js?v=20261018a"></script>
+<script src="js/ui-items.js?v=20261018a"></script>
+<script src="js/ui-production.js?v=20261018a"></script>
+<script src="js/ui-claims.js?v=20261018a"></script>
+<script src="js/ui-trials.js?v=20261018a"></script>
+<script src="js/ui-dashboard.js?v=20261018a"></script>
+<script src="js/auth.js?v=20261018a"></script>
+<script src="js/ui-board.js?v=20261018a"></script>
+<script src="js/ui-bot.js?v=20261018a"></script>
+<script src="js/ui-history.js?v=20261018a"></script>
+<script src="js/ui-orders.js?v=20261018a"></script>
+<script src="js/ui-warehouse.js?v=20261018a"></script>
+<script src="js/ui-safety.js?v=20261018a"></script>
+<script src="js/boot.js?v=20261018a"></script>
 
 </body></html>
