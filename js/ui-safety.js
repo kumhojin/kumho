@@ -1,4 +1,4 @@
-/* 금호정공 사내 업무 시스템 · 안전재고 (이카운트 2년 판매로 계산) · 현재 재고 · 자재 현황판 알림
+/* 금호정공 사내 업무 시스템 · 안전재고 (지난 1년 하루 최대 판매 · 최대는 2년 월평균으로 계산 · 계산은 Supabase safety_recalc_core) · 현재 재고 · 자재 현황판 알림
    계정 관리의 '안전재고 · 재고 수량 보기' 권한이 있는 사람만 보고, 그 사람 자재 현황판에 재고가 너무 적거나 많은 품목 알림이 뜸.
    일반 <script>로 순서대로 불러옴 (모든 파일이 같은 전역 범위를 씀). 순서는 index.html 참고. */
 (function(){
@@ -43,7 +43,7 @@
       tb.append(tr)});
     $('ss-empty').hidden=!!list.length;
     const adj=adjust(rows), c=k=>adj.filter(x=>x.status===k).length;
-    $('ss-status').textContent=rows.length?(c('재고 모름')?`안전재고 ${c('재고 모름')}개 계산됨 · 현재 재고 엑셀을 올리면 부족·과다를 알려 줍니다`:`부족 ${c('부족')} · 과다 ${c('과다')} · 판매 없는 재고 ${c('판매 없음')} · 적정 ${c('적정')}`)+(list.length>500?' · 500개까지만 보여 줍니다':''):'아직 자료가 없습니다. 1) 자료 가져오기에서 이카운트 판매현황(2년)을 넣고 2) ‘다시 계산’ 3) 현재 재고 엑셀을 올리세요.'}
+    $('ss-status').textContent=rows.length?(c('재고 모름')?`안전재고 ${c('재고 모름')}개 계산됨 · 현재 재고 엑셀을 올리면 부족·과다를 알려 줍니다`:`부족 ${c('부족')} · 과다 ${c('과다')} · 판매 없는 재고 ${c('판매 없음')} · 적정 ${c('적정')}`)+(list.length>500?' · 500개까지만 보여 줍니다':''):'아직 자료가 없습니다. 1) 자료 가져오기에서 이카운트 판매현황(일자별, 최근 1년 이상)을 ‘판매’로 넣고 2) ‘다시 계산’ 3) 현재 재고 엑셀을 올리세요.'}
   function editRow(x,tr){const f=document.createElement('tr'), c=document.createElement('td'); c.colSpan=11; f.append(c);
     const mk=(lbl,v)=>{const l=document.createElement('label'); l.className='nowrap'; l.textContent=lbl+' '; const i=document.createElement('input'); i.type='number'; i.min='0'; i.style.width='110px'; i.value=v??''; i.placeholder='계산값'; l.append(i); return [l,i]};
     const [l1,i1]=mk('안전재고',x.manual?x.safety:''), [l2,i2]=mk('최대',x.manual?x.max_qty:'');
