@@ -96,7 +96,8 @@
     for(const s of xfers){const x=s.data(); if(!inM(x.date)) continue; const k=key(x.item,x.lot); m.set(k,(m.get(k)||0)-(Number(x.qty)||0))}
     for(const s of moves){const x=s.data(), n=Number(x.qty)||0; if(n<=0||!inM(iso(new Date(x.createdAt)))) continue; const k=key(x.item,x.lot); m.set(k,(m.get(k)||0)+n)}
     let n=0; m.forEach(v=>{if(v!==0) n++}); return {n,total:m.size}}
-  function renderRcAlert(){const el=document.getElementById('rc-alert'); if(!el) return; const isAdm=!!me&&(me.role==='admin'||isMgrAcct(me));
+  function renderRcAlert(){const el=document.getElementById('rc-alert'); if(!el) return; el.hidden=true; return; // 사상반 ↔ 자재 대조 기능 없앰
+    const isAdm=!!me&&(me.role==='admin'||isMgrAcct(me));
     if(!isAdm){el.hidden=true;return} const r=reconMismatch(iso(d).slice(0,7)); el.hidden=!r.total;
     el.classList.toggle('ok',r.n===0); el.querySelector('span').textContent=r.n?`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건 (전체 ${r.total}개 품번·LOT)`:`이번 달 사상반 ↔ 자재 수량이 모두 일치합니다 (${r.total}개 품번·LOT)`}
   [rcMonth,document.getElementById('rc-search'),document.getElementById('rc-only')].forEach(el=>el.addEventListener('input',renderRecon));
@@ -268,7 +269,7 @@
     for(const s of reqs){const x=s.data();
       ev.push({ts:x.createdAt,ic:'req',sym:'요',t:`재료 요청: ${x.item} ${Number(x.qty).toLocaleString('ko-KR')}${x.unit||''}`,m:`${reqWho(x)} · 필요 ${x.need||'-'} · ${fmtT(x.createdAt)}`,go:'reqlist'});
       if(x.doneAt&&x.status==='완료') ev.push({ts:x.doneAt,ic:'done',sym:'✓',t:`요청 완료: ${x.item}`,m:`${x.doneByName||'자재'} 처리 · ${fmtT(x.doneAt)}`,go:'reqlist'})}
-    try{const r=reconMismatch(iso(d).slice(0,7)); if(r.n) ev.push({ts:0,sticky:true,ic:'bad',sym:'!',t:`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건`,m:'눌러서 오차 확인',go:'recon2'})}catch(e){}
+    try{const r={n:0}; if(r.n) ev.push({ts:0,sticky:true,ic:'bad',sym:'!',t:`이번 달 사상반 ↔ 자재 수량 오차 ${r.n}건`,m:'눌러서 오차 확인',go:'recon2'})}catch(e){}
     return ev.sort((a,b)=>(b.sticky-a.sticky)||(b.ts-a.ts)).slice(0,40)}
   function renderBell(){const isAdm=!!me&&(me.role==='admin'||isMgrAcct(me)); bellBtn.hidden=!isAdm; if(!isAdm){bellPanel.hidden=true;return}
     const seen=bellSeen(), ev=bellEvents(), n=ev.filter(e=>e.ts>seen||e.sticky).length;

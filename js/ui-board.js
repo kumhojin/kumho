@@ -63,7 +63,7 @@
     const rc=new Map(), key=(i,l)=>String(i||'').trim()+'\u0000'+String(l||'').trim();
     xfers.forEach(x=>{const v=x.data(),k=key(v.item,v.lot),e=rc.get(k)||{item:v.item,lot:v.lot,s:0,g:0}; e.s+=Number(v.qty)||0; rc.set(k,e)});
     moves.forEach(x=>{const v=x.data(),q=Number(v.qty)||0; if(q<=0) return; const k=key(v.item,v.lot); const e=rc.get(k); if(e) e.g+=q});
-    add('e','사상반 ↔ 창고 오차','사상반이 보냈다고 적은 수량과 창고 입고 수량이 다릅니다.',
+    if(false) add('e','사상반 ↔ 창고 오차','사상반이 보냈다고 적은 수량과 창고 입고 수량이 다릅니다.',
       [...rc.values()].filter(e=>e.s!==e.g).sort((a,b)=>Math.abs(b.g-b.s)-Math.abs(a.g-a.s)).map(e=>[`${e.item} / ${lotLabel(e.lot)}`,`${e.g-e.s>0?'+':''}${n(e.g-e.s)}`]),'recon2');
     // 4. 중복 입력 의심 (같은 품번·LOT·수량을 10분 안에 두 번)
     const dup=[]; const mv=moves.map(x=>x.data()).filter(v=>!v.slip).sort((a,b)=>a.createdAt-b.createdAt);

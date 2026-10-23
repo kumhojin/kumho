@@ -9,7 +9,7 @@
     return hex(await crypto.subtle.deriveBits({name:'PBKDF2',hash:'SHA-256',salt:unhex(saltHex),iterations:ITER},k,256))}
   const ALLTEAMS=['생산관리팀','생산','품질','계발','총무팀','고객대응'];
   // 작업자: 작업장별로 쓸 수 있는 화면
-  const WORK={'생산':{team:'생산',items:['reqnew']},'사상반':{team:'생산',items:['xfer']},'자재':{team:'생산관리팀',items:['recv']}};
+  const WORK={'생산':{team:'생산',items:['reqnew']},'사상반':{team:'생산',items:['qrlabel']},'자재':{team:'생산관리팀',items:['qrin']}};
   function isWorker(){return !!me&&me.role==='worker'}
   function workItems(){const w=WORK[me&&me.station]||WORK['사상반']; return w.items}
   const EXECS=['사장','전무','상무'];
@@ -112,7 +112,7 @@
     rows.forEach(s=>{const x=s.data(), tr=document.createElement('tr');
       if((x.team||'')!==lastTeam){lastTeam=x.team||''; const n=rows.filter(r=>(r.data().team||'')===lastTeam).length;
         const h=document.createElement('tr'); h.className='acgrp'; const td=document.createElement('td'); td.colSpan=7; td.textContent=`${TLBL[lastTeam]||lastTeam||'부서 없음'} · ${n}명`; h.append(td); tb.append(h)} const c=t=>{const td=document.createElement('td');td.textContent=t;tr.append(td);return td};
-      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='worker'?(x.station==='자재'?'생산에서 받은 내역 입력':x.station==='생산'?'재료 요청':'자재로 보낸 내역·불량 입력'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
+      c(x.user); c(x.name); c(x.team||''); c(roleLabel(x)); c(x.role==='worker'?(x.station==='자재'?'일일 제품 입고현황 (QR)':x.station==='생산'?'재료 요청':'QR 라벨 만들기'):ALLTEAMS.map(t=>`${t==='생산관리팀'?'자재':t} ${LBL[permOf(x).teams[t]]}`).join(' · '));
       {const p=permOf(x); c(x.role==='worker'?'입력만':[p.notice&&'공지',p.price&&(p.priceEdit?'단가 수정':'단가'),p.item&&'품목 수정',p.itemToggle&&'사용·미사용',p.history&&'거래 내역',p.import&&'가져오기',p.safety&&'안전재고',p.stockEdit&&'재고 고치기'].filter(Boolean).join(', ')||'없음')}
       const a=c(''); a.style.whiteSpace='nowrap'; const self=!!(me&&me.user===x.user); if(!x.fixed){const ed=document.createElement('button'); ed.type='button'; ed.className='ghost'; ed.textContent='수정';
         ed.onclick=()=>{document.getElementById('ac-user').value=x.user; document.getElementById('ac-name').value=x.name||''; document.getElementById('ac-team').value=x.team||'생산';

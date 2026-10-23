@@ -39,14 +39,14 @@
     {g:'공통',items:[['dash','대시보드','홈',['dash','links','teams']],['notice','공지사항','홈',['notice']],['bot','포털 도우미','홈',['bot']],['hist','거래 내역','홈',['histbox']],['imp','자료 가져오기','홈',['impbox']],['audit','변경 기록','홈',['auditbox']]]},
     {g:'주요 정보',items:[['acct','계정 관리','홈',['acctbox']],['safety','안전재고','홈',['ssbox']],['items','품목 관리','홈',['itembox']]]},
     {g:'자재 · 생산관리팀',items:[['board','자재 현황판','생산관리팀',['boardbox']],['wh_mat','창고별 재고','생산관리팀',['whbox']],['order','수주 · 납기','생산관리팀',['ordbox']],['partner','거래처 관리','생산관리팀',['ptbox']],['slipin','입고 등록','생산관리팀',['slipbox'],'입고'],['slipsale','판매 등록','생산관리팀',['slipbox'],'판매'],['slipbuy','구매 등록','생산관리팀',['slipbox'],'구매'],['stock','완제품 재고','생산관리팀',['stockbox']],['plan','출하 계획표','생산관리팀',['planbox']],
-      ['ec','이카운트 올릴 엑셀 만들기','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['recv','생산에서 받은 내역','생산관리팀',['recvbox']],['recon2','사상반 대조','생산관리팀',['reconbox']],['npm','부서 공지','생산관리팀',['notice']]]},
-    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['wh_prod','창고별 재고','생산',['whbox']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['xfer','자재로 보낸 내역','생산',['xferbox']],['recon','오차 확인','생산',['reconbox']],['nprod','부서 공지','생산',['notice']]]},
+      ['ec','이카운트 올릴 엑셀 만들기','생산관리팀',['ecbox']],['lotpm','LOT 기록','생산관리팀',['lot'],'원자재'],['ecards','이카운트 메뉴','생산관리팀',['ecards']],['pplan2','생산 계획표 · 호기 이력','생산관리팀',['pplanbox']],['reqlist','재료 요청 확인','생산관리팀',['reqinbox']],['qrin','일일 제품 입고현황 (QR)','생산관리팀',['qrinbox']],['npm','부서 공지','생산관리팀',['notice']]]},
+    {g:'생산',items:[['lotprod','LOT 기록','생산',['lot']],['wh_prod','창고별 재고','생산',['whbox']],['pplan','생산 계획표','생산',['pplanbox']],['reqnew','재료 요청','생산',['reqbox']],['qrlabel','QR 라벨 만들기','생산',['qrlabelbox']],['nprod','부서 공지','생산',['notice']]]},
     {g:'품질',items:[['lotqc','불량 LOT','품질',['lot'],'불량'],['initqc','초물 LOT','품질',['lot'],'초물'],['nqc','부서 공지','품질',['notice']]]},
     {g:'고객대응',items:[['claim','클레임 현황','고객대응',['claimbox']],['cpreg','고객 클레임 등록','고객대응',['cpbox']]]},
     {g:'계발',items:[['trial','시험사출','계발',['trialbox']],['wh_dev','창고별 재고','계발',['whbox']],['ndev','부서 공지','계발',['notice']]]},
     {g:'총무팀',items:[['evreg','일정 등록','총무팀',['evbox']],['nga','부서 공지','총무팀',['notice']]]}];
   const ITEM={}; MENU.forEach(g=>g.items.forEach(([id,label,t,show,kind])=>ITEM[id]={id,label,t,show,kind,g:g.g}));
-  const SECTIONS=['whbox','ssbox','ordbox','ptbox','histbox','impbox','auditbox','evbox','cpbox','itembox','trialbox','claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','teams'];
+  const SECTIONS=['qrinbox','qrlabelbox','whbox','ssbox','ordbox','ptbox','histbox','impbox','auditbox','evbox','cpbox','itembox','trialbox','claimbox','boardbox','acctbox','pplanbox','reqbox','reqinbox','xferbox','recvbox','reconbox','slipbox','dash','notice','bot','links','stockbox','calcbox','planbox','ecbox','lot','ecards','rules','teams'];
   const side=document.getElementById('side');
   const mq=window.matchMedia('(max-width:860px)');
   let openG=new Set(); try{JSON.parse(localStorage.getItem('openGroups')||'[]').forEach(x=>openG.add(x))}catch(e){}
@@ -97,6 +97,7 @@
     if(it.id==='order'||it.id==='partner'||it.id==='dash') try{ordersOpen(it.id)}catch(e){}
     if(it.id==='safety'||it.id==='board') try{safetyOpen(it.id)}catch(e){}
     if(/^wh_/.test(it.id)) try{whOpen(it.id)}catch(e){}
+    if(it.id==='qrin'||it.id==='qrlabel'){const f=document.querySelector('#'+it.id+'box iframe'); if(f&&!f.getAttribute('src')) f.src=f.dataset.src; if(f) setTimeout(()=>{try{f.focus(); const s=f.contentDocument&&f.contentDocument.getElementById('scan'); if(s) s.focus()}catch(e){}},300)}
     if(it.id==='lotprod') applyArea();
     else if(it.show.includes('lot')){const lb=document.querySelector('#llocs button[data-l="전체"]'); if(lb) lb.click();
       const b=document.querySelector(`#ltabs button[data-k="${it.kind||'전체'}"]`); if(b) b.click()}
