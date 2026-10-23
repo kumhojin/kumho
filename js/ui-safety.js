@@ -15,7 +15,9 @@
   // 최근 판매일: 제품만 (전체 품목 엑셀 · 이카운트 2년 판매여부의 최근 판매일)
   const lastSold=c=>{try{if(((prodOf(c)||{}).cat||'')!=='제품') return ''; const m=master.get(normItem(c)); return (m&&m.last)||''}catch(e){return ''}};
   const ago=d=>{if(!d) return ''; const n=Math.floor((Date.now()-Date.parse(d+'T00:00:00'))/864e5); return n<=0?'오늘':n<31?n+'일 전':n<365?Math.floor(n/30)+'개월 전':(n/365).toFixed(1).replace('.0','')+'년 전'};
-  function adjust(list){const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
+  // 스크랩·분쇄재는 안전재고에서 뺌 (품목 그룹 '스크랩(분쇄재)' 또는 이름에 스크랩·분쇄재)
+  const isScrap=x=>{let p={}; try{p=prodOf(x.item_code)||{}}catch(e){} return /스크랩|분쇄재|scrap/i.test([p.group,p.name,x.item_name].join(' '))};
+  function adjust(list){list=list.filter(x=>!isScrap(x)); const off=c=>{try{return typeof isOff==='function'&&isOff(c)}catch(e){return false}};
     const cat=c=>{try{return (prodOf(c)||{}).cat||''}catch(e){return ''}};
     return list.filter(x=>!off(x.item_code)).map(x=>x.status==='판매 없음'&&!SELL.includes(cat(x.item_code))?{...x,status:'재료',gap:0}:x)}
 
@@ -27,8 +29,12 @@
       rows=list; const asof=list.find(x=>x.as_of); $('ss-asof').textContent=asof?`현재 재고 기준: ${asof.as_of}`:'현재 재고를 아직 올리지 않았습니다.';
       ssRender()}
     catch(e){st.textContent='불러오지 못했습니다: '+errMsg(e)}}
+  // 종류로 보기 (품목 관리의 종류: 제품·반제품·상품·재료·부재료·포장품·금형)
+  const catOf=c=>{try{return (prodOf(c)||{}).cat||''}catch(e){return ''}};
+  const CATS={our:['제품','반제품'],mat:['재료','부재료'],none:['']};
+  function catOK(x){const v=$('ss-cat')&&$('ss-cat').value; if(!v) return true; return (CATS[v]||[v]).includes(catOf(x.item_code))}
   function ssRender(){const tb=$('ss-body'), q=$('ss-q').value.trim().toLowerCase(); tb.replaceChildren();
-    let list=adjust(rows);
+    let list=adjust(rows).filter(catOK);
     if(ssF==='out') list=list.filter(x=>['부족','과다','판매 없음'].includes(x.status)); else if(ssF!=='all') list=list.filter(x=>x.status===ssF);
     if(q) list=list.filter(x=>[x.item_code,x.item_name,x.spec].some(v=>String(v||'').toLowerCase().includes(q)));
     const ord={'부족':0,'과다':1,'판매 없음':2,'적정':3,'재료':4,'재고 모름':5};
@@ -42,7 +48,7 @@
         b.onclick=()=>editRow(x,tr); a.append(b)}
       tb.append(tr)});
     $('ss-empty').hidden=!!list.length;
-    const adj=adjust(rows), c=k=>adj.filter(x=>x.status===k).length;
+    const adj=adjust(rows).filter(catOK), c=k=>adj.filter(x=>x.status===k).length;
     $('ss-status').textContent=rows.length?(c('재고 모름')?`안전재고 ${c('재고 모름')}개 계산됨 · 현재 재고 엑셀을 올리면 부족·과다를 알려 줍니다`:`부족 ${c('부족')} · 과다 ${c('과다')} · 판매 없는 재고 ${c('판매 없음')} · 적정 ${c('적정')}`)+(list.length>500?' · 500개까지만 보여 줍니다':''):'아직 자료가 없습니다. 1) 자료 가져오기에서 이카운트 판매현황(일자별, 최근 1년 이상)을 ‘판매’로 넣고 2) ‘다시 계산’ 3) 현재 재고 엑셀을 올리세요.'}
   function editRow(x,tr){const f=document.createElement('tr'), c=document.createElement('td'); c.colSpan=11; f.append(c);
     const mk=(lbl,v)=>{const l=document.createElement('label'); l.className='nowrap'; l.textContent=lbl+' '; const i=document.createElement('input'); i.type='number'; i.min='0'; i.style.width='110px'; i.value=v??''; i.placeholder='계산값'; l.append(i); return [l,i]};
@@ -76,6 +82,8 @@
   function ssSetup(){if(ssInit) return; ssInit=true; $('ss-asofd').value=new Date().toISOString().slice(0,10);
     $('ss-tabs').querySelectorAll('button').forEach(b=>b.onclick=()=>{ssF=b.dataset.f; $('ss-tabs').querySelectorAll('button').forEach(x=>x.setAttribute('aria-selected',x===b)); ssRender()});
     let tm; $('ss-q').addEventListener('input',()=>{clearTimeout(tm); tm=setTimeout(ssRender,200)});
+    try{const v=localStorage.getItem('ssCat'); if(v!=null&&[...$('ss-cat').options].some(o=>o.value===v)) $('ss-cat').value=v}catch(e){}
+    $('ss-cat').addEventListener('change',()=>{try{localStorage.setItem('ssCat',$('ss-cat').value)}catch(e){} ssRender()});
     $('ss-file').addEventListener('change',e=>{const f=e.target.files&&e.target.files[0]; if(f) readStock(f)});
     $('ss-calc').onclick=async()=>{const b=$('ss-calc'), st=$('ss-status'); b.disabled=true; st.textContent='계산하는 중…';
       const u=await SB().from('safety_settings').update({service:Number($('ss-service').value),lead_days:Number($('ss-lead').value)||7,max_months:Number($('ss-max').value)||1,min_months:Number($('ss-minm').value)||6,updated_at:new Date().toISOString()}).eq('id',1);
