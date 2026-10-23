@@ -5,7 +5,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=20261018b">
+<link rel="stylesheet" href="css/app.css?v=20261023a">
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
@@ -609,11 +609,11 @@
   </section>
 
   <section class="panel" id="ssbox" aria-labelledby="h-ss">
-    <h2 id="h-ss">안전재고 <span class="tag">이카운트 2년 판매 기준 · 권한 있는 사람만</span></h2>
-    <p class="hint">이카운트에서 가져온 지난 24개월 판매를 월별로 묶어, 품목마다 안전재고(최소)와 최대 재고를 계산합니다. 안전재고 = 만드는 동안 팔리는 양 + 판매가 들쭉날쭉한 만큼의 여유분, 최대 = 안전재고 + 월평균 판매 × 정한 개월. 현재 재고가 안전재고보다 적으면 ‘부족’, 최대보다 많으면 ‘과다’, 2년 동안 안 팔렸는데 재고가 있으면 ‘판매 없음’으로 보이고, 권한 있는 사람의 자재 현황판에 알림이 뜹니다. 품목마다 직접 정한 값이 있으면 그 값을 씁니다.</p>
+    <h2 id="h-ss">안전재고 <span class="tag">지난 1년 하루 최대 판매 기준 · 권한 있는 사람만</span></h2>
+    <p class="hint">안전재고(최소) = 지난 1년 동안 하루에 가장 많이 판매(출하)된 양입니다. 자료 가져오기에서 ‘판매’로 넣은 일자별 판매 기록으로 계산하며, 일자별 기록이 없는 품목은 0입니다. 최대 = 안전재고 + 월평균 판매(24개월) × 정한 개월. 현재 재고가 안전재고보다 적으면 ‘부족’, 최대보다 많으면 ‘과다’, 2년 동안 안 팔렸는데 재고가 있으면 ‘판매 없음’으로 보이고, 권한 있는 사람의 자재 현황판에 알림이 뜹니다. 품목마다 직접 정한 값이 있으면 그 값을 씁니다.</p>
     <div class="row">
-      <label class="nowrap">서비스 수준 <select id="ss-service" style="width:auto"><option value="90">90% (여유 적게)</option><option value="95">95% (보통)</option><option value="97.5">97.5%</option><option value="99">99% (여유 많이)</option></select></label>
-      <label class="nowrap">리드타임 <input id="ss-lead" type="number" min="1" max="120" style="width:80px"> 일</label>
+      <label class="nowrap" hidden>서비스 수준 <select id="ss-service" style="width:auto"><option value="90">90% (여유 적게)</option><option value="95">95% (보통)</option><option value="97.5">97.5%</option><option value="99">99% (여유 많이)</option></select></label>
+      <label class="nowrap" hidden>리드타임 <input id="ss-lead" type="number" min="1" max="120" style="width:80px"> 일</label>
       <label class="nowrap">최대 = 안전재고 + 월평균 × <input id="ss-max" type="number" min="0.25" max="12" step="0.25" style="width:80px"> 개월</label>
       <label class="nowrap">24개월 중 <input id="ss-minm" type="number" min="1" max="24" style="width:70px"> 달 이상 팔린 품목만 안전재고 (나머지는 주문 생산)</label>
       <button type="button" id="ss-calc" data-write>다시 계산</button><span class="hint" id="ss-calcinfo"></span>
@@ -739,27 +739,27 @@
   </section>
 </div></main></div>
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
-<script src="js/theme.js?v=20261018b"></script>
+<script src="js/theme.js?v=20261023a"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=20261018b"></script>
+<script src="js/supabase-client.js?v=20261023a"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core.js?v=20261018b"></script>
-<script src="js/ui-inventory.js?v=20261018b"></script>
-<script src="js/ui-shipping.js?v=20261018b"></script>
-<script src="js/ui-ecount.js?v=20261018b"></script>
-<script src="js/ui-slips.js?v=20261018b"></script>
-<script src="js/ui-items.js?v=20261018b"></script>
-<script src="js/ui-production.js?v=20261018b"></script>
-<script src="js/ui-claims.js?v=20261018b"></script>
-<script src="js/ui-trials.js?v=20261018b"></script>
-<script src="js/ui-dashboard.js?v=20261018b"></script>
-<script src="js/auth.js?v=20261018b"></script>
-<script src="js/ui-board.js?v=20261018b"></script>
-<script src="js/ui-bot.js?v=20261018b"></script>
-<script src="js/ui-history.js?v=20261018b"></script>
-<script src="js/ui-orders.js?v=20261018b"></script>
-<script src="js/ui-warehouse.js?v=20261018b"></script>
-<script src="js/ui-safety.js?v=20261018b"></script>
-<script src="js/boot.js?v=20261018b"></script>
+<script src="js/core.js?v=20261023a"></script>
+<script src="js/ui-inventory.js?v=20261023a"></script>
+<script src="js/ui-shipping.js?v=20261023a"></script>
+<script src="js/ui-ecount.js?v=20261023a"></script>
+<script src="js/ui-slips.js?v=20261023a"></script>
+<script src="js/ui-items.js?v=20261023a"></script>
+<script src="js/ui-production.js?v=20261023a"></script>
+<script src="js/ui-claims.js?v=20261023a"></script>
+<script src="js/ui-trials.js?v=20261023a"></script>
+<script src="js/ui-dashboard.js?v=20261023a"></script>
+<script src="js/auth.js?v=20261023a"></script>
+<script src="js/ui-board.js?v=20261023a"></script>
+<script src="js/ui-bot.js?v=20261023a"></script>
+<script src="js/ui-history.js?v=20261023a"></script>
+<script src="js/ui-orders.js?v=20261023a"></script>
+<script src="js/ui-warehouse.js?v=20261023a"></script>
+<script src="js/ui-safety.js?v=20261023a"></script>
+<script src="js/boot.js?v=20261023a"></script>
 
 </body></html>
