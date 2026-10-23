@@ -630,7 +630,7 @@
     </div>
     <label class="drop small" for="ss-file"><input type="file" id="ss-file" accept=".xlsx,.xls"><b>현재 재고 엑셀 놓기 (이카운트 재고현황)</b><span>품목코드 · 품목명 · 규격 · 재고수량(또는 합계) — 올릴 때마다 현재 재고가 통째로 바뀝니다</span></label>
     <div class="row"><label class="nowrap">재고 기준 날짜 <input type="date" id="ss-asofd" style="width:auto"></label><span class="hint" id="ss-asof"></span><span class="status" id="ss-upst"></span></div>
-    <div class="row"><input id="ss-q" class="grow" placeholder="품목코드 · 품목명 · 규격으로 찾기" autocomplete="off">
+    <div class="row"><select id="ss-cat" style="width:auto" aria-label="종류"><option value="">종류: 전체</option><option value="our">우리 제품 (제품 + 반제품)</option><option>제품</option><option>반제품</option><option>상품</option><option value="mat">자재 (재료 + 부재료)</option><option>재료</option><option>부재료</option><option>포장품</option><option>금형</option><option value="none">종류 없음</option></select><input id="ss-q" class="grow" placeholder="품목코드 · 품목명 · 규격으로 찾기" autocomplete="off">
       <div class="tabs" role="tablist" id="ss-tabs"><button type="button" role="tab" data-f="out" aria-selected="true">범위 밖</button><button type="button" role="tab" data-f="부족" aria-selected="false">부족</button><button type="button" role="tab" data-f="과다" aria-selected="false">과다</button><button type="button" role="tab" data-f="판매 없음" aria-selected="false">판매 없음</button><button type="button" role="tab" data-f="all" aria-selected="false">전체</button></div></div>
     <div class="status" id="ss-status"></div>
     <div class="scroll"><table class="rules sliplist sstable"><thead><tr><th>품목코드</th><th>품목명</th><th>규격</th><th class="num">현재 재고</th><th class="num">안전재고</th><th class="num">최대</th><th class="num">월평균 판매</th><th>최근 판매일 (제품)</th><th>상태</th><th>차이</th><th></th></tr></thead><tbody id="ss-body"></tbody></table></div>
@@ -769,7 +769,7 @@
 <script src="js/ui-history.js?v=20261023b"></script>
 <script src="js/ui-orders.js?v=20261023b"></script>
 <script src="js/ui-warehouse.js?v=20261023b"></script>
-<script src="js/ui-safety.js?v=20261023b"></script>
+<script src="js/ui-safety.js?v=20261023c"></script>
 <script src="js/boot.js?v=20261023b"></script>
 
 </body></html>
