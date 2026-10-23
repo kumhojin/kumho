@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>QR Label Maker – 금호정공</title>
+<!-- 금호정공 사내 업무 시스템 · 생산: QR 라벨 만들기. 포털의 'QR 라벨' 메뉴에서 iframe으로 열림. 자료는 이 브라우저(localStorage 'qrlabels')에만 저장됨. -->
+<script>try{var t=localStorage.getItem('kumhoTheme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f3f4f6;--card:#fff;--tx:#1f2937;--mu:#6b7280;--bd:#d1d5db;--ac:#1d4ed8;--act:#fff}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#111827;--card:#1f2937;--tx:#f3f4f6;--mu:#9ca3af;--bd:#374151;--ac:#60a5fa;--act:#0b1220}}
+:root[data-theme="dark"]{--bg:#111827;--card:#1f2937;--tx:#f3f4f6;--mu:#9ca3af;--bd:#374151;--ac:#60a5fa;--act:#0b1220}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif;font-size:14px}
+.app{display:flex;flex-wrap:wrap;gap:16px;padding:16px;align-items:flex-start}
+.panel{flex:1 1 360px;max-width:560px;display:flex;flex-direction:column;gap:12px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:12px}
+h1{font-size:17px;margin:0 0 2px}h2{font-size:13px;margin:0 0 8px;color:var(--mu);font-weight:700}
+.sub{color:var(--mu);font-size:12px}
+.row{border:1px solid var(--bd);border-radius:8px;padding:8px;margin-bottom:8px;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row label{display:flex;flex-direction:column;font-size:11px;color:var(--mu);gap:2px}
+.row .full{grid-column:1/-1}
+input{font:inherit;padding:6px 8px;border:1px solid var(--bd);border-radius:6px;background:var(--bg);color:var(--tx);width:100%;min-width:0}
+button{font:inherit;padding:7px 12px;border-radius:6px;border:1px solid var(--bd);background:var(--card);color:var(--tx);cursor:pointer}
+button.p{background:var(--ac);color:var(--act);border-color:var(--ac);font-weight:700}
+.bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.bar label{display:flex;align-items:center;gap:6px;font-size:12px}.bar input[type=number]{width:70px}
+.cp{display:flex;gap:4px;align-items:center;flex-wrap:wrap;margin-top:2px}.cp input{text-align:center;width:64px}.cp button{padding:6px 10px}.tot{font-size:13px;font-weight:700;margin-top:6px}
+.qrp{font-size:11px;color:var(--mu);word-break:break-all;margin-top:4px}
+.pv{flex:2 1 420px;min-width:0;overflow-x:auto}
+.pages{display:flex;flex-direction:column;gap:16px;align-items:flex-start}
+.page{position:relative;width:210mm;height:297mm;background:#fff;color:#000;box-shadow:0 1px 6px rgba(0,0,0,.25);flex:none;overflow:hidden;zoom:var(--z,1)}
+.cell{position:absolute;width:94.5mm;height:31.4mm}
+.cell.skip{outline:.2mm dashed #bbb}
+.cell svg{position:absolute;left:0;top:0;width:31.4mm;height:31.4mm;shape-rendering:crispEdges}
+.cell img{position:absolute;left:46.8mm;top:.9mm;width:36.2mm;height:9.05mm}
+.t{position:absolute;white-space:nowrap;font-size:3mm;line-height:4mm;height:4mm;overflow:hidden;font-family:'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif}
+.k{left:50mm;font-weight:400}.v{left:64.4mm;width:19mm;font-weight:700}
+.cvc{position:absolute;left:83.5mm;width:11mm;top:16.7mm;text-align:center;font:700 2.6mm/4mm Arial,sans-serif}
+.cvb{position:absolute;left:83.5mm;top:20.6mm;width:11mm;height:11mm;border:.5mm solid #000}
+.grid .cell{outline:.2mm dotted #f66}
+@media print{@page{size:A4;margin:0}body{background:#fff}.app{display:block;padding:0}.panel{display:none}.pv{overflow:visible}.pages{gap:0}.page{box-shadow:none;zoom:1!important;page-break-after:always;break-after:page}.cell.skip{outline:none}.grid .cell{outline:none}:root{padding:0}}
+</style></head><body>
+<div class="app">
+<div class="panel">
+ <div class="card"><h1>QR label maker</h1><div class="sub">금호정공(주) · 2 × 7 sticker sheet (A4). Logo and company text stay fixed; QR and the five fields change.</div></div>
+ <div class="card"><h2>Labels</h2>
+  <div class="bar" style="margin-bottom:4px"><input id="ql" placeholder="Paste one line: 20010351-2//Jm S/L (A-D)//VJV//3000//진현성" style="flex:1 1 220px"><button id="qb">Fill</button></div>
+  <div class="sub" id="qm" style="margin-bottom:8px">Order: 품목코드 // 생산품목명 // LOT // 수량 // 입고자. Pasting a line also works inside any field below.</div>
+  <div id="rows"></div>
+  <div class="bar"><button id="add">+ Add item</button><button id="dup">Duplicate last</button></div>
+  <div class="tot" id="tot"></div>
+  <div class="qrp">QR text: fields joined with “//” (e.g. A-1024//샘플 부품//LOT250101//100//OK)</div></div>
+ <div class="card"><h2>Sheet</h2><div class="bar">
+  <label>Start at cell <input type="number" id="st" min="1" max="14" value="1"></label>
+  <label>Offset X (mm) <input type="number" id="ox" step="0.1" value="0"></label>
+  <label>Offset Y (mm) <input type="number" id="oy" step="0.1" value="0"></label>
+  <label>Text/logo closer to QR (mm) <input type="number" id="sh" min="0" max="13.8" step="0.5" value="11"></label>
+  <label><input type="checkbox" id="gd" style="width:auto"> Show cell guides</label></div>
+  <div class="sub" style="margin-top:6px">Start at cell: reuse a partly used sheet (1–14, left to right, top to bottom). Offsets fine-tune alignment to your printer.</div></div>
+ <div class="bar"><button class="p" id="pdf" hidden>Export PDF</button><button class="p" id="png" hidden>Export PNG</button><button id="pr">Print sheet</button><span class="sub" id="msg">PDF is A4, true size. If printing, use 100% / “Actual size”, no margins.</span></div>
+</div>
+<div class="pv"><div class="pages" id="pages"></div></div>
+</div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script>
+const LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAawAAABrAQAAAAADKYu5AAAD30lEQVR42u2YO27kRhCGvyIJDQMBQzgwFBieti9gOTOMxYoGnO8V1lcwNpCdqBdwbCjwAXQFZ87cAjbYyNYROGsFCjmGgpkFydqAnOFj+BgJ8CNQJ+SQ/bOqq//6q3pEecRYeTxqPMGeYP0jt+XVPAyWuRKdHgbbTlknJbp8di0iImJzERGpP6MiprpdikhMWv4I1i1rWZ0WIhJRVLdm99xsRCTqhORuytmk8jlrwa4mFxmXlwIIdkt5PYUqA4m0nCzac6KeGFf7pk3Yff16rpqCqCbM00UCC9UULDPlIsU2YTfjHqaVd11yuc48FWkGvxkZewhLBFh1eTgJS3fmAd065R2KqsKdlOuZtLauKBKX4b4rEycYXJI2GbWznQ06qSISLeHaazDc2AIwYZWrw05qrDG4orS6ANjwMZcTsPdwA1btNjIBb/mOe0jGYHdwTw6OXKKVeIAR64oJawkUZGKbrDvCeET9MFFVVZilyp0XrxtpccInwYQ199Ucro5Pw5YHfh1J0fKLmu0lcxyFUSOjgPMpcjnAmCODr6patPg2DIvfriBy4tq5JHbI2qbMtE0k+Lzep58Zs2bA4zi3+XNYStwU0jHYCRzDLdyghjeHVpwjOIUE7nkPRXvmMEycOHBQsAa1HaK71r6Jqq7nmi5U1zNVZeZEE+Cs8FXVqqo709Trq0qNHeb8mZJI1uHBhCioWB947rtEipG19YiEhRjTF8lZRfpm7yfhRoKG9Nek65HXsOulVcCRwMWIk1FZdKOdJF++E3iTx6ZVeKZ00q4MmDyotH+r7t4+E/s7hbgp6sPW5qqqGS/hmBMQi2no/5STJxBx1JxXBD2wpNqOrYjPrCRIwjOIWu3MxLgogIW6uvqEPbB0+APhKVxUPPL661LfCMqQ+Jc9sGwY5lfXl/9591r8C9bKFvTBsOzp1PG/gm3gR9ALCSsR0VeHWdPfuMaRAUlu99PQA1RKUZVKyW9L8Y05S9gALMPD1vY38POIVg+HRL+sW0k/fUQks4dtwLutvLjcewDs00qS0psRa8d7Jy64NgB/nfvFIOyjpjBE3MifRjQDy7dfj1j7rH72OymnfF/KrcvDL0Zgse3sUuwAvITTkJ+GQ7IrYPxiAc7kVxGW+G6W78GC/YKouB+2wbdhGsFiM2yt7mE+T9TArb5Yqw3PJxJnx7viG+a7iF/GTZL3wHZvPNso4FcGYJEMwrz6nOcASkbFJxNOdkV5255tROIxKneaJK96NVN1Y7C4cyA9UILqQMzgD7bZkgBLMwyL9rqv2XAdHxSMeaNR1BEngwfIqzz9P/kE+6dgHwBrgU+rCCl3LQAAAABJRU5ErkJggg==";
+const F=[["code","품목코드"],["name","생산품목명"],["lot","LOT"],["qty","수량"],["user","입고자"]];
+const COLX=[6.5,110.9],Y0=14.9,PITCH=39.27;
+let rows=[{code:"A-1024",name:"샘플 부품",lot:"LOT250101",qty:"100",user:"OK",copies:14}];
+try{const s=JSON.parse(localStorage.getItem("qrlabels")||"null");if(s&&s.length)rows=s}catch(e){}
+const $=id=>document.getElementById(id);
+function save(){try{localStorage.setItem("qrlabels",JSON.stringify(rows))}catch(e){}}
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function SH(){return Math.min(13.8,Math.max(0,+$("sh").value||0))}
+function qrSvg(text){
+ qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];
+ const q=qrcode(0,"M");q.addData(text);q.make();const n=q.getModuleCount();let d="";
+ for(let r=0;r<n;r++)for(let c=0;c<n;c++)if(q.isDark(r,c))d+=`M${c} ${r}h1v1h-1z`;
+ return `<svg viewBox="0 0 ${n} ${n}" xmlns="http://www.w3.org/2000/svg"><path d="${d}" fill="#000"/></svg>`;
+}
+function label(r,x,y){
+ const txt=F.map(f=>r[f[0]]||"").join("//");
+ const sh=SH(),W=18.6+sh,mc=Math.max(10,Math.floor(W/1.9));let h=`<div class="cell" style="left:${x}mm;top:${y}mm">${qrSvg(txt)}<img style="left:${46.8-sh}mm" src="${LOGO}" alt="">`;
+ F.forEach((f,i)=>{const v=String(r[f[0]]||""),fs=Math.min(3,3*mc/Math.max(v.length,mc));
+  h+=`<div class="t k" style="left:${50-sh}mm;top:${12.3+4*i}mm">${f[1]}</div><div class="t v" style="left:${64.4-sh}mm;width:${W}mm;top:${12.3+4*i}mm;font-size:${fs.toFixed(2)}mm">${esc(v)}</div>`});
+ return h+`<div class="cvc">CV</div><div class="cvb"></div></div>`;
+}
+function render(){
+ const box=$("rows");box.innerHTML="";
+ rows.forEach((r,i)=>{const d=document.createElement("div");d.className="row";
+  d.innerHTML=F.map((f,j)=>`<label class="${j==1?"full":""}">${f[1]}<input data-i="${i}" data-k="${f[0]}" value="${esc(r[f[0]]||"")}"></label>`).join("")+
+  `<div class="full" style="font-size:11px;color:var(--mu)">Number of QR codes (labels) for this product<div class="cp"><button data-m="${i}">−</button><input type="number" min="0" data-i="${i}" data-k="copies" value="${r.copies}"><button data-p="${i}">+</button><button data-f="${i}">Fill sheet (14)</button><button data-del="${i}" style="margin-left:auto">Remove</button></div></div>`;
+  box.appendChild(d)});
+ draw();
+}
+function draw(){
+ const list=[];rows.forEach(r=>{for(let n=0;n<(+r.copies||0);n++)list.push(r)});
+ const st=Math.min(14,Math.max(1,+$("st").value||1))-1,ox=+$("ox").value||0,oy=+$("oy").value||0;
+ const total=st+list.length,np=Math.max(1,Math.ceil(total/14));let html="";
+ for(let p=0;p<np;p++){html+=`<div class="page ${$("gd").checked?"grid":""}">`;
+  for(let c=0;c<14;c++){const g=p*14+c,x=COLX[c%2]+ox,y=Y0+PITCH*Math.floor(c/2)+oy;
+   if(g>=st&&g-st<list.length)html+=label(list[g-st],x,y);else html+=`<div class="cell skip" style="left:${x}mm;top:${y}mm"></div>`}
+  html+="</div>"}
+ $("pages").innerHTML=html;fit();
+ $("tot").textContent=`Total: ${list.length} labels · ${np} sheet${np>1?"s":""}`;
+}
+function fit(){const w=document.querySelector(".pv").clientWidth-4,z=Math.min(1,w/794);document.querySelectorAll(".page").forEach(p=>p.style.setProperty("--z",z))}
+$("rows").addEventListener("input",e=>{const t=e.target;if(!t.dataset.k)return;rows[t.dataset.i][t.dataset.k]=t.value;save();draw()});
+$("rows").addEventListener("click",e=>{const D=e.target.dataset;
+if(D.m!==undefined||D.p!==undefined||D.f!==undefined){const k=D.m??D.p??D.f,r=rows[k];r.copies=D.m!==undefined?Math.max(0,(+r.copies||0)-1):D.p!==undefined?(+r.copies||0)+1:14;save();render();return}
+const i=D.del;if(i===undefined)return;rows.splice(i,1);if(!rows.length)rows.push({code:"",name:"",lot:"",qty:"",user:"",copies:1});save();render()});
+function parseLine(s){return s.split("//").map(t=>t.trim()).slice(0,5)}
+function quickFill(){const el=$("ql"),p=parseLine(el.value);
+ if(p.length<2||!p[0]){$("qm").textContent="Use parts separated by //, e.g. A-1024//샘플 부품//LOT250101//100//OK";return}
+ const last=rows[rows.length-1],empty=F.every(f=>!last[f[0]]),t=empty?last:{...last};
+ F.forEach((f,i)=>{t[f[0]]=p[i]||""});if(!empty)rows.push(t);
+ el.value="";$("qm").textContent=p.length<5?`Filled ${p.length} of 5 fields.`:"Filled all 5 fields.";save();render()}
+$("qb").onclick=quickFill;
+$("ql").addEventListener("keydown",e=>{if(e.key==="Enter")quickFill()});
+$("ql").addEventListener("paste",e=>setTimeout(()=>{if($("ql").value.includes("//"))quickFill()},0));
+$("rows").addEventListener("paste",e=>{const t=e.target;if(!t.dataset||!t.dataset.k||t.dataset.k==="copies")return;
+ const s=(e.clipboardData||window.clipboardData).getData("text");if(!s.includes("//"))return;
+ e.preventDefault();const p=parseLine(s),r=rows[t.dataset.i],start=p.length>=5?0:F.findIndex(f=>f[0]===t.dataset.k);
+ p.forEach((v,i)=>{const f=F[start+i];if(f)r[f[0]]=v});save();render()});
+$("add").onclick=()=>{rows.push({code:"",name:"",lot:"",qty:"",user:"",copies:1});save();render()};
+$("dup").onclick=()=>{rows.push({...rows[rows.length-1]});save();render()};
+["st","ox","oy","gd","sh"].forEach(id=>$(id).addEventListener("input",draw));
+$("pr").onclick=()=>window.print();
+// 포털에서는 브라우저 다운로드로 저장
+const DL={save:async({filename,data})=>{const blob=data instanceof Blob?data:new Blob([data]);const url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000)}};
+let LG=null;
+$("pdf").hidden=false;$("png").hidden=false;
+function logoPng(){return LG?Promise.resolve(LG):new Promise((ok,no)=>{const i=new Image();i.onload=()=>{const c=document.createElement("canvas");c.width=i.width;c.height=i.height;const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.drawImage(i,0,0);LG=c.toDataURL("image/png");ok(LG)};i.onerror=no;i.src=LOGO})}
+async function textPng(r,K0,sh){
+ const K=K0||23.62,W=18.6+sh,mc=Math.max(10,Math.floor(W/1.9)),c=document.createElement("canvas");c.width=Math.round((44.5+sh)*K);c.height=Math.round(20*K);
+ const x=c.getContext("2d"),ff="'Noto Sans KR','Malgun Gothic','Apple SD Gothic Neo',sans-serif";
+ x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.fillStyle="#000";x.textBaseline="middle";
+ F.forEach((f,i)=>{const cy=(4*i+2)*K,v=String(r[f[0]]||""),fs=Math.min(3,3*mc/Math.max(v.length,mc));
+  x.font=`400 ${3*K}px ${ff}`;x.textAlign="left";x.fillText(f[1],0,cy);
+  x.save();x.beginPath();x.rect(14.4*K,cy-2*K,W*K,4*K);x.clip();x.font=`700 ${fs*K}px ${ff}`;x.fillText(v,14.4*K,cy);x.restore()});
+ x.font=`700 ${2.6*K}px Arial,sans-serif`;x.textAlign="center";x.fillText("CV",(39+sh)*K,6.4*K);
+ return K0?c:c.toDataURL("image/png")}
+async function exportPdf(){
+ const b=$("pdf"),m=$("msg"),old=b.textContent;b.disabled=true;b.textContent="Creating PDF…";
+ try{
+  try{await document.fonts.load("400 20px 'Noto Sans KR'","품목코드");await document.fonts.load("700 20px 'Noto Sans KR'","샘플")}catch(e){}
+  const list=[];rows.forEach(r=>{for(let n=0;n<(+r.copies||0);n++)list.push(r)});
+  if(!list.length){m.textContent="Nothing to export: set at least one label.";return}
+  const st=Math.min(14,Math.max(1,+$("st").value||1))-1,ox=+$("ox").value||0,oy=+$("oy").value||0,np=Math.max(1,Math.ceil((st+list.length)/14));
+  const sh=SH(),logo=await logoPng(),doc=new jspdf.jsPDF({unit:"mm",format:"a4",orientation:"portrait"}),cache={};
+  qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];
+  for(let p=0;p<np;p++){if(p)doc.addPage();
+   for(let c=0;c<14;c++){const g=p*14+c;if(g<st||g-st>=list.length)continue;
+    const r=list[g-st],x=COLX[c%2]+ox,y=Y0+PITCH*Math.floor(c/2)+oy,txt=F.map(f=>r[f[0]]||"").join("//");
+    const q=qrcode(0,"M");q.addData(txt);q.make();const n=q.getModuleCount(),s=31.4/n;doc.setFillColor(0,0,0);
+    for(let i=0;i<n;i++){let j=0;while(j<n){if(!q.isDark(i,j)){j++;continue}let k=j;while(k<n&&q.isDark(i,k))k++;doc.rect(x+j*s,y+i*s,(k-j)*s+.01,s+.01,"F");j=k}}
+    doc.addImage(logo,"PNG",x+46.8-sh,y+.9,36.2,9.05,"logo");
+    if(!cache[txt])cache[txt]=await textPng(r,0,sh);
+    doc.addImage(cache[txt],"PNG",x+50-sh,y+12.3,44.5+sh,20,"t:"+txt);
+    doc.setDrawColor(0,0,0);doc.setLineWidth(.5);doc.rect(x+83.75,y+20.85,10.5,10.5,"S")}}
+  await DL.save({filename:`QR_labels_${new Date().toISOString().slice(0,10)}.pdf`,data:doc.output("arraybuffer")});
+  m.textContent="PDF ready.";
+ }catch(e){m.textContent=(e&&e.code==="declined")?"Download cancelled.":"PDF export failed: "+((e&&e.message)||e)}
+ finally{b.textContent=old;b.disabled=false}}
+$("pdf").onclick=exportPdf;
+async function exportPng(){
+ const b=$("png"),m=$("msg"),old=b.textContent;b.disabled=true;b.textContent="Creating PNG…";
+ try{
+  try{await document.fonts.load("400 20px 'Noto Sans KR'","품목코드");await document.fonts.load("700 20px 'Noto Sans KR'","샘플")}catch(e){}
+  const list=[];rows.forEach(r=>{for(let n=0;n<(+r.copies||0);n++)list.push(r)});
+  if(!list.length){m.textContent="Nothing to export: set at least one label.";return}
+  const st=Math.min(14,Math.max(1,+$("st").value||1))-1,ox=+$("ox").value||0,oy=+$("oy").value||0,np=Math.max(1,Math.ceil((st+list.length)/14));
+  const sh=SH(),K=300/25.4,li=new Image();li.src=LOGO;await li.decode();
+  qrcode.stringToBytes=qrcode.stringToBytesFuncs["UTF-8"];
+  const tcache={},files=[];
+  for(let p=0;p<np;p++){
+   const c=document.createElement("canvas");c.width=Math.round(210*K);c.height=Math.round(297*K);
+   const x=c.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,c.width,c.height);x.fillStyle="#000";
+   for(let k0=0;k0<14;k0++){const g=p*14+k0;if(g<st||g-st>=list.length)continue;
+    const r=list[g-st],lx=COLX[k0%2]+ox,ly=Y0+PITCH*Math.floor(k0/2)+oy,txt=F.map(f=>r[f[0]]||"").join("//");
+    const q=qrcode(0,"M");q.addData(txt);q.make();const n=q.getModuleCount(),s=31.4/n;x.fillStyle="#000";
+    for(let i=0;i<n;i++)for(let j=0;j<n;j++)if(q.isDark(i,j)){const x0=Math.round((lx+j*s)*K),x1=Math.round((lx+(j+1)*s)*K),y0=Math.round((ly+i*s)*K),y1=Math.round((ly+(i+1)*s)*K);x.fillRect(x0,y0,x1-x0,y1-y0)}
+    x.drawImage(li,(lx+46.8-sh)*K,(ly+.9)*K,36.2*K,9.05*K);
+    if(!tcache[txt])tcache[txt]=await textPng(r,K,sh);
+    x.drawImage(tcache[txt],Math.round((lx+50-sh)*K),Math.round((ly+12.3)*K));
+    x.strokeStyle="#000";x.lineWidth=.5*K;x.strokeRect((lx+83.75)*K,(ly+20.85)*K,10.5*K,10.5*K)}
+   files.push(await new Promise(ok=>c.toBlob(ok,"image/png")))}
+  const d=new Date().toISOString().slice(0,10);
+  if(files.length===1)await DL.save({filename:`QR_labels_${d}.png`,data:files[0]});
+  else{const z=new JSZip();files.forEach((f,i)=>z.file(`QR_labels_${d}_sheet${i+1}.png`,f));await DL.save({filename:`QR_labels_${d}.zip`,data:await z.generateAsync({type:"blob"})})}
+  m.textContent=files.length>1?`${files.length} sheets saved as a ZIP of PNGs.`:"PNG ready.";
+ }catch(e){m.textContent=(e&&e.code==="declined")?"Download cancelled.":"PNG export failed: "+((e&&e.message)||e)}
+ finally{b.textContent=old;b.disabled=false}}
+$("png").onclick=exportPng;
+window.addEventListener("resize",fit);
+render();
+</script></body></html>

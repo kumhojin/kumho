@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>일일 제품 입고현황</title>
+<!-- 금호정공 사내 업무 시스템 · 자재: 일일 제품 입고현황 (QR 스캔). 포털의 '일일 제품 입고현황 (QR)' 메뉴에서 iframe으로 열림. 자료는 이 브라우저(localStorage 'incoming-log')에만 저장됨. -->
+<script>try{var t=localStorage.getItem('kumhoTheme');if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t)}catch(e){}</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1c2230;--mute:#667085;--line:#cfd4dc;--head:#e8ecf2;--acc:#1f6feb;--ok:#18794e;--bad:#c42b2b;--hl:#fff6c9;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#14171d;--card:#1d222b;--ink:#e8ebf0;--mute:#98a2b3;--line:#3a4252;--head:#272e3a;--acc:#5b9bff;--ok:#4cc38a;--bad:#ff7a7a;--hl:#4a4320;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#14171d;--card:#1d222b;--ink:#e8ebf0;--mute:#98a2b3;--line:#3a4252;--head:#272e3a;--acc:#5b9bff;--ok:#4cc38a;--bad:#ff7a7a;--hl:#4a4320;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 "Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",system-ui,sans-serif}
+.wrap{max-width:1000px;margin:0 auto;padding:16px}
+h1{font-size:22px;letter-spacing:.3em;text-align:center;margin:4px 0 14px}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.bar label{font-size:13px;color:var(--mute)}
+input,button{font:inherit;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px 10px}
+#scan{flex:1 1 320px;border:2px solid var(--acc);font-size:16px}
+button{cursor:pointer}button:hover{background:var(--head)}
+button.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.msg{min-height:22px;font-size:14px;margin:0 2px 10px}
+.msg.ok{color:var(--ok)}.msg.bad{color:var(--bad)}
+.hint{font-size:12.5px;color:var(--mute);margin:0 2px 10px}
+.hint code{background:var(--head);padding:1px 5px;border-radius:4px}
+.sheet{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:10px}
+table{border-collapse:collapse;width:100%;min-width:760px}
+th,td{border:1px solid var(--line);padding:0;text-align:center;font-size:14px}
+th{background:var(--head);padding:7px 4px;font-weight:600}
+th.ttl{background:var(--card);font-size:24px;font-weight:700;padding:12px 4px;white-space:pre}
+th.sigh{font-size:13px;letter-spacing:.2em}
+td.dt{font-size:13px;padding:6px}
+th.xh{background:var(--card);border:0}
+td.n{width:44px;color:var(--mute);background:var(--head)}
+td.e{padding:7px 6px;min-height:34px;outline:none}
+td[contenteditable]:focus{background:var(--hl)}
+td.v{background:var(--head);white-space:pre-line;font-size:13px;padding:4px;width:90px}
+td.x{width:34px}td.x button{border:0;background:none;color:var(--mute);padding:6px}
+tr.new td:not(.v){animation:f 1.6s}
+@keyframes f{from{background:var(--hl)}to{background:transparent}}
+.foot{display:flex;justify-content:space-between;color:var(--mute);font-size:13px;margin-top:10px}
+.only-print{display:none}
+@page{size:A4 portrait;margin:0}
+@media print{
+  html,body{background:#fff!important;color:#000!important;padding:0!important}
+  .wrap{max-width:none;padding:10mm}
+  .bar,.msg,.hint,.foot{display:none!important}
+  h1{font-size:20px;margin:0 0 6px}
+  .only-print{display:block;text-align:left;font-size:12px;margin:0 0 6px;color:#000}
+  .sheet{border:0;border-radius:0;overflow:visible;background:#fff}
+  table{min-width:0;width:100%}
+  th,td{border:1px solid #000!important;color:#000!important;font-size:11px;background:#fff}
+  th,td.n,td.v{background:#e6e6e6!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  th{position:static;padding:4px}
+  td.e{padding:3px 4px}
+  td.x{display:none}
+  tr{page-break-inside:avoid}
+  table{table-layout:fixed;width:190mm}
+  col.cx,th.xh{display:none}
+  th,td{font-size:10.5px;line-height:1.2}
+  th,td.dt{padding:0 3px}
+  td.e,td.n{height:6mm;padding:0 3px}
+  th.ttl{font-size:22px;background:#fff!important;padding:0}
+  th.sigh{font-size:10.5px}
+  td.v{font-size:12px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="bar">
+    <strong id="today"></strong>
+    <label style="color:var(--ink);font-size:14px"><input type="radio" name="grp" value="A" checked style="padding:0;width:18px;height:18px;vertical-align:middle"> 씨티알/일진</label>
+    <label style="color:var(--ink);font-size:14px"><input type="radio" name="grp" value="B" style="padding:0;width:18px;height:18px;vertical-align:middle"> 유니크/SL/기타</label>
+    <input id="scan" placeholder="여기에 QR 스캔 (품번//품명//LOT//수량//입고자//문제점//창고담당)" autocomplete="off" autofocus>
+    <button id="add" class="pri">추가</button>
+  </div>
+  <div class="msg" id="msg"></div>
+  <p class="hint">스캐너가 읽은 값은 <code>//</code> 로 나뉘어 품번 → 품명 → LOT → 수량 → 입고자 → 문제점 → 창고담당 순서로 다음 빈 줄에 입력됩니다. 수량·문제점 칸만 눌러서 직접 수정할 수 있어요.</p>
+  <div class="sheet"><table>
+    <colgroup><col style="width:5.26%"><col style="width:14.74%"><col style="width:15.79%"><col style="width:12.63%"><col style="width:8.42%"><col style="width:9.47%"><col style="width:11.58%"><col style="width:9.47%"><col style="width:12.63%"><col class="cx" style="width:34px"></colgroup>
+    <thead>
+      <tr style="height:7mm"><th colspan="6" rowspan="2" class="ttl">일일  제품  입고현황</th><th rowspan="3" class="sigh">결 재</th><th class="sigh">작 성</th><th class="sigh">검 토</th><th rowspan="4" class="xh"></th></tr>
+      <tr style="height:9mm"><td rowspan="2"></td><td rowspan="2"></td></tr>
+      <tr style="height:7mm"><td colspan="6" class="dt" id="tdate"></td></tr>
+      <tr style="height:8mm"><th>NO</th><th>품번</th><th>품명</th><th>LOT</th><th>수량</th><th>입고자</th><th>문제점</th><th>창고담당</th><th>업체</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+  <div class="foot"><span id="count"></span>
+    <span><button id="xl">엑셀 저장</button> <button id="pdf">PDF 저장 (A4)</button> <button id="prt">인쇄</button> <button id="clr">전체 지우기</button></span></div>
+</div>
+<script>
+const N=40, F=['pn','name','lot','qty','who','issue','wh'];
+let S={date:'',rows:Array.from({length:N},()=>({}))};
+try{const s=JSON.parse(localStorage.getItem('incoming-log')||'null');if(s&&s.rows&&s.rows.length===N)S=s}catch(e){}
+const $=id=>document.getElementById(id);
+const save=()=>{try{localStorage.setItem('incoming-log',JSON.stringify(S))}catch(e){}};
+const DAY='일월화수목금토';
+function dateText(){
+  const n=new Date(),y=n.getFullYear(),m=n.getMonth()+1,d=n.getDate();
+  return `일 자 : ${y}년 ${m}월 ${d}일 ${DAY[n.getDay()]}요일`;
+}
+function render(newIdx){
+  const tb=$('rows');tb.innerHTML='';
+  S.rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');if(i===newIdx)tr.className='new';
+    tr.innerHTML=`<td class="n">${i+1}</td>`;
+    F.forEach(f=>{const td=document.createElement('td');td.className='e';td.textContent=r[f]||'';if(f==='qty'||f==='issue')td.contentEditable='plaintext-only';
+      if(f==='qty'||f==='issue'){td.onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();td.blur()}};td.onblur=()=>{r[f]=td.textContent.trim();save();count()}};tr.appendChild(td)});
+    if(i===0){const v=document.createElement('td');v.className='v';v.rowSpan=27;v.textContent='씨티알/\n일진';tr.appendChild(v)}
+    if(i===27){const v=document.createElement('td');v.className='v';v.rowSpan=13;v.textContent='유니크/\nSL/\n기타';tr.appendChild(v)}
+    const x=document.createElement('td');x.className='x';x.innerHTML='<button title="이 줄 지우기">✕</button>';
+    x.firstChild.onclick=()=>{S.rows[i]={};save();render();count()};tr.appendChild(x);
+    tb.appendChild(tr);
+  });
+  $('tdate').textContent=dateText();count();
+}
+const used=r=>F.some(f=>r[f]);
+function count(){$('count').textContent=`${S.rows.filter(used).length} / ${N} 줄 입력됨`}
+function msg(t,c){const m=$('msg');m.textContent=t;m.className='msg '+(c||'')}
+function ingest(){
+  const el=$('scan'),raw=el.value.trim();el.value='';
+  if(!raw)return;
+  const parts=raw.split('//').map(s=>s.trim());
+  const num=v=>{const t=String(v||'').replace(/,/g,'').trim();return t!==''&&!isNaN(t)?Number(t):null};
+  const key=(a,b)=>(a||'').trim().toLowerCase()+'\u0000'+(b||'').trim().toLowerCase();
+  const add=num(parts[3]);const B=S.group==='B',lo=B?27:0,hi=B?N:27;
+  if(parts[0]&&add!==null){
+    const j=S.rows.findIndex((r,x)=>x>=lo&&x<hi&&used(r)&&key(r.pn,r.lot)===key(parts[0],parts[2])&&num(r.qty)!==null);
+    if(j>=0){
+      const old=num(S.rows[j].qty),total=old+add;
+      S.rows[j].qty=String(total);S.date=new Date().toLocaleDateString('sv');$('today').textContent=dateText();save();render(j);
+      msg(`${j+1}번 줄에 합산: ${parts[0]} / ${parts[2]||'LOT 없음'} — ${old} + ${add} = ${total}`,'ok');
+      $('rows').children[j].scrollIntoView({block:'nearest'});el.focus();return;
+    }
+  }
+  const i=S.rows.findIndex((r,x)=>x>=lo&&x<hi&&!used(r));
+  if(i<0){msg(B?'유니크/SL/기타 구역(28–40번)이 모두 찼습니다.':'씨티알/일진 구역(1–27번)이 모두 찼습니다.','bad');el.focus();return}
+  const row={};F.forEach((f,k)=>row[f]=parts[k]||'');
+  S.rows[i]=row;S.date=new Date().toLocaleDateString('sv');$('today').textContent=dateText();save();render(i);
+  msg(`${i+1}번 줄 입력됨: ${parts.slice(0,3).filter(Boolean).join(' · ')}${parts.length>F.length?' (초과 항목 '+(parts.length-F.length)+'개 무시)':''}`,'ok');
+  const tr=$('rows').children[i];tr.scrollIntoView({block:'nearest'});
+  el.focus();
+}
+$('scan').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();ingest()}});
+$('add').onclick=ingest;
+$('today').textContent=dateText();
+document.querySelector('input[name=grp][value='+(S.group==='B'?'B':'A')+']').checked=true;
+document.querySelectorAll('input[name=grp]').forEach(r=>r.onchange=()=>{S.group=r.value;save();$('scan').focus()});
+if(S.date&&S.date!==new Date().toLocaleDateString('sv')&&S.rows.some(used))msg(`${S.date} 데이터가 남아 있습니다. 엑셀 저장 후 '전체 지우기'를 눌러 새로 시작하세요.`,'bad');
+$('clr').onclick=()=>{if(confirm('입력한 내용을 모두 지울까요?')){S.rows=Array.from({length:N},()=>({}));save();render();msg('')}};
+document.addEventListener('click',e=>{if(!e.target.closest('td[contenteditable],input,button'))$('scan').focus()});
+
+// 포털에서는 브라우저 다운로드로 저장
+async function saveFile(filename,data){
+  try{
+    const url=URL.createObjectURL(data),a=document.createElement('a');
+    a.href=url;a.download=filename;document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),10000);
+    msg('저장되었습니다: '+filename,'ok');
+  }catch(e){msg('저장하지 못했습니다 ('+((e&&e.message)||'알 수 없는 오류')+')','bad')}
+}
+$('xl').onclick=async()=>{
+  let blob,name;
+  try{
+  const A=[[ '일일  제품  입고현황',,,,,,'결\n\n재','작 성','검 토'],[],[dateText()],
+    ['NO','품번','품명','LOT','수량','입고자','문제점','창고담당','업체']];
+  S.rows.forEach((r,i)=>A.push([i+1,...F.map(f=>r[f]||''),i===0?'씨티알/\n일진':i===27?'유니크/\nSL/\n기타':'']));
+  const ws=XLSX.utils.aoa_to_sheet(A);
+  ws['!merges']=['A1:F2','A3:F3','G1:G3','H2:H3','I2:I3','I5:I31','I32:I44'].map(a=>XLSX.utils.decode_range(a));
+  ws['!cols']=[5.5,15,11,11,10,10,24,11,11].map(w=>({wch:w}));
+  const wb=XLSX.utils.book_new();XLSX.utils.book_append_sheet(wb,ws,'입고현황');
+  const buf=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  blob=new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  name=`일일_제품_입고현황_${new Date().toLocaleDateString('sv')}.xlsx`;
+  }catch(e){msg('엑셀 파일을 만들지 못했습니다 ('+(e&&e.message||e)+')','bad');return}
+  await saveFile(name,blob);
+};
+$('pdf').onclick=async()=>{
+  const K=200/25.4*1,W=Math.round(210*K),H=Math.round(297*K),c=document.createElement('canvas');c.width=W;c.height=H;
+  const g=c.getContext('2d'),FF='"Malgun Gothic","Apple SD Gothic Neo","Noto Sans KR",sans-serif';
+  g.fillStyle='#fff';g.fillRect(0,0,W,H);g.strokeStyle='#000';g.lineWidth=1.5;g.fillStyle='#000';g.textBaseline='middle';
+  function cell(x,y,w,h,t,o={}){
+    x*=K;y*=K;w*=K;h*=K;
+    if(o.fill){g.fillStyle=o.fill;g.fillRect(x,y,w,h);g.fillStyle='#000'}
+    g.strokeRect(x,y,w,h);
+    if(!t)return;
+    const L=String(t).split('\n');let fs=(o.fs||3.4)*K;
+    const fit=()=>{g.font=(o.b?'bold ':'')+fs+'px '+FF;return Math.max(...L.map(s=>g.measureText(s).width))};
+    while(fit()>w-6&&fs>8)fs--;
+    g.textAlign='center';
+    L.forEach((s,i)=>g.fillText(s,x+w/2,y+h/2+(i-(L.length-1)/2)*fs*1.25));
+  }
+  const G='#e6e6e6',cw=[10,28,30,24,16,18,22,18,24],X=[10];cw.forEach((w,i)=>X.push(X[i]+w));
+  cell(10,10,126,16,'일일  제품  입고현황',{fs:7,b:1});
+  cell(10,26,126,7,dateText(),{fs:3.4});
+  cell(136,10,22,23,'결 재',{fs:3.6,b:1,fill:G});
+  cell(158,10,18,7,'작 성',{fill:G});cell(158,17,18,16,'');
+  cell(176,10,24,7,'검 토',{fill:G});cell(176,17,24,16,'');
+  ['NO','품번','품명','LOT','수량','입고자','문제점','창고담당','업체'].forEach((t,i)=>cell(X[i],33,cw[i],8,t,{b:1,fill:G}));
+  S.rows.forEach((r,i)=>{
+    const y=41+i*6;cell(X[0],y,cw[0],6,i+1,{fill:G});
+    F.forEach((f,k)=>cell(X[k+1],y,cw[k+1],6,r[f]||'',{fs:3.2}));
+  });
+  cell(176,41,24,162,'씨티알/\n일진',{fill:G});cell(176,203,24,78,'유니크/\nSL/\n기타',{fill:G});
+  let blob;
+  try{
+    const pdf=new jspdf.jsPDF({unit:'mm',format:'a4',orientation:'portrait'});
+    pdf.addImage(c.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,297);
+    blob=pdf.output('blob');
+  }catch(e){msg('PDF를 만들지 못했습니다 ('+(e&&e.message||e)+')','bad');return}
+  await saveFile(`일일_제품_입고현황_${new Date().toLocaleDateString('sv')}.pdf`,blob);
+};
+$('prt').onclick=()=>{
+  try{window.print();msg('인쇄 창이 열리지 않으면 "PDF 저장 (A4)"를 이용해 주세요.')}
+  catch(e){msg('이 화면에서는 인쇄를 사용할 수 없습니다. "PDF 저장 (A4)"를 이용해 주세요.','bad')}
+};
+render();
+</script>
+</body>
+</html>

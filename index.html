@@ -5,7 +5,7 @@
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gothic+A1:wght@500;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
-<link rel="stylesheet" href="css/app.css?v=20261023a">
+<link rel="stylesheet" href="css/app.css?v=20261023b">
 
 <script>document.body.classList.add('locked')</script>
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="khmark" viewBox="0 0 290 202"><path fill="#F2C443" fill-rule="evenodd" d="M0 0H136V20L172 0H290V70L276 94L290 118V202H192L148 158L136 168V202H0Z M52 51H88V81H192V51H228V145H192V121H88V145H52Z"/></symbol></svg>
@@ -70,7 +70,7 @@
       <label for="ac-team">부서<select id="ac-team"><option>본사</option><option>생산</option><option>생산관리팀</option><option>품질</option><option>계발</option><option>총무팀</option></select></label>
       <label for="ac-pass">비밀번호<input id="ac-pass" type="password" minlength="6" autocomplete="new-password" placeholder="6자 이상 (수정 시 비우면 유지)"></label>
       <label for="ac-role">권한<select id="ac-role"><option value="user">일반</option><option value="lead">팀장</option><option value="manager">관리자</option><option value="worker">작업자</option><option value="admin">시스템 관리자</option></select></label>
-      <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="생산">생산 작업자 (재료 요청)</option><option value="사상반">생산 사상반 (자재로 보낸 수량·불량 입력)</option><option value="자재">자재 작업자 (생산에서 받은 수량 입력)</option></select></label>
+      <label for="ac-station" id="ac-wwrap" hidden>작업장<select id="ac-station"><option value="생산">생산 작업자 (재료 요청)</option><option value="사상반">생산 사상반 (QR 라벨 만들기)</option><option value="자재">자재 작업자 (일일 제품 입고현황 QR 스캔)</option></select></label>
       <fieldset class="acc" id="ac-perm"><legend>부서 메뉴 권한</legend>
         <div class="pgrid">
           <span>자재 · 생산관리팀</span><select data-t="생산관리팀"><option value="edit">보기+수정</option><option value="view">보기만</option><option value="none">숨김</option></select>
@@ -608,6 +608,16 @@
     <div class="empty" id="wh-empty" hidden>해당하는 품목이 없습니다.</div>
   </section>
 
+  <section class="panel" id="qrinbox" aria-labelledby="h-qrin">
+    <h2 id="h-qrin">일일 제품 입고현황 <span class="tag">QR 스캔 · 이 컴퓨터에 저장</span></h2>
+    <iframe class="qrframe" title="일일 제품 입고현황" data-src="qrin.html?v=20261023b"></iframe>
+  </section>
+
+  <section class="panel" id="qrlabelbox" aria-labelledby="h-qrl">
+    <h2 id="h-qrl">QR 라벨 만들기 <span class="tag">A4 2 × 7 스티커 · 이 컴퓨터에 저장</span></h2>
+    <iframe class="qrframe" title="QR 라벨 만들기" data-src="qrlabel.html?v=20261023b"></iframe>
+  </section>
+
   <section class="panel" id="ssbox" aria-labelledby="h-ss">
     <h2 id="h-ss">안전재고 <span class="tag">지난 1년 하루 최대 판매 기준 · 권한 있는 사람만</span></h2>
     <p class="hint">안전재고(최소) = 지난 1년 동안 하루에 가장 많이 판매(출하)된 양입니다. 자료 가져오기에서 ‘판매’로 넣은 일자별 판매 기록으로 계산하며, 일자별 기록이 없는 품목은 0입니다. 최대 = 안전재고 + 월평균 판매(24개월) × 정한 개월. 현재 재고가 안전재고보다 적으면 ‘부족’, 최대보다 많으면 ‘과다’, 2년 동안 안 팔렸는데 재고가 있으면 ‘판매 없음’으로 보이고, 권한 있는 사람의 자재 현황판에 알림이 뜹니다. 품목마다 직접 정한 값이 있으면 그 값을 씁니다.</p>
@@ -739,27 +749,27 @@
   </section>
 </div></main></div>
 <footer><div class="cwrap"><svg class="kmark" viewBox="0 0 290 202" aria-hidden="true"><use href="#khmark"/></svg><span>금호정공(주) · www.khpi.co.kr · 사내용 페이지입니다. 외부 공유를 삼가 주세요.</span></div></footer>
-<script src="js/theme.js?v=20261023a"></script>
+<script src="js/theme.js?v=20261023b"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.min.js"></script>
-<script src="js/supabase-client.js?v=20261023a"></script>
+<script src="js/supabase-client.js?v=20261023b"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-<script src="js/core.js?v=20261023a"></script>
-<script src="js/ui-inventory.js?v=20261023a"></script>
-<script src="js/ui-shipping.js?v=20261023a"></script>
-<script src="js/ui-ecount.js?v=20261023a"></script>
-<script src="js/ui-slips.js?v=20261023a"></script>
-<script src="js/ui-items.js?v=20261023a"></script>
-<script src="js/ui-production.js?v=20261023a"></script>
-<script src="js/ui-claims.js?v=20261023a"></script>
-<script src="js/ui-trials.js?v=20261023a"></script>
-<script src="js/ui-dashboard.js?v=20261023a"></script>
-<script src="js/auth.js?v=20261023a"></script>
-<script src="js/ui-board.js?v=20261023a"></script>
-<script src="js/ui-bot.js?v=20261023a"></script>
-<script src="js/ui-history.js?v=20261023a"></script>
-<script src="js/ui-orders.js?v=20261023a"></script>
-<script src="js/ui-warehouse.js?v=20261023a"></script>
-<script src="js/ui-safety.js?v=20261023a"></script>
-<script src="js/boot.js?v=20261023a"></script>
+<script src="js/core.js?v=20261023b"></script>
+<script src="js/ui-inventory.js?v=20261023b"></script>
+<script src="js/ui-shipping.js?v=20261023b"></script>
+<script src="js/ui-ecount.js?v=20261023b"></script>
+<script src="js/ui-slips.js?v=20261023b"></script>
+<script src="js/ui-items.js?v=20261023b"></script>
+<script src="js/ui-production.js?v=20261023b"></script>
+<script src="js/ui-claims.js?v=20261023b"></script>
+<script src="js/ui-trials.js?v=20261023b"></script>
+<script src="js/ui-dashboard.js?v=20261023b"></script>
+<script src="js/auth.js?v=20261023b"></script>
+<script src="js/ui-board.js?v=20261023b"></script>
+<script src="js/ui-bot.js?v=20261023b"></script>
+<script src="js/ui-history.js?v=20261023b"></script>
+<script src="js/ui-orders.js?v=20261023b"></script>
+<script src="js/ui-warehouse.js?v=20261023b"></script>
+<script src="js/ui-safety.js?v=20261023b"></script>
+<script src="js/boot.js?v=20261023b"></script>
 
 </body></html>
