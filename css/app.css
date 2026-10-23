@@ -675,3 +675,6 @@ button.editbtn{margin-right:4px}
 .nostock .stockcell{display:none}
 .whtable td.neg{color:var(--bad)}
 #wh-tabs small{opacity:.6;font-size:11px}
+
+/* QR 화면 (iframe) */
+.qrframe{display:block;width:100%;height:calc(100vh - 150px);min-height:720px;border:1px solid var(--line,#d0d5dd);border-radius:10px;background:transparent}
